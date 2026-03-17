@@ -1,0 +1,41 @@
+name: patinhas_amor
+description: Flutter mobile application for Patinhas e Amor NGO - managing animal rescue occurrences and rescued animals.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP client for API communication
+  http: ^1.1.0
+
+  # State management
+  provider: ^6.1.1
+
+  # Image picking for animal registration
+  image_picker: ^1.0.7
+
+  # Material Design icons
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+
+  # Assets can be added here for images used in the app
+  # assets:
+  #   - assets/images/
+
+  
