@@ -116,13 +116,15 @@ class AnimalCard extends StatelessWidget {
 
   /// Returns the color associated with the animal status.
   Color _getStatusColor(AnimalStatus status) {
-    switch (status) {
-      case AnimalStatus.underTreatment:
-        return Colors.orange;
-      case AnimalStatus.availableForAdoption:
-        return Colors.green;
-      case AnimalStatus.adopted:
-        return Colors.blue;
-    }
+  switch (status) {
+    case AnimalStatus.underTreatment:
+      return Colors.orange;
+    case AnimalStatus.availableForAdoption:
+      return Colors.green;
+    case AnimalStatus.adopted:
+      return Colors.blue;
+    case AnimalStatus.missing: // Adicione este caso
+      return Colors.red; 
   }
+}
 }

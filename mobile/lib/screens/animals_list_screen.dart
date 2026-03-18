@@ -25,11 +25,13 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
 
   dynamic _selectedFilter = 'all';
 
+  // 1. FILTRO ATUALIZADO: Adicionado status 'missing'
   final List<Map<String, dynamic>> _filterOptions = [
     {'value': 'all', 'label': 'Todos'},
     {'value': AnimalStatus.underTreatment, 'label': 'Em Tratamento'},
     {'value': AnimalStatus.availableForAdoption, 'label': 'Disponíveis'},
     {'value': AnimalStatus.adopted, 'label': 'Adotados'},
+    {'value': AnimalStatus.missing, 'label': 'Desaparecidos'},
   ];
 
   @override
@@ -293,7 +295,22 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                   if (animal.age != null)
                     _buildDetailRow('Idade', '${animal.age} anos'),
 
-                  const SizedBox(height: 16),
+                  // 2. DETALHES DO RESPONSÁVEL: Exibir para Adotados e Desaparecidos
+                  if (animal.status == AnimalStatus.adopted || animal.status == AnimalStatus.missing) ...[
+                    const Divider(height: 32),
+                    Text(
+                      animal.status == AnimalStatus.missing 
+                          ? 'Informações do Proprietário' 
+                          : 'Informações do Adotante',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('Nome', animal.adopterName ?? 'Não informado'),
+                    _buildDetailRow('Telefone', animal.adopterPhone ?? 'Não informado'),
+                    _buildDetailRow('Endereço', animal.adopterAddress ?? 'Não informado'),
+                  ],
+
+                  const Divider(height: 32),
 
                   const Text(
                     'Descrição',
@@ -317,40 +334,43 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$label: ',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          Text(value),
+          Expanded(child: Text(value)),
         ],
       ),
     );
   }
 
+  // 3. CORES ATUALIZADAS: Adicionado missing (Vermelho)
   Color _getStatusColor(AnimalStatus status) {
     switch (status) {
       case AnimalStatus.underTreatment:
         return Colors.orange;
-
       case AnimalStatus.availableForAdoption:
         return Colors.green;
-
       case AnimalStatus.adopted:
         return Colors.blue;
+      case AnimalStatus.missing:
+        return Colors.red;
     }
   }
 
+  // 4. TEXTOS ATUALIZADOS: Adicionado missing
   String _getStatusText(AnimalStatus status) {
     switch (status) {
       case AnimalStatus.underTreatment:
         return 'Em Tratamento';
-
       case AnimalStatus.availableForAdoption:
         return 'Disponível para Adoção';
-
       case AnimalStatus.adopted:
         return 'Adotado';
+      case AnimalStatus.missing:
+        return 'Desaparecido';
     }
   }
 

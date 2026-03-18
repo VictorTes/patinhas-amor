@@ -2,6 +2,7 @@ enum AnimalStatus {
   underTreatment,
   availableForAdoption,
   adopted,
+  missing, // 1. Nova opção adicionada
 }
 
 extension AnimalStatusExtension on AnimalStatus {
@@ -13,6 +14,8 @@ extension AnimalStatusExtension on AnimalStatus {
         return 'available_for_adoption';
       case AnimalStatus.adopted:
         return 'adopted';
+      case AnimalStatus.missing:
+        return 'missing'; // 2. Valor para persistência (banco/API)
     }
   }
 
@@ -24,6 +27,8 @@ extension AnimalStatusExtension on AnimalStatus {
         return 'Disponível para Adoção';
       case AnimalStatus.adopted:
         return 'Adotado';
+      case AnimalStatus.missing:
+        return 'Desaparecido'; // 3. Label para interface
     }
   }
 }
@@ -106,6 +111,8 @@ class Animal {
         return AnimalStatus.availableForAdoption;
       case 'adopted':
         return AnimalStatus.adopted;
+      case 'missing':
+        return AnimalStatus.missing; // 4. Mapeamento da leitura do JSON
       default:
         return AnimalStatus.underTreatment;
     }

@@ -60,6 +60,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
       'label': 'Disponível para Adoção'
     },
     {'value': AnimalStatus.adopted, 'label': 'Adotado'},
+    {'value': AnimalStatus.missing, 'label': 'Desaparecido'},
   ];
 
   @override
@@ -150,10 +151,18 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
         rescueDate: DateTime.now(),
         sex: _sex,
         size: _size,
-        adopterName: _status == AnimalStatus.adopted ? _adopterName : null,
+        adopterName:
+            (_status == AnimalStatus.adopted || _status == AnimalStatus.missing)
+                ? _adopterName
+                : null,
         adopterAddress:
-            _status == AnimalStatus.adopted ? _adopterAddress : null,
-        adopterPhone: _status == AnimalStatus.adopted ? _adopterPhone : null,
+            (_status == AnimalStatus.adopted || _status == AnimalStatus.missing)
+                ? _adopterAddress
+                : null,
+        adopterPhone:
+            (_status == AnimalStatus.adopted || _status == AnimalStatus.missing)
+                ? _adopterPhone
+                : null,
       );
 
       await _animalService.createAnimal(animal);
@@ -305,20 +314,23 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
                 }).toList(),
                 onChanged: (value) => setState(() => _status = value!),
               ),
-              if (_status == AnimalStatus.adopted) ...[
+              if (_status == AnimalStatus.adopted ||
+                  _status == AnimalStatus.missing) ...[
                 const SizedBox(height: 16),
                 TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Nome do adotante',
-                    prefixIcon: Icon(Icons.person),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: _status == AnimalStatus.missing
+                        ? 'Nome do Proprietário'
+                        : 'Nome do Adotante',
+                    prefixIcon: const Icon(Icons.person),
+                    border: const OutlineInputBorder(),
                   ),
                   onSaved: (value) => _adopterName = value,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   decoration: const InputDecoration(
-                    labelText: 'Endereço',
+                    labelText: 'Endereço de Contato', // Nome mais genérico
                     prefixIcon: Icon(Icons.home),
                     border: OutlineInputBorder(),
                   ),
@@ -327,7 +339,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   decoration: const InputDecoration(
-                    labelText: 'Telefone',
+                    labelText: 'Telefone de Contato',
                     prefixIcon: Icon(Icons.phone),
                     border: OutlineInputBorder(),
                   ),
