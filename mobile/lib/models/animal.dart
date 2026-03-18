@@ -10,27 +10,19 @@ enum AnimalStatus {
 extension AnimalStatusExtension on AnimalStatus {
   String get value {
     switch (this) {
-      case AnimalStatus.underTreatment:
-        return 'under_treatment';
-      case AnimalStatus.availableForAdoption:
-        return 'available_for_adoption';
-      case AnimalStatus.adopted:
-        return 'adopted';
-      case AnimalStatus.missing:
-        return 'missing';
+      case AnimalStatus.underTreatment: return 'under_treatment';
+      case AnimalStatus.availableForAdoption: return 'available_for_adoption';
+      case AnimalStatus.adopted: return 'adopted';
+      case AnimalStatus.missing: return 'missing';
     }
   }
 
   String get label {
     switch (this) {
-      case AnimalStatus.underTreatment:
-        return 'Em Tratamento';
-      case AnimalStatus.availableForAdoption:
-        return 'Disponível para Adoção';
-      case AnimalStatus.adopted:
-        return 'Adotado';
-      case AnimalStatus.missing:
-        return 'Desaparecido';
+      case AnimalStatus.underTreatment: return 'Em Tratamento';
+      case AnimalStatus.availableForAdoption: return 'Disponível para Adoção';
+      case AnimalStatus.adopted: return 'Adotado';
+      case AnimalStatus.missing: return 'Desaparecido';
     }
   }
 }
@@ -42,10 +34,11 @@ class Animal {
   final int? age;
   final String description;
   final AnimalStatus status;
-  final String? imageUrl;
+  final String? imageUrl; 
   final DateTime? rescueDate;
   final String? sex;
   final String? size;
+  
   final String? adopterName;
   final String? adopterAddress;
   final String? adopterPhone;
@@ -67,22 +60,30 @@ class Animal {
   });
 
   factory Animal.fromJson(Map<String, dynamic> json, {String? docId}) {
+    // Função auxiliar interna para tratar strings vazias como nulas
+    // Isso evita que o Dropdown trave ao tentar ler "" do Firebase
+    String? _nullIfEmpty(dynamic value) {
+      if (value == null || (value is String && value.isEmpty)) return null;
+      return value.toString();
+    }
+
     return Animal(
       id: docId ?? json['id'] as String?, 
       name: json['name'] as String? ?? '',
       species: json['species'] as String? ?? '',
-      // Tratamento para garantir que idade seja int, mesmo que o Firebase mande double
       age: json['age'] is num ? (json['age'] as num).toInt() : null,
       description: json['description'] as String? ?? '',
       status: _parseStatus(json['status'] as String? ?? ''),
-      imageUrl: json['imageUrl'] as String?,
-      // Tratamento para DateTime: o Firebase pode mandar String ou Timestamp
+      imageUrl: _nullIfEmpty(json['imageUrl']),
       rescueDate: _parseDate(json['rescueDate']),
-      sex: json['sex'] as String?,
-      size: json['size'] as String?,
-      adopterName: json['adopterName'] as String?,
-      adopterAddress: json['adopterAddress'] as String?,
-      adopterPhone: json['adopterPhone'] as String?,
+      
+      // Aplicando a trava de segurança para campos de Dropdown
+      sex: _nullIfEmpty(json['sex']),
+      size: _nullIfEmpty(json['size']),
+      
+      adopterName: _nullIfEmpty(json['adopterName']),
+      adopterAddress: _nullIfEmpty(json['adopterAddress']),
+      adopterPhone: _nullIfEmpty(json['adopterPhone']),
     );
   }
 
@@ -90,36 +91,29 @@ class Animal {
     return {
       'name': name,
       'species': species,
-      if (age != null) 'age': age,
+      'age': age,
       'description': description,
       'status': status.value,
-      if (imageUrl != null) 'imageUrl': imageUrl,
-      // Ao salvar, convertemos para String ISO8601 para manter compatibilidade
-      if (rescueDate != null) 'rescueDate': rescueDate!.toIso8601String(),
-      if (sex != null) 'sex': sex,
-      if (size != null) 'size': size,
-      if (adopterName != null) 'adopterName': adopterName,
-      if (adopterAddress != null) 'adopterAddress': adopterAddress,
-      if (adopterPhone != null) 'adopterPhone': adopterPhone,
+      'imageUrl': imageUrl,
+      'rescueDate': rescueDate != null ? Timestamp.fromDate(rescueDate!) : null,
+      'sex': sex,
+      'size': size,
+      'adopterName': adopterName,
+      'adopterAddress': adopterAddress,
+      'adopterPhone': adopterPhone,
     };
   }
 
   static AnimalStatus _parseStatus(String status) {
     switch (status) {
-      case 'under_treatment':
-        return AnimalStatus.underTreatment;
-      case 'available_for_adoption':
-        return AnimalStatus.availableForAdoption;
-      case 'adopted':
-        return AnimalStatus.adopted;
-      case 'missing':
-        return AnimalStatus.missing;
-      default:
-        return AnimalStatus.underTreatment;
+      case 'under_treatment': return AnimalStatus.underTreatment;
+      case 'available_for_adoption': return AnimalStatus.availableForAdoption;
+      case 'adopted': return AnimalStatus.adopted;
+      case 'missing': return AnimalStatus.missing;
+      default: return AnimalStatus.underTreatment;
     }
   }
 
-  // Função auxiliar para evitar erros de tipo com datas
   static DateTime? _parseDate(dynamic date) {
     if (date == null) return null;
     if (date is Timestamp) return date.toDate();

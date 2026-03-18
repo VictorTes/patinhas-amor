@@ -1,19 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // Importação do Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // 1. Importe o pacote
 import 'package:patinhas_amor/screens/home_screen.dart';
 
-/// Ponto de entrada principal para a aplicação Patinhas e Amor.
 void main() async {
-  // Garante que as comunicações nativas do Flutter estejam prontas antes do Firebase
+  // Garante que as comunicações nativas estejam prontas
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa o Firebase com as configurações do seu arquivo google-services.json
-  await Firebase.initializeApp();
+  try {
+    // 2. Carrega o arquivo .env antes de tudo
+    // Certifique-se de que o arquivo se chama exatamente ".env" na raiz do projeto
+    await dotenv.load(fileName: ".env");
+    print("Variáveis de ambiente carregadas com sucesso!");
+  } catch (e) {
+    print("Erro ao carregar arquivo .env: $e");
+    // Dica: Verifique se o arquivo .env está listado nos assets do pubspec.yaml
+  }
 
+  // Inicializa o Firebase
+  await Firebase.initializeApp();
+  
   runApp(const PatinhasAmorApp());
 }
 
-/// Widget raiz da aplicação.
 class PatinhasAmorApp extends StatelessWidget {
   const PatinhasAmorApp({super.key});
 
@@ -33,7 +42,6 @@ class PatinhasAmorApp extends StatelessWidget {
           elevation: 2,
         ),
       ),
-      // Tela inicial do App
       home: const HomeScreen(),
     );
   }
