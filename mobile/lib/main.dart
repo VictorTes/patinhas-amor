@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_core/firebase_core.dart'; // Importação do Firebase
 import 'package:patinhas_amor/screens/home_screen.dart';
 
-/// Main entry point for the Patinhas e Amor application.
-///
-/// This app is used internally by the NGO team to manage reports of
-/// animal abandonment or abuse submitted by the public.
-void main() {
+/// Ponto de entrada principal para a aplicação Patinhas e Amor.
+void main() async {
+  // Garante que as comunicações nativas do Flutter estejam prontas antes do Firebase
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa o Firebase com as configurações do seu arquivo google-services.json
+  await Firebase.initializeApp();
+
   runApp(const PatinhasAmorApp());
 }
 
-/// Root widget of the application.
-///
-/// Sets up the MaterialApp with theme configuration.
+/// Widget raiz da aplicação.
 class PatinhasAmorApp extends StatelessWidget {
   const PatinhasAmorApp({super.key});
 
@@ -32,7 +33,7 @@ class PatinhasAmorApp extends StatelessWidget {
           elevation: 2,
         ),
       ),
-      // Initial screen is now the HomeScreen
+      // Tela inicial do App
       home: const HomeScreen(),
     );
   }

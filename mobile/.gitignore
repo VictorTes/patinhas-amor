@@ -41,3 +41,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+# Firebase / Android
+android/app/google-services.json
+
+# Firebase / iOS
+ios/Runner/GoogleService-Info.plist
+
+# Firebase / Web
+lib/firebase_options.dart
+
+# Melhores práticas de ambiente
+.env
+*.env

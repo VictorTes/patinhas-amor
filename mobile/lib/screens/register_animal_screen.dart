@@ -141,7 +141,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
 
     try {
       final animal = Animal(
-        id: 0,
+        id: null,
         name: _name,
         species: _species ?? '',
         age: _age,

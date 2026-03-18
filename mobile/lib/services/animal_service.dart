@@ -1,75 +1,72 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:patinhas_amor/models/animal.dart';
 
-/// Service class responsible for handling all API communication
+/// Service class responsible for handling all Firestore communication
 /// related to animals rescued by the NGO.
-///
-/// This service interacts with the REST API to create and fetch
-/// animal records.
 class AnimalService {
-  /// Base URL for the API
-  ///
-  /// In a production environment, this should be configured
-  /// through environment variables or a configuration file.
-  static const String _baseUrl = 'http://10.0.2.2:3000';
+  // Referência para a coleção "animals" no Firestore
+  final CollectionReference _animalsRef =
+      FirebaseFirestore.instance.collection('animals');
 
-  /// HTTP client for making API requests
-  final http.Client _client;
-
-  /// Creates an AnimalService instance.
-  ///
-  /// Optionally accepts a custom HTTP client for testing purposes.
-  AnimalService({http.Client? client}) : _client = client ?? http.Client();
-
-  /// Fetches all animals registered by the NGO.
+  /// Fetches all animals registered in Firestore.
   ///
   /// Returns a list of [Animal] objects.
   /// Throws an exception if the request fails.
   Future<List<Animal>> fetchAnimals() async {
     try {
-      final response = await _client.get(Uri.parse('$_baseUrl/animals'));
+      // Busca todos os documentos da coleção
+      final QuerySnapshot snapshot = await _animalsRef.get();
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Animal.fromJson(json)).toList();
-      } else {
-        throw Exception(
-            'Failed to load animals. Status code: ${response.statusCode}');
-      }
+      // Converte cada documento em um objeto Animal usando o doc.id
+      return snapshot.docs.map((doc) {
+        return Animal.fromJson(
+          doc.data() as Map<String, dynamic>,
+          docId: doc.id,
+        );
+      }).toList();
     } catch (e) {
-      throw Exception('Failed to load animals: $e');
+      throw Exception('Failed to load animals from Firestore: $e');
     }
   }
 
-  /// Creates a new animal record in the system.
+  /// Creates a new animal record in Firestore.
   ///
   /// [animal] is the animal data to be registered.
-  /// Returns the created [Animal] with its assigned ID.
-  /// Throws an exception if the creation fails.
+  /// Returns the created [Animal] with its assigned Firestore ID.
   Future<Animal> createAnimal(Animal animal) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$_baseUrl/animals'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(animal.toJson()),
-      );
+      // O Firestore gera o ID automaticamente (.add)
+      // O animal.toJson() já cuida de não enviar o ID no corpo se ele for nulo
+      final DocumentReference docRef = await _animalsRef.add(animal.toJson());
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return Animal.fromJson(data);
-      } else {
-        throw Exception(
-            'Failed to create animal. Status code: ${response.statusCode}');
-      }
+      // Busca o documento recém-criado para confirmar os dados e o ID
+      final DocumentSnapshot doc = await docRef.get();
+
+      return Animal.fromJson(
+        doc.data() as Map<String, dynamic>,
+        docId: doc.id,
+      );
     } catch (e) {
-      throw Exception('Failed to create animal: $e');
+      throw Exception('Failed to create animal in Firestore: $e');
     }
   }
 
-  /// Closes the HTTP client when the service is no longer needed.
+  /// Opcional: Stream para ouvir mudanças em tempo real (Real-time)
+  /// Útil se você quiser que a lista atualize sozinha sem refresh
+  Stream<List<Animal>> getAnimalsStream() {
+    return _animalsRef.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Animal.fromJson(
+          doc.data() as Map<String, dynamic>,
+          docId: doc.id,
+        );
+      }).toList();
+    });
+  }
+
+  /// No Firestore, não há necessidade de fechar o client como no HTTP,
+  /// mas mantemos o método por padrão de estrutura.
   void dispose() {
-    _client.close();
+    // Firestore gerencia o ciclo de vida automaticamente
   }
 }

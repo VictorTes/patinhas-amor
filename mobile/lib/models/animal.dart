@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum AnimalStatus {
   underTreatment,
   availableForAdoption,
   adopted,
-  missing, // 1. Nova opção adicionada
+  missing,
 }
 
 extension AnimalStatusExtension on AnimalStatus {
@@ -15,7 +17,7 @@ extension AnimalStatusExtension on AnimalStatus {
       case AnimalStatus.adopted:
         return 'adopted';
       case AnimalStatus.missing:
-        return 'missing'; // 2. Valor para persistência (banco/API)
+        return 'missing';
     }
   }
 
@@ -28,13 +30,13 @@ extension AnimalStatusExtension on AnimalStatus {
       case AnimalStatus.adopted:
         return 'Adotado';
       case AnimalStatus.missing:
-        return 'Desaparecido'; // 3. Label para interface
+        return 'Desaparecido';
     }
   }
 }
 
 class Animal {
-  final int id;
+  final String? id; 
   final String name;
   final String species;
   final int? age;
@@ -42,16 +44,14 @@ class Animal {
   final AnimalStatus status;
   final String? imageUrl;
   final DateTime? rescueDate;
-
   final String? sex;
   final String? size;
-
   final String? adopterName;
   final String? adopterAddress;
   final String? adopterPhone;
 
   Animal({
-    required this.id,
+    this.id,
     required this.name,
     required this.species,
     this.age,
@@ -66,23 +66,23 @@ class Animal {
     this.adopterPhone,
   });
 
-  factory Animal.fromJson(Map<String, dynamic> json) {
+  factory Animal.fromJson(Map<String, dynamic> json, {String? docId}) {
     return Animal(
-      id: json['id'],
-      name: json['name'],
-      species: json['species'],
-      age: json['age'],
-      description: json['description'],
-      status: _parseStatus(json['status']),
-      imageUrl: json['imageUrl'],
-      rescueDate: json['rescueDate'] != null
-          ? DateTime.parse(json['rescueDate'])
-          : null,
-      sex: json['sex'],
-      size: json['size'],
-      adopterName: json['adopterName'],
-      adopterAddress: json['adopterAddress'],
-      adopterPhone: json['adopterPhone'],
+      id: docId ?? json['id'] as String?, 
+      name: json['name'] as String? ?? '',
+      species: json['species'] as String? ?? '',
+      // Tratamento para garantir que idade seja int, mesmo que o Firebase mande double
+      age: json['age'] is num ? (json['age'] as num).toInt() : null,
+      description: json['description'] as String? ?? '',
+      status: _parseStatus(json['status'] as String? ?? ''),
+      imageUrl: json['imageUrl'] as String?,
+      // Tratamento para DateTime: o Firebase pode mandar String ou Timestamp
+      rescueDate: _parseDate(json['rescueDate']),
+      sex: json['sex'] as String?,
+      size: json['size'] as String?,
+      adopterName: json['adopterName'] as String?,
+      adopterAddress: json['adopterAddress'] as String?,
+      adopterPhone: json['adopterPhone'] as String?,
     );
   }
 
@@ -94,6 +94,7 @@ class Animal {
       'description': description,
       'status': status.value,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      // Ao salvar, convertemos para String ISO8601 para manter compatibilidade
       if (rescueDate != null) 'rescueDate': rescueDate!.toIso8601String(),
       if (sex != null) 'sex': sex,
       if (size != null) 'size': size,
@@ -112,9 +113,17 @@ class Animal {
       case 'adopted':
         return AnimalStatus.adopted;
       case 'missing':
-        return AnimalStatus.missing; // 4. Mapeamento da leitura do JSON
+        return AnimalStatus.missing;
       default:
         return AnimalStatus.underTreatment;
     }
+  }
+
+  // Função auxiliar para evitar erros de tipo com datas
+  static DateTime? _parseDate(dynamic date) {
+    if (date == null) return null;
+    if (date is Timestamp) return date.toDate();
+    if (date is String) return DateTime.tryParse(date);
+    return null;
   }
 }
