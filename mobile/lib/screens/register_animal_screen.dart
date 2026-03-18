@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:patinhas_amor/models/animal.dart';
 import 'package:patinhas_amor/services/animal_service.dart';
-import 'package:patinhas_amor/widgets/loading_indicator.dart';
 
 class RegisterAnimalScreen extends StatefulWidget {
   const RegisterAnimalScreen({super.key});
