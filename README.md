@@ -77,14 +77,7 @@ App Flutter (ONG)
 * Flutter
 * Dart
 
-**Backend**
-
-* Node.js
-* API REST
-
-**Banco de dados**
-
-* PostgreSQL
+Firebase
 
 ---
 
