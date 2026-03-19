@@ -1,18 +1,14 @@
-/// Represents an occurrence (report) of animal abandonment or abuse.
-///
-/// Occurrences are submitted by the public through the web platform
-/// and managed by the NGO team through this mobile app.
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Enum representing the possible statuses of an occurrence.
+/// Enum representando os possíveis status de uma ocorrência.
 enum OccurrenceStatus {
   pending,
   inProgress,
   resolved,
 }
 
-/// Extension to provide string conversion for OccurrenceStatus
+/// Extensão para facilitar a conversão do enum para String e labels da UI
 extension OccurrenceStatusExtension on OccurrenceStatus {
-  /// Converts the enum to a string value for API
   String get value {
     switch (this) {
       case OccurrenceStatus.pending:
@@ -24,7 +20,6 @@ extension OccurrenceStatusExtension on OccurrenceStatus {
     }
   }
 
-  /// Returns a user-friendly label for the status
   String get label {
     switch (this) {
       case OccurrenceStatus.pending:
@@ -37,28 +32,17 @@ extension OccurrenceStatusExtension on OccurrenceStatus {
   }
 }
 
-/// Model class representing an occurrence report.
 class Occurrence {
-  /// Unique identifier for the occurrence
-  final int id;
-
-  /// Type of occurrence (e.g., abandonment, abuse, injured)
+  /// O ID agora é String para suportar o padrão do Firestore (ex: "abc123XYZ")
+  final String? id; 
   final String type;
-
-  /// Detailed description of the occurrence
   final String description;
-
-  /// Location where the occurrence was reported
   final String location;
-
-  /// Current status of the occurrence
   final OccurrenceStatus status;
-
-  /// Date when the occurrence was reported
   final DateTime? createdAt;
 
   Occurrence({
-    required this.id,
+    this.id,
     required this.type,
     required this.description,
     required this.location,
@@ -66,35 +50,33 @@ class Occurrence {
     this.createdAt,
   });
 
-  /// Creates an Occurrence from a JSON map (API response)
-  factory Occurrence.fromJson(Map<String, dynamic> json) {
+  /// Converte um documento do Firestore em um objeto Occurrence
+  factory Occurrence.fromJson(Map<String, dynamic> json, {String? docId}) {
     return Occurrence(
-      id: json['id'],
-      type: json['type'],
-      description: json['description'],
-      location: json['location'],
-      status: _parseStatus(json['status']),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
+      id: docId ?? json['id'] as String?,
+      type: json['type'] as String? ?? 'Outro',
+      description: json['description'] as String? ?? '',
+      location: json['location'] as String? ?? '',
+      status: _parseStatus(json['status'] as String? ?? 'pending'),
+      createdAt: _parseDate(json['createdAt'] ?? json['timestamp']),
     );
   }
 
-  /// Converts the Occurrence to a JSON map for API requests
+  /// Converte o objeto para um mapa para salvar no Firestore
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'type': type,
       'description': description,
       'location': location,
       'status': status.value,
-      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      // Usamos serverTimestamp para garantir a hora correta do servidor
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
     };
   }
 
-  /// Creates a copy of this Occurrence with the given fields replaced
+  /// Cria uma cópia da ocorrência alterando apenas os campos desejados
   Occurrence copyWith({
-    int? id,
+    String? id,
     String? type,
     String? description,
     String? location,
@@ -111,7 +93,7 @@ class Occurrence {
     );
   }
 
-  /// Parses a status string into an OccurrenceStatus enum
+  /// Helper para transformar String do banco no Enum correspondente
   static OccurrenceStatus _parseStatus(String status) {
     switch (status) {
       case 'pending':
@@ -123,5 +105,13 @@ class Occurrence {
       default:
         return OccurrenceStatus.pending;
     }
+  }
+
+  /// Helper robusto para lidar com datas (Timestamp ou ISO String)
+  static DateTime? _parseDate(dynamic date) {
+    if (date == null) return null;
+    if (date is Timestamp) return date.toDate();
+    if (date is String) return DateTime.tryParse(date);
+    return null;
   }
 }

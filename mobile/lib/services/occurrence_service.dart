@@ -1,73 +1,64 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 
-/// Service class responsible for handling all API communication
-/// related to occurrences (reports of animal abandonment or abuse).
-///
-/// This service interacts with the REST API to fetch and update
-/// occurrence data.
+/// Service responsável por gerenciar as ocorrências (denúncias) no Firebase Firestore.
 class OccurrenceService {
-  /// Base URL for the API
-  ///
-  /// In a production environment, this should be configured
-  /// through environment variables or a configuration file.
-  static const String _baseUrl = 'http:////10.0.2.2:3000';
+  // Referência para a coleção 'occurrences' no banco de dados
+  final CollectionReference _occurrencesRef =
+      FirebaseFirestore.instance.collection('occurrences');
 
-  /// HTTP client for making API requests
-  final http.Client _client;
+  /// Busca todas as ocorrências em tempo real (Stream).
+  /// Ideal para o seu mapa ou lista, pois atualiza a UI automaticamente.
+  Stream<List<Occurrence>> getOccurrencesStream() {
+    return _occurrencesRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        // Passamos o doc.id para o model para podermos editar/deletar depois
+        return Occurrence.fromJson(
+          doc.data() as Map<String, dynamic>,
+          docId: doc.id,
+        );
+      }).toList();
+    });
+  }
 
-  /// Creates an OccurrenceService instance.
-  ///
-  /// Optionally accepts a custom HTTP client for testing purposes.
-  OccurrenceService({http.Client? client}) : _client = client ?? http.Client();
-
-  /// Fetches all occurrences from the API.
-  ///
-  /// Returns a list of [Occurrence] objects.
-  /// Throws an exception if the request fails.
-  Future<List<Occurrence>> fetchOccurrences() async {
+  /// Cria uma nova ocorrência (denúncia) no Firestore.
+  Future<void> createOccurrence(Occurrence occurrence) async {
     try {
-      final response = await _client.get(Uri.parse('$_baseUrl/occurrences'));
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Occurrence.fromJson(json)).toList();
-      } else {
-        throw Exception(
-            'Failed to load occurrences. Status code: ${response.statusCode}');
-      }
+      // O método .add() gera um ID automático para o documento
+      await _occurrencesRef.add(occurrence.toJson());
     } catch (e) {
-      throw Exception('Failed to load occurrences: $e');
+      throw Exception('Erro ao registrar ocorrência no Firebase: $e');
     }
   }
 
-  /// Updates the status of a specific occurrence.
-  ///
-  /// [id] is the occurrence identifier.
-  /// [status] is the new status value (pending, in_progress, resolved).
-  ///
-  /// Throws an exception if the update fails.
-  Future<void> updateOccurrenceStatus(int id, String status) async {
+  /// Atualiza o status de uma ocorrência (Pendente, Em Andamento, Resolvida).
+  /// [id] deve ser a String gerada pelo Firestore.
+  Future<void> updateOccurrenceStatus(String id, String status) async {
     try {
-      final response = await _client.patch(
-        Uri.parse('$_baseUrl/occurrences/$id/status'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'status': status}),
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw Exception(
-            'Failed to update occurrence status. Status code: ${response.statusCode}');
-      }
+      await _occurrencesRef.doc(id).update({
+        'status': status,
+        'updatedAt': FieldValue.serverTimestamp(), // Marca o horário da última alteração
+      });
     } catch (e) {
-      throw Exception('Failed to update occurrence status: $e');
+      throw Exception('Erro ao atualizar status da ocorrência: $e');
     }
   }
 
-  /// Closes the HTTP client when the service is no longer needed.
+  /// Deleta uma ocorrência do banco de dados.
+  Future<void> deleteOccurrence(String id) async {
+    try {
+      await _occurrencesRef.doc(id).delete();
+    } catch (e) {
+      throw Exception('Erro ao remover ocorrência: $e');
+    }
+  }
+
+  /// No Firestore, não é necessário o dispose() do cliente HTTP, 
+  /// mas mantemos a assinatura caso você use controllers de stream futuramente.
   void dispose() {
-    _client.close();
+    // Implementar se usar StreamControllers personalizados
   }
 }
