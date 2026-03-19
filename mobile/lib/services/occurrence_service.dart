@@ -8,14 +8,12 @@ class OccurrenceService {
       FirebaseFirestore.instance.collection('occurrences');
 
   /// Busca todas as ocorrências em tempo real (Stream).
-  /// Ideal para o seu mapa ou lista, pois atualiza a UI automaticamente.
   Stream<List<Occurrence>> getOccurrencesStream() {
     return _occurrencesRef
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        // Passamos o doc.id para o model para podermos editar/deletar depois
         return Occurrence.fromJson(
           doc.data() as Map<String, dynamic>,
           docId: doc.id,
@@ -27,23 +25,33 @@ class OccurrenceService {
   /// Cria uma nova ocorrência (denúncia) no Firestore.
   Future<void> createOccurrence(Occurrence occurrence) async {
     try {
-      // O método .add() gera um ID automático para o documento
       await _occurrencesRef.add(occurrence.toJson());
     } catch (e) {
       throw Exception('Erro ao registrar ocorrência no Firebase: $e');
     }
   }
 
-  /// Atualiza o status de uma ocorrência (Pendente, Em Andamento, Resolvida).
-  /// [id] deve ser a String gerada pelo Firestore.
-  Future<void> updateOccurrenceStatus(String id, String status) async {
+  /// Atualiza o status e/ou a observação/resolução da ocorrência.
+  /// 
+  /// [id] é o identificador do documento no Firestore.
+  /// [status] é o novo status (pending, in_progress, resolved).
+  /// [resolutionDescription] é a nota de observação ou relato da resolução.
+  Future<void> updateOccurrenceStatus(
+    String id, 
+    String status, 
+    {String? resolutionDescription}
+  ) async {
     try {
-      await _occurrencesRef.doc(id).update({
+      final Map<String, dynamic> updateData = {
         'status': status,
-        'updatedAt': FieldValue.serverTimestamp(), // Marca o horário da última alteração
-      });
+        'updatedAt': FieldValue.serverTimestamp(),
+        // O Firestore atualizará o campo com o novo texto ou com null se estiver vazio.
+        'resolutionDescription': resolutionDescription,
+      };
+
+      await _occurrencesRef.doc(id).update(updateData);
     } catch (e) {
-      throw Exception('Erro ao atualizar status da ocorrência: $e');
+      throw Exception('Erro ao atualizar dados da ocorrência: $e');
     }
   }
 
@@ -56,9 +64,23 @@ class OccurrenceService {
     }
   }
 
-  /// No Firestore, não é necessário o dispose() do cliente HTTP, 
-  /// mas mantemos a assinatura caso você use controllers de stream futuramente.
+  /// Busca uma única ocorrência pelo ID (útil para Deep Links ou notificações).
+  Future<Occurrence?> getOccurrenceById(String id) async {
+    try {
+      final doc = await _occurrencesRef.doc(id).get();
+      if (doc.exists) {
+        return Occurrence.fromJson(
+          doc.data() as Map<String, dynamic>,
+          docId: doc.id,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Erro ao buscar ocorrência específica: $e');
+    }
+  }
+
   void dispose() {
-    // Implementar se usar StreamControllers personalizados
+    // Implementar se usar StreamControllers personalizados no futuro
   }
 }

@@ -17,6 +17,9 @@ dependencies:
   url_launcher: ^6.3.0
   intl: ^0.19.0
 
+  pdf: ^3.10.7
+  printing: ^5.11.1
+
   # HTTP client for API communication
   http: ^1.1.0
 

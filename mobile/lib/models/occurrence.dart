@@ -33,15 +33,16 @@ extension OccurrenceStatusExtension on OccurrenceStatus {
 }
 
 class Occurrence {
-  final String? id; 
+  final String? id;
   final String type;
   final String description;
   final String location;
-  final String? imageUrl; // Nova campo para evidência visual
+  final String? imageUrl;
   final OccurrenceStatus status;
   final DateTime? createdAt;
-  final double? latitude;  // Necessário para o Mapa de Calor
-  final double? longitude; // Necessário para o Mapa de Calor
+  final double? latitude;
+  final double? longitude;
+  final String? resolutionDescription;
 
   Occurrence({
     this.id,
@@ -53,6 +54,7 @@ class Occurrence {
     this.createdAt,
     this.latitude,
     this.longitude,
+    this.resolutionDescription,
   });
 
   /// Converte um documento do Firestore em um objeto Occurrence
@@ -65,9 +67,9 @@ class Occurrence {
       imageUrl: json['imageUrl'] as String?,
       status: _parseStatus(json['status'] as String? ?? 'pending'),
       createdAt: _parseDate(json['createdAt'] ?? json['timestamp']),
-      // Tratamento seguro para conversão de números (int/double) vindos do Firebase
       latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
       longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
+      resolutionDescription: json['resolutionDescription'] as String?,
     );
   }
 
@@ -81,12 +83,15 @@ class Occurrence {
       'status': status.value,
       'latitude': latitude,
       'longitude': longitude,
-      // Usamos serverTimestamp se a data for nula
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'resolutionDescription': resolutionDescription,
     };
   }
 
-  /// Cria uma cópia da ocorrência alterando apenas os campos desejados
+  /// Cria uma cópia da ocorrência alterando apenas os campos desejados.
+  /// 
+  /// NOTA: Para campos que podem ser nulos (como resolutionDescription),
+  /// usamos uma verificação para permitir que o valor seja resetado para null.
   Occurrence copyWith({
     String? id,
     String? type,
@@ -97,6 +102,8 @@ class Occurrence {
     DateTime? createdAt,
     double? latitude,
     double? longitude,
+    // Usamos dynamic ou uma lógica de fallback para permitir null real
+    Object? resolutionDescription = _sentinel, 
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -108,8 +115,15 @@ class Occurrence {
       createdAt: createdAt ?? this.createdAt,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      // Se passarmos algo (incluindo null), ele usa. Se não passarmos nada, mantém o antigo.
+      resolutionDescription: resolutionDescription == _sentinel 
+          ? this.resolutionDescription 
+          : resolutionDescription as String?,
     );
   }
+
+  // Valor estático privado usado apenas para identificar quando o parâmetro não foi passado
+  static const _sentinel = Object();
 
   static OccurrenceStatus _parseStatus(String status) {
     switch (status) {

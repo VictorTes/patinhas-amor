@@ -3,6 +3,10 @@ import 'package:patinhas_amor/models/occurrence.dart';
 import 'package:patinhas_amor/services/occurrence_service.dart';
 import 'package:patinhas_amor/widgets/loading_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:http/http.dart' as http;
 
 class OccurrenceDetailsScreen extends StatefulWidget {
   final Occurrence occurrence;
@@ -19,6 +23,7 @@ class OccurrenceDetailsScreen extends StatefulWidget {
 
 class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
   final OccurrenceService _occurrenceService = OccurrenceService();
+  final TextEditingController _resolutionController = TextEditingController();
 
   bool _isLoading = false;
   late Occurrence _occurrence;
@@ -29,59 +34,147 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     _occurrence = widget.occurrence;
   }
 
-  /// Tenta abrir o local da ocorrência no aplicativo de mapas do dispositivo.
-  Future<void> _openInMaps() async {
-    if (_occurrence.latitude == null || _occurrence.longitude == null) {
-      _showErrorSnackBar('Coordenadas geográficas não disponíveis.');
-      return;
+  @override
+  void dispose() {
+    _resolutionController.dispose();
+    super.dispose();
+  }
+
+  // --- LÓGICA DE PDF ---
+  Future<void> _generateAndPreviewReport() async {
+    setState(() => _isLoading = true);
+    final pdf = pw.Document();
+    pw.MemoryImage? profileImage;
+
+    if (_occurrence.imageUrl != null) {
+      try {
+        final response = await http.get(Uri.parse(_occurrence.imageUrl!));
+        if (response.statusCode == 200) {
+          profileImage = pw.MemoryImage(response.bodyBytes);
+        }
+      } catch (e) {
+        debugPrint("Erro imagem PDF: $e");
+      }
     }
 
-    final Uri uri = Uri.parse(
-      'geo:${_occurrence.latitude},${_occurrence.longitude}?q=${_occurrence.latitude},${_occurrence.longitude}',
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('PATINHAS AMOR - RELATORIO',
+                      style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(_formatDate(_occurrence.createdAt ?? DateTime.now())),
+                ],
+              ),
+              pw.Divider(thickness: 1),
+              pw.SizedBox(height: 15),
+              if (profileImage != null)
+                pw.Center(
+                  child: pw.Container(
+                    height: 200,
+                    width: 350,
+                    margin: const pw.EdgeInsets.only(bottom: 20),
+                    child: pw.Image(profileImage, fit: pw.BoxFit.cover),
+                  ),
+                ),
+              pw.Text('INFORMACOES GERAIS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 8),
+              pw.Text('ID: ${_occurrence.id}'),
+              pw.Text('Tipo: ${_occurrence.type}'),
+              pw.Text('Localizacao: ${_occurrence.location}'),
+              pw.Text('Status: ${_occurrence.status.label}'),
+              pw.SizedBox(height: 20),
+              pw.Text('DESCRICAO:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Paragraph(text: _occurrence.description),
+              if (_occurrence.resolutionDescription != null && _occurrence.resolutionDescription!.isNotEmpty) ...[
+                pw.SizedBox(height: 20),
+                pw.Text('OBSERVACAO E/OU RESOLUCAO:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.green)),
+                pw.Paragraph(text: _occurrence.resolutionDescription!),
+              ],
+            ],
+          );
+        },
+      ),
     );
 
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      final googleMapsUrl = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=${_occurrence.latitude},${_occurrence.longitude}',
-      );
+    setState(() => _isLoading = false);
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+  }
 
-      if (await canLaunchUrl(googleMapsUrl)) {
-        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
-      } else {
-        _showErrorSnackBar('Não foi possível abrir um aplicativo de mapas.');
-      }
+  // --- MÉTODOS DE AÇÃO ---
+  Future<void> _openInMaps() async {
+    if (_occurrence.latitude == null) return;
+    final Uri uri = Uri.parse('geo:${_occurrence.latitude},${_occurrence.longitude}?q=${_occurrence.latitude},${_occurrence.longitude}');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      _showErrorSnackBar('Não foi possível abrir o mapa.');
     }
   }
 
-  Future<void> _updateStatus(OccurrenceStatus newStatus) async {
-    if (_occurrence.id == null || _occurrence.status == newStatus) return;
+  Future<void> _showResolutionDialog({bool isEditing = false}) async {
+    if (isEditing) {
+      _resolutionController.text = _occurrence.resolutionDescription ?? '';
+    } else {
+      _resolutionController.clear();
+    }
 
-    setState(() {
-      _isLoading = true;
-    });
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(isEditing ? 'Editar Observação' : 'Adicionar Observação'),
+        content: TextField(
+          controller: _resolutionController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Descreva os detalhes da visita ou resolução...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
+          ElevatedButton(
+            onPressed: () {
+              final text = _resolutionController.text.trim();
+              Navigator.pop(context);
+              _updateStatus(
+                _occurrence.status, // Mantém o status atual
+                resolution: text.isEmpty ? null : text,
+              );
+            },
+            child: const Text('SALVAR'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Future<void> _updateStatus(OccurrenceStatus newStatus, {String? resolution}) async {
+    setState(() => _isLoading = true);
     try {
       await _occurrenceService.updateOccurrenceStatus(
         _occurrence.id!,
         newStatus.value,
+        resolutionDescription: resolution,
       );
-
+      
       if (mounted) {
         setState(() {
-          _occurrence = _occurrence.copyWith(status: newStatus);
+          _occurrence = _occurrence.copyWith(
+            status: newStatus,
+            resolutionDescription: resolution,
+          );
           _isLoading = false;
         });
-        _showSuccessSnackBar('Status atualizado para: ${newStatus.label}');
       }
     } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('Erro ao atualizar status: $e');
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
+      _showErrorSnackBar('Erro: $e');
     }
   }
 
@@ -89,202 +182,123 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalhes da Ocorrência'),
+        title: const Text('Detalhes'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _isLoading ? null : _generateAndPreviewReport,
+            tooltip: 'Gerar PDF',
+          ),
+        ],
       ),
       body: _isLoading
-          ? const LoadingIndicator(message: 'Atualizando status...')
+          ? const LoadingIndicator(message: 'Processando...')
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- SEÇÃO DE IMAGEM ---
                   if (_occurrence.imageUrl != null) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        _occurrence.imageUrl!,
-                        width: double.infinity,
-                        height: 250,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            height: 250,
-                            color: Colors.grey[200],
-                            child: const Center(
-                                child: CircularProgressIndicator()),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 150,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image,
-                              size: 50, color: Colors.grey),
-                        ),
-                      ),
+                      child: Image.network(_occurrence.imageUrl!, height: 250, width: double.infinity, fit: BoxFit.cover),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                   ],
-
                   _buildStatusBadge(),
                   const SizedBox(height: 24),
-
-                  _buildDetailSection(
-                    icon: Icons.report_problem,
-                    title: 'Tipo de Ocorrência',
-                    content: _occurrence.type,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- SEÇÃO DE LOCALIZAÇÃO COM BOTÃO MINI MAPA ABAIXO ---
-                  _buildDetailSection(
-                    icon: Icons.location_on,
-                    title: 'Localização Relatada',
-                    content: _occurrence.location,
-                  ),
-                  if (_occurrence.latitude != null) ...[
-                    const SizedBox(height: 10),
+                  _buildDetailRow(Icons.pets, 'Tipo', _occurrence.type),
+                  _buildDetailRow(Icons.location_on, 'Localização', _occurrence.location),
+                  if (_occurrence.latitude != null)
                     Padding(
-                      padding: const EdgeInsets.only(left: 40), // Alinha com o texto da seção
-                      child: InkWell(
-                        onTap: _openInMaps,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.map_outlined, color: Colors.orange, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'ABRIR NO MAPA',
-                                style: TextStyle(
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
+                      padding: const EdgeInsets.only(left: 40, bottom: 16),
+                      child: OutlinedButton.icon(onPressed: _openInMaps, icon: const Icon(Icons.map), label: const Text('MAPA')),
+                    ),
+                  _buildDetailRow(Icons.event, 'Data', _formatDate(_occurrence.createdAt!)),
+                  const Divider(height: 40),
+                  const Text('Descrição da Denúncia', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  _buildTextCard(_occurrence.description),
+
+                  const SizedBox(height: 32),
+                  // --- SEÇÃO DE OBSERVAÇÃO / RESOLUÇÃO SEMPRE VISÍVEL ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Observação e/ou Resolução', 
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)
+                      ),
+                      if (_occurrence.resolutionDescription != null && _occurrence.resolutionDescription!.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20, color: Colors.green),
+                          onPressed: () => _showResolutionDialog(isEditing: true),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_occurrence.resolutionDescription != null && _occurrence.resolutionDescription!.isNotEmpty)
+                    _buildTextCard(_occurrence.resolutionDescription!, isSuccess: true)
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showResolutionDialog(),
+                        icon: const Icon(Icons.add_comment),
+                        label: const Text('ADICIONAR OBSERVAÇÃO'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.green,
+                          side: const BorderSide(color: Colors.green),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
                     ),
-                  ],
-
-                  const SizedBox(height: 16),
-                  if (_occurrence.createdAt != null)
-                    _buildDetailSection(
-                      icon: Icons.calendar_today,
-                      title: 'Data do Registro',
-                      content: _formatDate(_occurrence.createdAt!),
-                    ),
-
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Descrição do Relato',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Text(
-                      _occurrence.description,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[800],
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
 
                   const SizedBox(height: 40),
-                  const Text(
-                    'Gerenciar Progresso',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
+                  const Divider(),
+                  const Text('Alterar Status da Ocorrência', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
                   _buildStatusDropdown(),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
     );
   }
 
-  // --- MÉTODOS AUXILIARES DE UI ---
+  // --- AUXILIARES ---
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(children: [
+        Icon(icon, color: Colors.orange),
+        const SizedBox(width: 16),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ])
+      ]),
+    );
+  }
+
+  Widget _buildTextCard(String text, {bool isSuccess = false}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isSuccess ? Colors.green.withOpacity(0.05) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isSuccess ? Colors.green.withOpacity(0.2) : Colors.grey[300]!),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 15)),
+    );
+  }
 
   Widget _buildStatusBadge() {
     final color = _getStatusColor(_occurrence.status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: color.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(radius: 5, backgroundColor: color),
-          const SizedBox(width: 8),
-          Text(
-            _occurrence.status.label.toUpperCase(),
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailSection({
-    required IconData icon,
-    required String title,
-    required String content,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.orange, size: 24),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                content,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-      ],
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color)),
+      child: Text(_occurrence.status.label.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
     );
   }
 
@@ -292,66 +306,26 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     return DropdownButtonFormField<OccurrenceStatus>(
       value: _occurrence.status,
       decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        filled: true,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), 
+        filled: true, 
         fillColor: Colors.white,
       ),
-      items: OccurrenceStatus.values.map((status) {
-        return DropdownMenuItem<OccurrenceStatus>(
-          value: status,
-          child: Row(
-            children: [
-              CircleAvatar(radius: 6, backgroundColor: _getStatusColor(status)),
-              const SizedBox(width: 12),
-              Text(status.label, style: const TextStyle(fontSize: 16)),
-            ],
-          ),
-        );
-      }).toList(),
-      onChanged: _isLoading ? null : (newStatus) {
-        if (newStatus != null) _updateStatus(newStatus);
+      items: OccurrenceStatus.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label))).toList(),
+      onChanged: (val) {
+        if (val == null || val == _occurrence.status) return;
+        // Agora apenas atualiza o status, sem forçar o diálogo de resolução
+        _updateStatus(val, resolution: _occurrence.resolutionDescription);
       },
     );
   }
 
-  Color _getStatusColor(OccurrenceStatus status) {
-    switch (status) {
-      case OccurrenceStatus.pending:
-        return Colors.orange;
-      case OccurrenceStatus.inProgress:
-        return Colors.blue;
-      case OccurrenceStatus.resolved:
-        return Colors.green;
-    }
+  Color _getStatusColor(OccurrenceStatus s) {
+    if (s == OccurrenceStatus.pending) return Colors.orange;
+    if (s == OccurrenceStatus.inProgress) return Colors.blue;
+    return Colors.green;
   }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating),
-    );
-  }
+  String _formatDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} às ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  void _showErrorSnackBar(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m), backgroundColor: Colors.red));
 }
