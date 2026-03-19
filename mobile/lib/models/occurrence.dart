@@ -33,21 +33,26 @@ extension OccurrenceStatusExtension on OccurrenceStatus {
 }
 
 class Occurrence {
-  /// O ID agora é String para suportar o padrão do Firestore (ex: "abc123XYZ")
   final String? id; 
   final String type;
   final String description;
   final String location;
+  final String? imageUrl; // Nova campo para evidência visual
   final OccurrenceStatus status;
   final DateTime? createdAt;
+  final double? latitude;  // Necessário para o Mapa de Calor
+  final double? longitude; // Necessário para o Mapa de Calor
 
   Occurrence({
     this.id,
     required this.type,
     required this.description,
     required this.location,
+    this.imageUrl,
     required this.status,
     this.createdAt,
+    this.latitude,
+    this.longitude,
   });
 
   /// Converte um documento do Firestore em um objeto Occurrence
@@ -57,8 +62,12 @@ class Occurrence {
       type: json['type'] as String? ?? 'Outro',
       description: json['description'] as String? ?? '',
       location: json['location'] as String? ?? '',
+      imageUrl: json['imageUrl'] as String?,
       status: _parseStatus(json['status'] as String? ?? 'pending'),
       createdAt: _parseDate(json['createdAt'] ?? json['timestamp']),
+      // Tratamento seguro para conversão de números (int/double) vindos do Firebase
+      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
     );
   }
 
@@ -68,8 +77,11 @@ class Occurrence {
       'type': type,
       'description': description,
       'location': location,
+      'imageUrl': imageUrl,
       'status': status.value,
-      // Usamos serverTimestamp para garantir a hora correta do servidor
+      'latitude': latitude,
+      'longitude': longitude,
+      // Usamos serverTimestamp se a data for nula
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
     };
   }
@@ -80,20 +92,25 @@ class Occurrence {
     String? type,
     String? description,
     String? location,
+    String? imageUrl,
     OccurrenceStatus? status,
     DateTime? createdAt,
+    double? latitude,
+    double? longitude,
   }) {
     return Occurrence(
       id: id ?? this.id,
       type: type ?? this.type,
       description: description ?? this.description,
       location: location ?? this.location,
+      imageUrl: imageUrl ?? this.imageUrl,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 
-  /// Helper para transformar String do banco no Enum correspondente
   static OccurrenceStatus _parseStatus(String status) {
     switch (status) {
       case 'pending':
@@ -107,7 +124,6 @@ class Occurrence {
     }
   }
 
-  /// Helper robusto para lidar com datas (Timestamp ou ISO String)
   static DateTime? _parseDate(dynamic date) {
     if (date == null) return null;
     if (date is Timestamp) return date.toDate();

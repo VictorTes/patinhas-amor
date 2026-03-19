@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 import 'package:patinhas_amor/services/occurrence_service.dart';
 import 'package:patinhas_amor/widgets/loading_indicator.dart';
+import 'package:url_launcher/url_launcher.dart'; 
 
-/// Tela que exibe informações detalhadas de uma ocorrência específica.
 class OccurrenceDetailsScreen extends StatefulWidget {
   final Occurrence occurrence;
 
@@ -29,9 +29,38 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     _occurrence = widget.occurrence;
   }
 
-  /// Atualiza o status da ocorrência no Firestore.
+  /// Tenta abrir o local da ocorrência no aplicativo de mapas do dispositivo.
+  Future<void> _openInMaps() async {
+    if (_occurrence.latitude == null || _occurrence.longitude == null) {
+      _showErrorSnackBar('Coordenadas geográficas não disponíveis.');
+      return;
+    }
+
+    // Criamos o URI com o esquema geo:lat,lng
+    // O parâmetro 'q' ajuda a colocar um marcador no ponto exato
+    final Uri uri = Uri.parse(
+      'geo:${_occurrence.latitude},${_occurrence.longitude}?q=${_occurrence.latitude},${_occurrence.longitude}',
+    );
+
+    try {
+      // Usamos LaunchMode.externalApplication para forçar a abertura de um app de mapas
+      // em vez de tentar abrir dentro do seu próprio app.
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      // Se falhar o esquema 'geo', tentamos abrir via Google Maps no navegador como fallback
+      final googleMapsUrl = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${_occurrence.latitude},${_occurrence.longitude}',
+      );
+      
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        _showErrorSnackBar('Não foi possível abrir um aplicativo de mapas.');
+      }
+    }
+  }
+
   Future<void> _updateStatus(OccurrenceStatus newStatus) async {
-    // Se o ID for nulo ou o status for o mesmo, não faz nada
     if (_occurrence.id == null || _occurrence.status == newStatus) return;
 
     setState(() {
@@ -39,7 +68,6 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     });
 
     try {
-      // Chama o service atualizado para o Firestore (passando String id)
       await _occurrenceService.updateOccurrenceStatus(
         _occurrence.id!,
         newStatus.value,
@@ -62,43 +90,19 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     }
   }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  Color _getStatusColor(OccurrenceStatus status) {
-    switch (status) {
-      case OccurrenceStatus.pending:
-        return Colors.orange;
-      case OccurrenceStatus.inProgress:
-        return Colors.blue;
-      case OccurrenceStatus.resolved:
-        return Colors.green;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes da Ocorrência'),
-        elevation: 0,
+        actions: [
+          if (_occurrence.latitude != null)
+            IconButton(
+              icon: const Icon(Icons.map),
+              onPressed: _openInMaps,
+              tooltip: 'Abrir no Mapa',
+            ),
+        ],
       ),
       body: _isLoading
           ? const LoadingIndicator(message: 'Atualizando status...')
@@ -107,22 +111,62 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Badge de Status Dinâmico
+                  // --- SEÇÃO DE IMAGEM ---
+                  if (_occurrence.imageUrl != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        _occurrence.imageUrl!,
+                        width: double.infinity,
+                        height: 250,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 250,
+                            color: Colors.grey[200],
+                            child: const Center(child: CircularProgressIndicator()),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 150,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                   _buildStatusBadge(),
                   const SizedBox(height: 24),
-                  
-                  // Seção de Dados
+
                   _buildDetailSection(
                     icon: Icons.report_problem,
                     title: 'Tipo de Ocorrência',
                     content: _occurrence.type,
                   ),
                   const SizedBox(height: 16),
-                  _buildDetailSection(
-                    icon: Icons.location_on,
-                    title: 'Localização Relatada',
-                    content: _occurrence.location,
+                  
+                  // Localização com botão de ação
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDetailSection(
+                          icon: Icons.location_on,
+                          title: 'Localização Relatada',
+                          content: _occurrence.location,
+                        ),
+                      ),
+                      if (_occurrence.latitude != null)
+                        TextButton.icon(
+                          onPressed: _openInMaps,
+                          icon: const Icon(Icons.directions, size: 20),
+                          label: const Text('Ir'),
+                        ),
+                    ],
                   ),
+                  
                   const SizedBox(height: 16),
                   if (_occurrence.createdAt != null)
                     _buildDetailSection(
@@ -130,7 +174,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                       title: 'Data do Registro',
                       content: _formatDate(_occurrence.createdAt!),
                     ),
-                  
+
                   const SizedBox(height: 32),
                   const Text(
                     'Descrição do Relato',
@@ -154,7 +198,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 40),
                   const Text(
                     'Gerenciar Progresso',
@@ -167,6 +211,8 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
             ),
     );
   }
+
+  // --- MÉTODOS AUXILIARES DE UI (Mantidos conforme sua base) ---
 
   Widget _buildStatusBadge() {
     final color = _getStatusColor(_occurrence.status);
@@ -266,6 +312,26 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Color _getStatusColor(OccurrenceStatus status) {
+    switch (status) {
+      case OccurrenceStatus.pending: return Colors.orange;
+      case OccurrenceStatus.inProgress: return Colors.blue;
+      case OccurrenceStatus.resolved: return Colors.green;
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
     );
   }
 
