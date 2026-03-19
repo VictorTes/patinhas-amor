@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 import 'package:patinhas_amor/services/occurrence_service.dart';
 import 'package:patinhas_amor/widgets/loading_indicator.dart';
-import 'package:url_launcher/url_launcher.dart'; 
+import 'package:url_launcher/url_launcher.dart';
 
 class OccurrenceDetailsScreen extends StatefulWidget {
   final Occurrence occurrence;
@@ -36,22 +36,17 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
       return;
     }
 
-    // Criamos o URI com o esquema geo:lat,lng
-    // O parâmetro 'q' ajuda a colocar um marcador no ponto exato
     final Uri uri = Uri.parse(
       'geo:${_occurrence.latitude},${_occurrence.longitude}?q=${_occurrence.latitude},${_occurrence.longitude}',
     );
 
     try {
-      // Usamos LaunchMode.externalApplication para forçar a abertura de um app de mapas
-      // em vez de tentar abrir dentro do seu próprio app.
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      // Se falhar o esquema 'geo', tentamos abrir via Google Maps no navegador como fallback
       final googleMapsUrl = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=${_occurrence.latitude},${_occurrence.longitude}',
       );
-      
+
       if (await canLaunchUrl(googleMapsUrl)) {
         await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
       } else {
@@ -95,14 +90,6 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes da Ocorrência'),
-        actions: [
-          if (_occurrence.latitude != null)
-            IconButton(
-              icon: const Icon(Icons.map),
-              onPressed: _openInMaps,
-              tooltip: 'Abrir no Mapa',
-            ),
-        ],
       ),
       body: _isLoading
           ? const LoadingIndicator(message: 'Atualizando status...')
@@ -125,13 +112,15 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                           return Container(
                             height: 250,
                             color: Colors.grey[200],
-                            child: const Center(child: CircularProgressIndicator()),
+                            child: const Center(
+                                child: CircularProgressIndicator()),
                           );
                         },
                         errorBuilder: (context, error, stackTrace) => Container(
                           height: 150,
                           color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                          child: const Icon(Icons.broken_image,
+                              size: 50, color: Colors.grey),
                         ),
                       ),
                     ),
@@ -147,26 +136,48 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                     content: _occurrence.type,
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Localização com botão de ação
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDetailSection(
-                          icon: Icons.location_on,
-                          title: 'Localização Relatada',
-                          content: _occurrence.location,
+
+                  // --- SEÇÃO DE LOCALIZAÇÃO COM BOTÃO MINI MAPA ABAIXO ---
+                  _buildDetailSection(
+                    icon: Icons.location_on,
+                    title: 'Localização Relatada',
+                    content: _occurrence.location,
+                  ),
+                  if (_occurrence.latitude != null) ...[
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 40), // Alinha com o texto da seção
+                      child: InkWell(
+                        onTap: _openInMaps,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.map_outlined, color: Colors.orange, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'ABRIR NO MAPA',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      if (_occurrence.latitude != null)
-                        TextButton.icon(
-                          onPressed: _openInMaps,
-                          icon: const Icon(Icons.directions, size: 20),
-                          label: const Text('Ir'),
-                        ),
-                    ],
-                  ),
-                  
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
                   if (_occurrence.createdAt != null)
                     _buildDetailSection(
@@ -205,14 +216,15 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  _buildStatusButtons(),
+                  _buildStatusDropdown(),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
     );
   }
 
-  // --- MÉTODOS AUXILIARES DE UI (Mantidos conforme sua base) ---
+  // --- MÉTODOS AUXILIARES DE UI ---
 
   Widget _buildStatusBadge() {
     final color = _getStatusColor(_occurrence.status);
@@ -258,12 +270,16 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 2),
               Text(
                 content,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -272,66 +288,66 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     );
   }
 
-  Widget _buildStatusButtons() {
-    return Column(
-      children: OccurrenceStatus.values.map((status) {
-        final isSelected = _occurrence.status == status;
-        final color = _getStatusColor(status);
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: OutlinedButton(
-              onPressed: isSelected || _isLoading ? null : () => _updateStatus(status),
-              style: OutlinedButton.styleFrom(
-                backgroundColor: isSelected ? color : Colors.transparent,
-                foregroundColor: isSelected ? Colors.white : color,
-                side: BorderSide(color: color, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (isSelected) ...[
-                    const Icon(Icons.check_circle, size: 20),
-                    const SizedBox(width: 10),
-                  ],
-                  Text(
-                    status.label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isSelected ? Colors.white : color,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+  Widget _buildStatusDropdown() {
+    return DropdownButtonFormField<OccurrenceStatus>(
+      value: _occurrence.status,
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      items: OccurrenceStatus.values.map((status) {
+        return DropdownMenuItem<OccurrenceStatus>(
+          value: status,
+          child: Row(
+            children: [
+              CircleAvatar(radius: 6, backgroundColor: _getStatusColor(status)),
+              const SizedBox(width: 12),
+              Text(status.label, style: const TextStyle(fontSize: 16)),
+            ],
           ),
         );
       }).toList(),
+      onChanged: _isLoading ? null : (newStatus) {
+        if (newStatus != null) _updateStatus(newStatus);
+      },
     );
   }
 
   Color _getStatusColor(OccurrenceStatus status) {
     switch (status) {
-      case OccurrenceStatus.pending: return Colors.orange;
-      case OccurrenceStatus.inProgress: return Colors.blue;
-      case OccurrenceStatus.resolved: return Colors.green;
+      case OccurrenceStatus.pending:
+        return Colors.orange;
+      case OccurrenceStatus.inProgress:
+        return Colors.blue;
+      case OccurrenceStatus.resolved:
+        return Colors.green;
     }
   }
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating),
+      SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating),
     );
   }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+      SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating),
     );
   }
 
