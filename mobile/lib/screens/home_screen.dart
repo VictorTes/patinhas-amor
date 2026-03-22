@@ -1,14 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 
-/// Home screen for the Patinhas e Amor application.
-///
-/// This is the main entry point of the app, displaying the NGO logo
-/// and navigation options to access occurrences and rescued animals.
 class HomeScreen extends StatelessWidget {
-  /// Creates a HomeScreen widget.
   const HomeScreen({super.key});
 
   @override
@@ -17,19 +12,19 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 0.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 0),
-              // NGO Logo area with enhanced design
-              _buildLogoSection(),
-              const SizedBox(height: 40),
-              // Welcome text section
-              _buildWelcomeSection(),
-              const SizedBox(height: 48),
-              // Navigation cards
-              _buildNavigationSection(context),
+              const SizedBox(height: 20),
+              _buildHeader(),
+              const SizedBox(height: 24),
+              // Seção de Estatísticas em Tempo Real
+              _buildLiveSummarySection(),
+              const SizedBox(height: 24),
+              _buildMapPreview(),
+              const SizedBox(height: 32),
+              _buildGridNavigation(context),
               const SizedBox(height: 32),
             ],
           ),
@@ -38,263 +33,235 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the logo section with icon and NGO name.
-  Widget _buildLogoSection() {
-    return Column(
+  Widget _buildHeader() {
+    return Row(
       children: [
-        SizedBox(
-          width: 250,
-          height: 250,
-          child: Image.asset(
-            'assets/images/logo.png',
-            fit: BoxFit.contain,
-          ),
+        CircleAvatar(
+          radius: 30,
+          backgroundColor: Colors.orange[100],
+          // Certifique-se que o caminho da imagem está correto no seu pubspec.yaml
+          backgroundImage: const AssetImage('assets/images/logo.png'),
         ),
-        const SizedBox(height: 24),
-        // NGO Name
-        const Text(
-          'Patinhas e Amor',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Colors.orange,
-            letterSpacing: 1.2,
-          ),
+        const SizedBox(width: 16),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Patinhas e Amor',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orange),
+            ),
+            Text(
+              'Painel Administrativo',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        // Tagline
-        Text(
-          'Cuidando com amor',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
-            fontStyle: FontStyle.italic,
-          ),
+        const Spacer(),
+        IconButton(
+          icon: const Icon(Icons.notifications_none, color: Colors.grey),
+          onPressed: () {}, // Aqui entrará a navegação de notificações futuramente
+        )
+      ],
+    );
+  }
+
+  /// Widgets que buscam os dados reais do Firestore
+  Widget _buildLiveSummarySection() {
+    return Row(
+      children: [
+        _buildCounterStream(
+          collection: 'occurrences',
+          field: 'status',
+          value: 'pending',
+          label: 'Pendentes',
+          color: Colors.redAccent,
+        ),
+        const SizedBox(width: 12),
+        _buildCounterStream(
+          collection: 'occurrences',
+          field: 'status',
+          value: 'in_progress',
+          label: 'Em Aberto',
+          color: Colors.blue,
+        ),
+        const SizedBox(width: 12),
+        _buildCounterStream(
+          collection: 'animals', // Nome da sua coleção de animais resgatados
+          label: 'Resgatados',
+          color: Colors.green,
+          isTotalCount: true, // Para animais, buscamos o total geral
         ),
       ],
     );
   }
 
-  /// Builds the welcome text section.
-  Widget _buildWelcomeSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'Bem-vindo!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+  /// Helper para criar um StreamBuilder que conta documentos
+  Widget _buildCounterStream({
+    required String collection,
+    String? field,
+    String? value,
+    required String label,
+    required Color color,
+    bool isTotalCount = false,
+  }) {
+    Query query = FirebaseFirestore.instance.collection(collection);
+    
+    // Aplica o filtro (WHERE) se não for contagem total
+    if (!isTotalCount && field != null && value != null) {
+      query = query.where(field, isEqualTo: value);
+    }
+
+    return Expanded(
+      child: StreamBuilder<QuerySnapshot>(
+        stream: query.snapshots(),
+        builder: (context, snapshot) {
+          String count = '...';
+          if (snapshot.hasData) {
+            count = snapshot.data!.docs.length.toString().padLeft(2, '0');
+          }
+
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Sistema de Gerenciamento',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
+            child: Column(
+              children: [
+                Text(
+                  count,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  /// Builds the navigation section with cards.
-  Widget _buildNavigationSection(BuildContext context) {
+  Widget _buildMapPreview() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 16),
-          child: Text(
-            'Menu Principal',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+        const Text(
+          'Mapa de Ocorrências',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            height: 160,
+            width: double.infinity,
+            color: Colors.blue[50],
+            child: Stack(
+              children: [
+                // Aqui você pode colocar o seu widget de mapa real reduzido
+                const Center(
+                  child: Icon(Icons.map_outlined, size: 50, color: Colors.blueAccent),
+                ),
+                Positioned(
+                  bottom: 12,
+                  right: 12,
+                  child: FloatingActionButton.small(
+                    onPressed: () {}, // Abrir mapa em tela cheia
+                    backgroundColor: Colors.white,
+                    child: const Icon(Icons.fullscreen, color: Colors.blueAccent),
+                  ),
+                )
+              ],
             ),
           ),
-        ),
-        // Occurrences Card
-        _NavigationCard(
-          icon: Icons.report_problem_outlined,
-          title: 'Ocorrências',
-          subtitle: 'Gerenciar denúncias de abandono e maus-tratos',
-          color: Colors.orange,
-          accentColor: Colors.orange[50]!,
-          onTap: () => _navigateToOccurrences(context),
-        ),
-        const SizedBox(height: 16),
-        // Animals Card
-        _NavigationCard(
-          icon: Icons.pets_outlined,
-          title: 'Animais Resgatados',
-          subtitle: 'Visualizar e cadastrar animais resgatados',
-          color: Colors.green,
-          accentColor: Colors.green[50]!,
-          onTap: () => _navigateToAnimals(context),
         ),
       ],
     );
   }
 
-  /// Navigates to the occurrences list screen.
-  void _navigateToOccurrences(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const OccurrencesListScreen(),
-      ),
+  Widget _buildGridNavigation(BuildContext context) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.2,
+      children: [
+        _buildMenuItem(
+          context,
+          'Ocorrências',
+          Icons.notification_important_outlined,
+          Colors.orange,
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen())),
+        ),
+        _buildMenuItem(
+          context,
+          'Animais',
+          Icons.pets_outlined,
+          Colors.green,
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen())),
+        ),
+        _buildMenuItem(
+          context,
+          'Relatórios',
+          Icons.analytics_outlined,
+          Colors.blueAccent,
+          () => _showComingSoon(context), 
+        ),
+        _buildMenuItem(
+          context,
+          'Configurações',
+          Icons.settings_outlined,
+          Colors.blueGrey,
+          () => _showComingSoon(context),
+        ),
+      ],
     );
   }
 
-  /// Navigates to the animals list screen.
-  void _navigateToAnimals(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AnimalsListScreen(),
-      ),
-    );
-  }
-}
-
-/// Reusable navigation card widget for the home screen.
-class _NavigationCard extends StatelessWidget {
-  /// Icon to display
-  final IconData icon;
-
-  /// Card title
-  final String title;
-
-  /// Card subtitle/description
-  final String subtitle;
-
-  /// Primary color for the card
-  final Color color;
-
-  /// Accent background color for the icon
-  final Color accentColor;
-
-  /// Callback when card is tapped
-  final VoidCallback onTap;
-
-  /// Creates a navigation card.
-  const _NavigationCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.accentColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shadowColor: color.withOpacity(0.2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+  Widget _buildMenuItem(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        splashColor: color.withOpacity(0.1),
-        highlightColor: color.withOpacity(0.05),
         child: Container(
-          padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                accentColor.withOpacity(0.3),
-              ],
-            ),
+            border: Border.all(color: color.withOpacity(0.1)),
           ),
-          child: Row(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon container with accent background
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: color.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 20),
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Arrow indicator
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.arrow_forward,
-                  color: color,
-                  size: 20,
-                ),
+              Icon(icon, color: color, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Funcionalidade em desenvolvimento para o TCC.')),
     );
   }
 }
