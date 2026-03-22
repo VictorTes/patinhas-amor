@@ -19,7 +19,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
               _buildHeader(),
               const SizedBox(height: 24),
-              // Seção de Estatísticas em Tempo Real
+              // Dashboard com contadores e legendas
               _buildLiveSummarySection(),
               const SizedBox(height: 24),
               _buildMapPreview(),
@@ -33,13 +33,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// Cabeçalho com Logo e Nome da ONG
   Widget _buildHeader() {
     return Row(
       children: [
         CircleAvatar(
           radius: 30,
           backgroundColor: Colors.orange[100],
-          // Certifique-se que o caminho da imagem está correto no seu pubspec.yaml
           backgroundImage: const AssetImage('assets/images/logo.png'),
         ),
         const SizedBox(width: 16),
@@ -48,7 +48,11 @@ class HomeScreen extends StatelessWidget {
           children: [
             Text(
               'Patinhas e Amor',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orange),
+              style: TextStyle(
+                fontSize: 22, 
+                fontWeight: FontWeight.bold, 
+                color: Colors.orange
+              ),
             ),
             Text(
               'Painel Administrativo',
@@ -59,13 +63,15 @@ class HomeScreen extends StatelessWidget {
         const Spacer(),
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.grey),
-          onPressed: () {}, // Aqui entrará a navegação de notificações futuramente
+          onPressed: () {
+            // Futura implementação de notificações
+          },
         )
       ],
     );
   }
 
-  /// Widgets que buscam os dados reais do Firestore
+  /// Seção de Estatísticas com legendas explicativas
   Widget _buildLiveSummarySection() {
     return Row(
       children: [
@@ -75,38 +81,41 @@ class HomeScreen extends StatelessWidget {
           value: 'pending',
           label: 'Pendentes',
           color: Colors.redAccent,
+          description: 'Novas denúncias',
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         _buildCounterStream(
           collection: 'occurrences',
           field: 'status',
           value: 'in_progress',
-          label: 'Em Aberto',
+          label: 'Em Curso',
           color: Colors.blue,
+          description: 'Sendo atendidas',
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         _buildCounterStream(
-          collection: 'animals', // Nome da sua coleção de animais resgatados
-          label: 'Resgatados',
+          collection: 'animals',
+          label: 'Acolhidos',
           color: Colors.green,
-          isTotalCount: true, // Para animais, buscamos o total geral
+          isTotalCount: true,
+          description: 'Total na ONG',
         ),
       ],
     );
   }
 
-  /// Helper para criar um StreamBuilder que conta documentos
+  /// Helper para criar um StreamBuilder que conta documentos com legenda
   Widget _buildCounterStream({
     required String collection,
     String? field,
     String? value,
     required String label,
     required Color color,
+    required String description,
     bool isTotalCount = false,
   }) {
     Query query = FirebaseFirestore.instance.collection(collection);
     
-    // Aplica o filtro (WHERE) se não for contagem total
     if (!isTotalCount && field != null && value != null) {
       query = query.where(field, isEqualTo: value);
     }
@@ -121,7 +130,7 @@ class HomeScreen extends StatelessWidget {
           }
 
           return Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -137,12 +146,30 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Text(
                   count,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+                  style: TextStyle(
+                    fontSize: 20, 
+                    fontWeight: FontWeight.bold, 
+                    color: color
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12, 
+                    fontWeight: FontWeight.bold, 
+                    color: Colors.black87
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  label,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+                  description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 9, 
+                    color: Colors.grey[500], 
+                    fontStyle: FontStyle.italic
+                  ),
                 ),
               ],
             ),
@@ -152,6 +179,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// Preview do Mapa (Visualização rápida)
   Widget _buildMapPreview() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +197,6 @@ class HomeScreen extends StatelessWidget {
             color: Colors.blue[50],
             child: Stack(
               children: [
-                // Aqui você pode colocar o seu widget de mapa real reduzido
                 const Center(
                   child: Icon(Icons.map_outlined, size: 50, color: Colors.blueAccent),
                 ),
@@ -177,7 +204,9 @@ class HomeScreen extends StatelessWidget {
                   bottom: 12,
                   right: 12,
                   child: FloatingActionButton.small(
-                    onPressed: () {}, // Abrir mapa em tela cheia
+                    onPressed: () {
+                      // Sugestão: Navegar para uma tela de mapa em tela cheia
+                    },
                     backgroundColor: Colors.white,
                     child: const Icon(Icons.fullscreen, color: Colors.blueAccent),
                   ),
@@ -190,6 +219,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// Menu de navegação em Grid
   Widget _buildGridNavigation(BuildContext context) {
     return GridView.count(
       shrinkWrap: true,
@@ -204,14 +234,20 @@ class HomeScreen extends StatelessWidget {
           'Ocorrências',
           Icons.notification_important_outlined,
           Colors.orange,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen())),
+          () => Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (c) => const OccurrencesListScreen())
+          ),
         ),
         _buildMenuItem(
           context,
           'Animais',
           Icons.pets_outlined,
           Colors.green,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen())),
+          () => Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (c) => const AnimalsListScreen())
+          ),
         ),
         _buildMenuItem(
           context,
@@ -231,7 +267,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
+  /// Botão do Menu Principal
+  Widget _buildMenuItem(
+    BuildContext context, 
+    String title, 
+    IconData icon, 
+    Color color, 
+    VoidCallback onTap
+  ) {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(20),
@@ -261,7 +304,10 @@ class HomeScreen extends StatelessWidget {
 
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidade em desenvolvimento para o TCC.')),
+      const SnackBar(
+        content: Text('Funcionalidade em desenvolvimento para o TCC.'),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 }
