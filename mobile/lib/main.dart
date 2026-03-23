@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:patinhas_amor/widgets/auth_wrapper.dart';
-import 'package:patinhas_amor/screens/home_screen.dart'; // Importe sua Home
-import 'package:patinhas_amor/screens/login_screen.dart'; // Importe seu Login
+import 'package:patinhas_amor/screens/home_screen.dart'; 
+import 'package:patinhas_amor/screens/login_screen.dart'; 
+import 'package:patinhas_amor/screens/forgot_password_screen.dart'; 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
@@ -52,6 +53,7 @@ class PatinhasAmorApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(), // O nome deve bater com o pushReplacementNamed
+        '/forgot-password': (context) => const ForgotPasswordScreen(), // Opcional, mas organizado
       },
     );
   }

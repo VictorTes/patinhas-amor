@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/change_password_screen.dart';
+import 'package:patinhas_amor/screens/forgot_password_screen.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,7 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         } else {
           // Se já for admin ou voluntário antigo, vai para a home
-          // Certifique-se de que a rota '/home' está definida no seu main.dart
           Navigator.pushReplacementNamed(context, '/home');
         }
       }
@@ -63,32 +63,73 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Recuperação de senha
+  /// Recuperação de senha (Esqueci minha senha)
   void _handleForgotPassword() async {
-    if (_emailController.text.isEmpty) {
+    final email = _emailController.text.trim();
+
+    // Primeiro, verifica se o e-mail foi digitado para facilitar a vida do usuário
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Digite seu e-mail no campo acima primeiro.')),
+        const SnackBar(
+          content: Text('Digite seu e-mail no campo acima primeiro.'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+      // Opcional: Você pode optar por navegar direto para a tela de recuperação
+      // mesmo sem o e-mail preenchido:
+       Navigator.push(
+         context,
+         MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+       );
       return;
     }
     
+    setState(() => _isLoading = true);
+
     try {
-      await _authService.resetPassword(_emailController.text.trim());
+      await _authService.resetPassword(email);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Link de recuperação enviado! Verifique seu e-mail.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        _showSuccessDialog();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro ao enviar e-mail de recuperação.')),
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Diálogo de sucesso para informar que o e-mail foi enviado
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 10),
+            Text("E-mail enviado!"),
+          ],
+        ),
+        content: const Text(
+          "Enviamos um link de redefinição para o seu e-mail. Por favor, verifique sua caixa de entrada (e a pasta de spam).",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -108,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Icon(Icons.pets, size: 80, color: Colors.orange[400]),
                 const SizedBox(height: 16),
                 Text(
-                  'Patinhas de Amor',
+                  'Patinhas e Amor',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 28,
@@ -151,15 +192,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (value) => 
-                      value!.length < 6 ? 'A senha deve ter no mínimo 6 caracteres' : null,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Informe sua senha';
+                    if (value.length < 6) return 'A senha deve ter no mínimo 6 caracteres';
+                    return null;
+                  },
                 ),
 
                 // ESQUECI MINHA SENHA
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: _handleForgotPassword,
+                    onPressed: _isLoading ? null : _handleForgotPassword,
                     child: const Text(
                       'Esqueceu a senha?',
                       style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
@@ -195,5 +239,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }
