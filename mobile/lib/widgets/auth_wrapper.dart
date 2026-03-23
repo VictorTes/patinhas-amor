@@ -22,27 +22,27 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // 2. Se NÃO houver usuário autenticado no Firebase (Token inexistente)
+        // 2. Se NÃO houver usuário autenticado no Firebase (Token inexistente ou Logout)
         if (!snapshot.hasData || snapshot.data == null) {
           return const LoginScreen();
         }
 
         // 3. Se houver usuário autenticado, validamos a existência no Firestore
-        // Isso resolve o problema de usuários deletados manualmente no console
+        // O FutureBuilder garante que buscaremos os dados reais do usuário (role, mustChangePassword)
         return FutureBuilder<Map<String, dynamic>?>(
           future: authService.getUserData(),
           builder: (context, userSnapshot) {
-            // Enquanto busca os dados no Firestore (nome, role, mustChangePassword)
+            // Enquanto busca os dados no Firestore
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator(color: Colors.orange)),
               );
             }
 
-            // SE OS DADOS NÃO EXISTIREM (Usuário deletado ou banido no banco)
+            // SE OS DADOS NÃO EXISTIREM (Usuário deletado ou banido no banco Firestore)
             if (!userSnapshot.hasData || userSnapshot.data == null) {
-              // Forçamos o logout para limpar o cache local e evitar o "usuário fantasma"
-              authService.logout();
+              // Correção técnica: O logout deve ser agendado após o build para evitar erros de ciclo de vida
+              Future.microtask(() => authService.logout());
               return const LoginScreen();
             }
 
@@ -50,12 +50,12 @@ class AuthWrapper extends StatelessWidget {
             final userData = userSnapshot.data!;
 
             // 4. Verificação de Troca de Senha Obrigatória
-            // Se o Admin acabou de criar o voluntário, ele DEVE trocar a senha
+            // Se o campo for true, redirecionamos para a tela de troca
             if (userData['mustChangePassword'] == true) {
               return const ChangePasswordScreen();
             }
 
-            // 5. TUDO OK: Usuário autenticado, existente no banco e com senha trocada
+            // 5. TUDO OK: Usuário autenticado, existente no banco e com senha em dia
             return const HomeScreen();
           },
         );

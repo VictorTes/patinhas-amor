@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -29,90 +30,89 @@ class AuthService {
     try {
       await _auth.signOut();
     } catch (e) {
-      print("Erro ao deslogar: $e");
+      debugPrint("Erro ao deslogar: $e");
     }
   }
 
-  /// Resetar senha (Esqueci minha senha - envia e-mail oficial do Firebase)
+  /// Resetar senha (Esqueci minha senha)
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
-    } catch (e) {
-      throw 'Erro ao processar pedido de recuperação.';
     }
   }
 
-  // --- GERENCIAMENTO DE DADOS E PERMISSÕES ---
+  // --- GERENCIAMENTO DE DADOS ---
 
-  /// Buscar dados do perfil do usuário logado (nome, role, mustChangePassword, etc)
+  /// Buscar dados do perfil do usuário logado
   Future<Map<String, dynamic>?> getUserData() async {
     try {
       User? user = _auth.currentUser;
       if (user != null) {
         DocumentSnapshot doc = await _db.collection('users').doc(user.uid).get();
-        
-        if (doc.exists) {
-          return doc.data() as Map<String, dynamic>?;
-        } else {
-          print("Aviso: Documento do usuário ${user.uid} não existe no Firestore.");
-          return null;
-        }
+        return doc.exists ? doc.data() as Map<String, dynamic>? : null;
       }
     } catch (e) {
-      print("Erro ao buscar dados do usuário: $e");
-      return null;
+      debugPrint("Erro ao buscar dados: $e");
     }
     return null;
   }
 
-  /// Altera a senha do usuário atual e marca 'mustChangePassword' como false
-  /// Útil para o primeiro acesso do voluntário
+  /// Altera a senha e marca 'mustChangePassword' como false.
+  /// A ordem aqui é CRÍTICA para evitar o bug de sessão perdida.
   Future<void> updatePasswordAndRelease(String newPassword) async {
     try {
       User? user = _auth.currentUser;
-      if (user != null) {
-        // 1. Atualiza a senha no Authentication
-        await user.updatePassword(newPassword);
+      if (user == null) throw 'Sessão expirada. Faça login novamente.';
 
-        // 2. Atualiza o Firestore para que ele não precise trocar de novo
-        await _db.collection('users').doc(user.uid).update({
-          'mustChangePassword': false,
-        });
-      }
+      final String uid = user.uid;
+
+      // 1. PRIMEIRO: Atualiza o Firestore.
+      // Fazemos isso enquanto o token de acesso ainda é válido.
+      await _db.collection('users').doc(uid).update({
+        'mustChangePassword': false,
+      });
+
+      // 2. DEPOIS: Atualiza a senha no Authentication.
+      // Esta operação invalida o token atual imediatamente.
+      await user.updatePassword(newPassword);
+
+      // 3. FINALIZA: Força o logout.
+      // Mesmo que o Firebase dê erro de "token inválido" aqui, o catch vai garantir o logout.
+      await logout();
+
     } on FirebaseAuthException catch (e) {
+      // Caso a senha tenha sido alterada mas o logout falhou por token, forçamos o deslogue.
+      await logout();
+      
       if (e.code == 'requires-recent-login') {
-        throw 'Por segurança, faça login novamente antes de alterar a senha.';
+        throw 'Por segurança, saia e entre novamente antes de definir a nova senha.';
       }
       throw _handleAuthError(e);
     } catch (e) {
+      // Erro genérico: desloga para não deixar o app em estado inconsistente
+      await logout();
       throw 'Erro ao atualizar dados: $e';
     }
   }
 
   // --- UTILITÁRIOS ---
 
-  /// Tratamento de erros centralizado para mensagens em Português
   String _handleAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
       case 'wrong-password':
       case 'invalid-credential':
-      case 'invalid-email':
-        return 'E-mail ou senha incorretos. Verifique suas credenciais.';
+        return 'E-mail ou senha incorretos.';
       case 'user-disabled':
-        return 'Este usuário foi desativado pela administração.';
-      case 'too-many-requests':
-        return 'Muitas tentativas bloqueadas. Tente novamente mais tarde.';
-      case 'network-request-failed':
-        return 'Sem conexão com a internet. Verifique seu Wi-Fi.';
+        return 'Este usuário foi desativado.';
       case 'weak-password':
-        return 'A senha é muito fraca. Use pelo menos 6 caracteres.';
+        return 'A senha é muito fraca (mínimo 6 caracteres).';
       case 'requires-recent-login':
-        return 'Ação de segurança: Faça login novamente para prosseguir.';
+        return 'Sessão expirada. Faça login novamente.';
       default:
-        return 'Erro ao acessar: ${e.message ?? "Tente novamente."}';
+        return 'Erro: ${e.message ?? "Tente novamente."}';
     }
   }
 }

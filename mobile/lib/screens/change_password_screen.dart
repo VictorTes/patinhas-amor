@@ -11,6 +11,7 @@ class ChangePasswordScreen extends StatefulWidget {
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  final AuthService _authService = AuthService(); // Instanciando corretamente
   bool _isLoading = false;
 
   void _updatePassword() async {
@@ -27,32 +28,38 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // AJUSTE AQUI: Chamando a função correta do seu AuthService
-      await AuthService().updatePasswordAndRelease(_passwordController.text.trim());
+      // Chamando a função "blindada" do seu AuthService
+      await _authService.updatePasswordAndRelease(_passwordController.text.trim());
       
       if (mounted) {
-        _showMsg("Senha atualizada com sucesso!");
+        _showMsg("Senha atualizada! Por segurança, faça login novamente.");
         
-        // Usamos pushReplacement para ele não conseguir "voltar" para esta tela
-        Navigator.pushReplacementNamed(context, '/home'); 
+        // IMPORTANTE: Não navegamos para a /home aqui.
+        // O AuthService já chamou o logout(), então o AuthWrapper (no main.dart)
+        // vai detectar que o usuário é null e vai renderizar a LoginScreen sozinho.
       }
     } catch (e) {
-      // O AuthService já retorna strings amigáveis no catch
-      _showMsg(e.toString());
+      if (mounted) _showMsg(e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showMsg(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.orange[800],
+      )
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center( // Centraliza o conteúdo para ficar mais bonito
+      body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -101,7 +108,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: const Text(
-                      "SALVAR E ACESSAR APP", 
+                      "SALVAR E REFAZER LOGIN", 
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -110,5 +117,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmController.dispose();
+    super.dispose();
   }
 }
