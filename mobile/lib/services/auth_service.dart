@@ -8,7 +8,9 @@ class AuthService {
   // Stream que avisa o app se o usuário está logado ou não
   Stream<User?> get userStream => _auth.authStateChanges();
 
-  // Função para Logar
+  // --- AUTENTICAÇÃO ---
+
+  /// Função para Logar
   Future<UserCredential> login(String email, String password) async {
     try {
       return await _auth.signInWithEmailAndPassword(
@@ -22,7 +24,7 @@ class AuthService {
     }
   }
 
-  // Função para Deslogar
+  /// Função para Deslogar
   Future<void> logout() async {
     try {
       await _auth.signOut();
@@ -31,7 +33,20 @@ class AuthService {
     }
   }
 
-  // Buscar dados do perfil do usuário logado (nome, role, mustChangePassword, etc)
+  /// Resetar senha (Esqueci minha senha - envia e-mail oficial do Firebase)
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthError(e);
+    } catch (e) {
+      throw 'Erro ao processar pedido de recuperação.';
+    }
+  }
+
+  // --- GERENCIAMENTO DE DADOS E PERMISSÕES ---
+
+  /// Buscar dados do perfil do usuário logado (nome, role, mustChangePassword, etc)
   Future<Map<String, dynamic>?> getUserData() async {
     try {
       User? user = _auth.currentUser;
@@ -52,9 +67,8 @@ class AuthService {
     return null;
   }
 
-  // --- NOVIDADE: ATUALIZAR SENHA E LIBERAR ACESSO ---
-
   /// Altera a senha do usuário atual e marca 'mustChangePassword' como false
+  /// Útil para o primeiro acesso do voluntário
   Future<void> updatePasswordAndRelease(String newPassword) async {
     try {
       User? user = _auth.currentUser;
@@ -77,16 +91,9 @@ class AuthService {
     }
   }
 
-  // Resetar senha (Esqueci minha senha - envia e-mail)
-  Future<void> resetPassword(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email.trim());
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthError(e);
-    }
-  }
+  // --- UTILITÁRIOS ---
 
-  // Tratamento de erros centralizado
+  /// Tratamento de erros centralizado para mensagens em Português
   String _handleAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':

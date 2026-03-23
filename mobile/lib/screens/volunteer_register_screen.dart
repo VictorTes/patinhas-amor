@@ -1,8 +1,10 @@
-import 'dart:math'; // Para gerar a senha aleatória
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:patinhas_amor/services/auth_service.dart';
 
 class VolunteerRegisterScreen extends StatefulWidget {
   const VolunteerRegisterScreen({super.key});
@@ -16,28 +18,65 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  
+  String _selectedRole = 'volunteer'; // Valor padrão
   bool _isLoading = false;
 
-  /// Função principal para cadastrar no Auth, Firestore e Notificar
-  Future<void> _registerVolunteer() async {
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission(); // Proteção de rota logo ao abrir a tela
+  }
+
+  /// Verifica se quem está tentando usar esta tela é realmente um Admin
+  void _checkPermission() async {
+    final userData = await AuthService().getUserData();
+    if (userData == null || userData['role'] != 'admin') {
+      if (mounted) {
+        Navigator.pop(context); // Expulsa da tela
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Acesso restrito: Apenas administradores podem cadastrar usuários."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Função para cadastrar sem deslogar o Admin atual
+  Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
+    // Criamos uma instância secundária para não afetar o login atual do Admin
+    // Isso evita que o Firebase faça o login automático do novo usuário no app
+    FirebaseApp secondaryApp;
     try {
-      // 1. Geração de senha aleatória (MUDAR + 6 números)
+      secondaryApp = await Firebase.initializeApp(
+        name: 'SecondaryApp',
+        options: Firebase.app().options,
+      );
+    } catch (e) {
+      secondaryApp = Firebase.app('SecondaryApp');
+    }
+    
+    FirebaseAuth secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+
+    try {
+      // 1. Geração de senha aleatória
       final random = Random();
       final randomNumber = 100000 + random.nextInt(900000); 
       final temporaryPassword = "MUDAR$randomNumber";
 
-      // 2. Criar o usuário no Firebase Auth
-      UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
+      // 2. Criar o usuário na instância secundária
+      UserCredential userCredential = await secondaryAuth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: temporaryPassword, 
       );
 
-      // 3. Salvar os dados no Firestore usando o UID gerado
+      // 3. Salvar no Firestore (usando a instância principal do Firestore)
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -45,58 +84,50 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'role': 'volunteer',
+        'role': _selectedRole, 
+        'mustChangePassword': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 4. Abrir WhatsApp com as credenciais geradas
+      // 4. Desloga a conta secundária e deleta a instância temporária
+      await secondaryAuth.signOut();
+      await secondaryApp.delete();
+
+      // 5. Notifica via WhatsApp
       await _sendWhatsAppNotification(temporaryPassword);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Voluntário cadastrado e notificado!'),
-            backgroundColor: Colors.green,
-          ),
+          const SnackBar(content: Text('Usuário cadastrado com sucesso!'), backgroundColor: Colors.green),
         );
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
       String message = 'Erro ao cadastrar';
       if (e.code == 'email-already-in-use') message = 'Este e-mail já está em uso.';
-      if (e.code == 'weak-password') message = 'A senha gerada foi considerada fraca.';
+      if (e.code == 'weak-password') message = 'A senha gerada é muito fraca.';
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro inesperado: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// Monta a mensagem e abre o WhatsApp
   Future<void> _sendWhatsAppNotification(String password) async {
-    // Remove caracteres não numéricos do telefone
     String phone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), "");
-    String name = _nameController.text.trim();
-    String email = _emailController.text.trim();
+    String roleLabel = _selectedRole == 'admin' ? "Administrador(a)" : "Voluntário(a)";
     
-    String message = "Olá $name! Bem-vindo(a) à Patinhas e Amor. 🐾\n\n"
-        "Seu acesso ao App está pronto:\n"
-        "Login: $email\n"
+    String message = "Olá ${_nameController.text.trim()}! 🐾\n\n"
+        "Seu acesso como *$roleLabel* no App Patinhas de Amor está pronto!\n"
+        "Login: ${_emailController.text.trim()}\n"
         "Senha Temporária: $password\n\n"
-        "Baixe o app e, por segurança, altere sua senha após o primeiro acesso.";
+        "Por segurança, o app solicitará a troca da senha no seu primeiro acesso.";
 
     var url = Uri.parse("https://wa.me/55$phone?text=${Uri.encodeComponent(message)}");
-    
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      debugPrint("Não foi possível abrir o WhatsApp");
     }
   }
 
@@ -104,7 +135,7 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Novo Voluntário'),
+        title: const Text('Novo Usuário'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
       ),
@@ -119,69 +150,55 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
                 children: [
                   const Icon(Icons.person_add_alt_1, size: 80, color: Colors.orange),
                   const SizedBox(height: 20),
-                  const Text(
-                    'Cadastre um novo membro. Uma senha aleatória será gerada e enviada via WhatsApp.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
-                  ),
-                  const SizedBox(height: 30),
                   
-                  // Campo Nome
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome Completo',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Nome Completo', prefixIcon: Icon(Icons.person_outline)),
                     validator: (v) => v!.isEmpty ? 'Informe o nome' : null,
                   ),
                   const SizedBox(height: 16),
                   
-                  // Campo E-mail
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'E-mail de Acesso',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
+                    decoration: const InputDecoration(labelText: 'E-mail de Acesso', prefixIcon: Icon(Icons.email_outlined)),
                     validator: (v) => v!.contains('@') ? null : 'E-mail inválido',
                   ),
                   const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    value: _selectedRole,
+                    decoration: const InputDecoration(
+                      labelText: 'Nível de Acesso',
+                      prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'volunteer', child: Text('Voluntário')),
+                      DropdownMenuItem(value: 'admin', child: Text('Administrador')),
+                    ],
+                    onChanged: (value) => setState(() => _selectedRole = value!),
+                  ),
+                  const SizedBox(height: 16),
                   
-                  // Campo Telefone
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'WhatsApp (com DDD)',
-                      hintText: '47999999999',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.phone_android),
-                    ),
-                    validator: (v) => v!.length < 10 ? 'Telefone muito curto' : null,
+                    decoration: const InputDecoration(labelText: 'WhatsApp (com DDD)', prefixIcon: Icon(Icons.phone_android)),
+                    validator: (v) => v!.length < 10 ? 'Telefone inválido' : null,
                   ),
                   
                   const SizedBox(height: 32),
                   
-                  // Botão de Ação
                   ElevatedButton(
-                    onPressed: _registerVolunteer,
+                    onPressed: _registerUser,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text(
-                      'CADASTRAR E NOTIFICAR',
-                      style: TextStyle(
-                        color: Colors.white, 
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16
-                      ),
-                    ),
+                    child: const Text('CADASTRAR E NOTIFICAR', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

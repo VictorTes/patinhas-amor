@@ -80,19 +80,20 @@ class AppDrawer extends StatelessWidget {
           FutureBuilder<Map<String, dynamic>?>(
             future: authService.getUserData(),
             builder: (context, snapshot) {
+              // Verifica se os dados chegaram e se a role é 'admin'
               if (snapshot.hasData && snapshot.data?['role'] == 'admin') {
                 return Column(
                   children: [
                     const Divider(),
-                    Padding(
+                    const Padding(
                       padding:
-                          const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                          EdgeInsets.only(left: 16, top: 8, bottom: 8),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           "ADMINISTRAÇÃO",
                           style: TextStyle(
-                              color: Colors.grey[600],
+                              color: Colors.grey,
                               fontSize: 12,
                               fontWeight: FontWeight.bold),
                         ),
@@ -115,6 +116,7 @@ class AppDrawer extends StatelessWidget {
                   ],
                 );
               }
+              // Se não for admin, retorna um widget vazio
               return const SizedBox.shrink();
             },
           ),
@@ -128,7 +130,7 @@ class AppDrawer extends StatelessWidget {
                 style: TextStyle(color: Colors.redAccent)),
             onTap: () async {
               await authService.logout();
-              // O AuthWrapper no main.dart redirecionará para o Login automaticamente
+              // O listener de autenticação no seu main.dart cuidará do redirecionamento
             },
           ),
           const SizedBox(height: 20),
