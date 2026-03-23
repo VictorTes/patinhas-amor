@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:patinhas_amor/screens/home_screen.dart';
+import 'package:patinhas_amor/widgets/auth_wrapper.dart';
+import 'package:patinhas_amor/screens/home_screen.dart'; // Importe sua Home
+import 'package:patinhas_amor/screens/login_screen.dart'; // Importe seu Login
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
@@ -32,14 +34,30 @@ class PatinhasAmorApp extends StatelessWidget {
           primary: Colors.orange,
         ),
         useMaterial3: true,
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.orange, width: 2),
+          ),
+        ),
       ),
-      // ScaffoldMessenger aqui permite mostrar Snacks de qualquer lugar
-      home: const ConnectivityWrapper(child: HomeScreen()),
+      
+      // Define a tela inicial através do Wrapper
+      home: const ConnectivityWrapper(
+        child: AuthWrapper(),
+      ),
+
+      // --- ADICIONE AS ROTAS AQUI ---
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomeScreen(), // O nome deve bater com o pushReplacementNamed
+      },
     );
   }
 }
 
-// Widget que monitora a conexão e avisa o usuário
+// Widget que monitora a conexão (Seu código original mantido)
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
   const ConnectivityWrapper({super.key, required this.child});
@@ -57,7 +75,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     super.initState();
     _subscription = Connectivity().onConnectivityChanged.listen((results) {
       setState(() {
-        // Verifica se não há nenhuma conexão ativa (mobile, wifi, etc)
         _isOffline = results.contains(ConnectivityResult.none);
       });
     });
@@ -71,33 +88,39 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (_isOffline)
-          Material(
-            child: Container(
-              color: Colors.redAccent,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              alignment: Alignment.center,
-              child: const SafeArea(
-                bottom: false,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.wifi_off, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
-                    Text(
-                      "Sem conexão com a internet",
-                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+    return Scaffold( 
+      body: Column(
+        children: [
+          if (_isOffline)
+            Material(
+              child: Container(
+                color: Colors.redAccent,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                alignment: Alignment.center,
+                child: const SafeArea(
+                  bottom: false,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        "Sem conexão com a internet",
+                        style: TextStyle(
+                          color: Colors.white, 
+                          fontSize: 12, 
+                          fontWeight: FontWeight.bold
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        Expanded(child: widget.child),
-      ],
+          Expanded(child: widget.child),
+        ],
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
+import 'package:patinhas_amor/widgets/app_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -10,6 +11,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      // O Drawer precisa estar aqui para ser reconhecido pelo Scaffold
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -17,9 +20,9 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              _buildHeader(),
+              // Passamos o contexto para o header conseguir abrir o drawer
+              _buildHeader(context),
               const SizedBox(height: 24),
-              // Dashboard com contadores e legendas
               _buildLiveSummarySection(),
               const SizedBox(height: 24),
               _buildMapPreview(),
@@ -33,14 +36,36 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Cabeçalho com Logo e Nome da ONG
-  Widget _buildHeader() {
+  /// Cabeçalho com Logo clicável para abrir o Drawer
+  Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.orange[100],
-          backgroundImage: const AssetImage('assets/images/logo.png'),
+        // O Builder é essencial para o Scaffold.of(context) funcionar fora de uma AppBar
+        Builder(
+          builder: (innerContext) => GestureDetector(
+            onTap: () => Scaffold.of(innerContext).openDrawer(),
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.orange[100],
+                  // Se a imagem não carregar, ele mostra o ícone de menu
+                  backgroundImage: const AssetImage('assets/images/logo.png'),
+                  child: const Icon(Icons.menu, color: Colors.orange, size: 20),
+                ),
+                // Pequeno badge indicando que é um menu
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.menu, color: Colors.white, size: 12),
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(width: 16),
         const Column(
@@ -63,15 +88,12 @@ class HomeScreen extends StatelessWidget {
         const Spacer(),
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.grey),
-          onPressed: () {
-            // Futura implementação de notificações
-          },
+          onPressed: () => _showComingSoon(context),
         )
       ],
     );
   }
 
-  /// Seção de Estatísticas com legendas explicativas
   Widget _buildLiveSummarySection() {
     return Row(
       children: [
@@ -104,7 +126,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Helper para criar um StreamBuilder que conta documentos com legenda
   Widget _buildCounterStream({
     required String collection,
     String? field,
@@ -124,7 +145,7 @@ class HomeScreen extends StatelessWidget {
       child: StreamBuilder<QuerySnapshot>(
         stream: query.snapshots(),
         builder: (context, snapshot) {
-          String count = '...';
+          String count = '00';
           if (snapshot.hasData) {
             count = snapshot.data!.docs.length.toString().padLeft(2, '0');
           }
@@ -179,7 +200,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Preview do Mapa (Visualização rápida)
   Widget _buildMapPreview() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,23 +215,8 @@ class HomeScreen extends StatelessWidget {
             height: 160,
             width: double.infinity,
             color: Colors.blue[50],
-            child: Stack(
-              children: [
-                const Center(
-                  child: Icon(Icons.map_outlined, size: 50, color: Colors.blueAccent),
-                ),
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: FloatingActionButton.small(
-                    onPressed: () {
-                      // Sugestão: Navegar para uma tela de mapa em tela cheia
-                    },
-                    backgroundColor: Colors.white,
-                    child: const Icon(Icons.fullscreen, color: Colors.blueAccent),
-                  ),
-                )
-              ],
+            child: const Center(
+              child: Icon(Icons.map_outlined, size: 50, color: Colors.blueAccent),
             ),
           ),
         ),
@@ -219,7 +224,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Menu de navegação em Grid
   Widget _buildGridNavigation(BuildContext context) {
     return GridView.count(
       shrinkWrap: true,
@@ -267,7 +271,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Botão do Menu Principal
   Widget _buildMenuItem(
     BuildContext context, 
     String title, 
@@ -305,7 +308,7 @@ class HomeScreen extends StatelessWidget {
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Funcionalidade em desenvolvimento para o TCC.'),
+        content: Text('Funcionalidade em desenvolvimento.'),
         duration: Duration(seconds: 2),
       ),
     );

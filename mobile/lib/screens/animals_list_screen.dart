@@ -27,6 +27,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
 
   @override
   void dispose() {
+    _animalService.dispose();
     super.dispose();
   }
 
@@ -36,7 +37,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
     });
   }
 
-  // MÉTODO PARA CONFIRMAR E EXCLUIR (Recuperado)
+  // MÉTODO PARA CONFIRMAR E EXCLUIR
   void _confirmDelete(BuildContext context, Animal animal) {
     showDialog(
       context: context,
@@ -50,8 +51,8 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(ctx); 
-              Navigator.pop(context); 
+              Navigator.pop(ctx); // Fecha o diálogo
+              Navigator.pop(context); // Fecha o BottomSheet de detalhes
               
               try {
                 await _animalService.deleteAnimal(animal.id!);
@@ -89,15 +90,17 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
             child: StreamBuilder<List<Animal>>(
               stream: _animalService.getAnimalsStream(),
               builder: (context, snapshot) {
+                // TRATAMENTO DE ERRO
                 if (snapshot.hasError) {
                   return ErrorMessage(
-                    message: 'Não foi possível conectar ao Firebase.\nVerifique sua internet.',
+                    message: 'Erro ao carregar dados do Firebase.\nVerifique sua conexão.',
                     onRetry: () => setState(() {}),
                   );
                 }
 
+                // ESTADO DE CARREGAMENTO
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const LoadingIndicator(message: 'Buscando animais...');
+                  return const LoadingIndicator(message: 'Conectando ao Firebase...');
                 }
 
                 final allAnimals = snapshot.data ?? [];
@@ -110,6 +113,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                   return _buildEmptyState();
                 }
 
+                // REFRESH INDICATOR PARA FORÇAR RECARREGAMENTO MANUAL SE NECESSÁRIO
                 return RefreshIndicator(
                   onRefresh: () async => setState(() {}),
                   child: ListView.builder(
@@ -221,6 +225,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -237,6 +242,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                     ),
                   ],
                 ),
+
                 Center(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -248,6 +254,10 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                           ? Image.network(
                               animal.imageUrl!,
                               fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(child: CircularProgressIndicator());
+                              },
                               errorBuilder: (context, error, stackTrace) => 
                                   const Icon(Icons.broken_image, size: 80, color: Colors.grey),
                             )
@@ -274,11 +284,23 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                 if (animal.size != null) _buildDetailRow('Porte', animal.size!),
                 if (animal.age != null) _buildDetailRow('Idade Estimada', '${animal.age} anos'),
                 
+                if (animal.status == AnimalStatus.adopted || animal.status == AnimalStatus.missing) ...[
+                  const Divider(height: 40),
+                  Text(
+                    animal.status == AnimalStatus.missing ? 'Informações de Contato' : 'Dados do Adotante',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailRow('Nome', animal.adopterName ?? 'Não informado'),
+                  _buildDetailRow('Telefone', animal.adopterPhone ?? 'Não informado'),
+                  _buildDetailRow('Endereço', animal.adopterAddress ?? 'Não informado'),
+                ],
+
                 const Divider(height: 40),
                 const Text('Descrição / História', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text(
-                  animal.description.isEmpty ? 'Nenhuma descrição.' : animal.description,
+                  animal.description.isEmpty ? 'Nenhuma descrição fornecida.' : animal.description,
                   style: const TextStyle(fontSize: 16, height: 1.5),
                 ),
                 const SizedBox(height: 40),

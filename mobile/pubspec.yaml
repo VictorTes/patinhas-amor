@@ -20,6 +20,8 @@ dependencies:
   pdf: ^3.10.7
   printing: ^5.11.1
 
+  #login
+  firebase_auth: ^5.0.0
   connectivity_plus: ^6.1.0
 
   # HTTP client for API communication
