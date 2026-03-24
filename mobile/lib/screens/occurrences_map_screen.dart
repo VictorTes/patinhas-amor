@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart'; 
-import 'package:latlong2/latlong.dart'; 
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+// Verifique se os caminhos dos imports estão corretos conforme seu projeto
+import 'package:patinhas_amor/models/occurrence.dart'; 
+import 'package:patinhas_amor/screens/occurrence_details_screen.dart'; 
 
 class OccurrencesMapScreen extends StatefulWidget {
   const OccurrencesMapScreen({super.key});
@@ -11,62 +14,157 @@ class OccurrencesMapScreen extends StatefulWidget {
 }
 
 class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
-  // Ponto central do mapa (Porto União / União da Vitória)
+  // Coordenadas iniciais (ajuste conforme a necessidade da sua região)
   final LatLng _initialCenter = LatLng(-26.2295, -51.0878);
 
-  // Define a cor do ícone baseada no status da ocorrência
+  String _getStatusLabel(String status) {
+    switch (status) {
+      case 'pending': return 'PENDENTE';
+      case 'in_progress': return 'EM ANDAMENTO';
+      case 'resolved': 
+      case 'completed': return 'RESOLVIDA';
+      default: return 'DESCONHECIDO';
+    }
+  }
+
   Color _getMarkerColor(String status) {
     switch (status) {
       case 'pending': return Colors.red;
       case 'in_progress': return Colors.blue;
+      case 'resolved':
       case 'completed': return Colors.green;
       default: return Colors.orange;
     }
   }
 
-  // Mostra os detalhes ao clicar no Pin
-  void _showOccurrenceDetails(Map<String, dynamic> data) {
+  void _showOccurrenceDetails(Map<String, dynamic> data, String docId) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  data['animalType'] ?? 'Animal',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 50, height: 5,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-                Icon(Icons.pets, color: Colors.orange[300]),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text("Descrição da Situação:", style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(data['description'] ?? 'Sem descrição detalhada.'),
-            const SizedBox(height: 12),
-            Text("Status: ${data['status']?.toUpperCase() ?? 'N/A'}", 
-              style: TextStyle(color: _getMarkerColor(data['status'] ?? ''), fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text("VOLTAR AO MAPA", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
-            ),
-          ],
+
+              // Imagem da Ocorrência
+              if (data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Image.network(
+                    data['imageUrl'],
+                    height: 200, width: double.infinity, fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 120, color: Colors.grey[200], child: const Icon(Icons.broken_image),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  height: 120, width: double.infinity,
+                  decoration: BoxDecoration(color: Colors.orange[50], borderRadius: BorderRadius.circular(15)),
+                  child: Icon(Icons.pets, size: 50, color: Colors.orange[200]),
+                ),
+
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      data['animalType'] ?? data['type'] ?? 'Animal Desconhecido',
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getMarkerColor(data['status'] ?? '').withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _getStatusLabel(data['status'] ?? ''),
+                      style: TextStyle(
+                        color: _getMarkerColor(data['status'] ?? ''),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              const Text("Descrição da Situação:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 4),
+              Text(data['description'] ?? 'Sem descrição.', style: TextStyle(fontSize: 15, color: Colors.grey[800])),
+
+              const SizedBox(height: 32),
+              
+              // --- BOTÕES DE AÇÃO ---
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context); // Fecha o modal
+                        
+                        // CORREÇÃO: Usando o método fromJson da sua Model
+                        final occurrence = Occurrence.fromJson(data, docId: docId);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OccurrenceDetailsScreen(occurrence: occurrence),
+                          ),
+                        );
+                      },
+                      child: const Text("MAIS DETALHES", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // BOTÃO VOLTAR
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        side: const BorderSide(color: Colors.orange),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("VOLTAR", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -87,29 +185,23 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
           if (snapshot.hasError) return const Center(child: Text("Erro ao carregar mapa."));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Colors.orange));
 
-          // Mapeia os documentos do Firestore para a lista de Marcadores
           final markers = snapshot.data!.docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
+            final String docId = doc.id;
             
-            // Converte para double com segurança
             final double lat = (data['latitude'] ?? 0.0).toDouble();
             final double lng = (data['longitude'] ?? 0.0).toDouble();
 
             return Marker(
               point: LatLng(lat, lng),
-              width: 50,
-              height: 50,
+              width: 50, height: 50,
               child: GestureDetector(
-                onTap: () => _showOccurrenceDetails(data),
+                onTap: () => _showOccurrenceDetails(data, docId),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Sombra/Efeito de pulso simples para o Pin
                     Icon(Icons.location_on, size: 45, color: _getMarkerColor(data['status'] ?? 'pending')),
-                    const Positioned(
-                      top: 10,
-                      child: Icon(Icons.circle, size: 12, color: Colors.white),
-                    ),
+                    const Positioned(top: 10, child: Icon(Icons.circle, size: 12, color: Colors.white)),
                   ],
                 ),
               ),
@@ -118,7 +210,7 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
 
           return FlutterMap(
             options: MapOptions(
-              initialCenter: _initialCenter,
+              initialCenter: _initialCenter, 
               initialZoom: 14.0,
             ),
             children: [
