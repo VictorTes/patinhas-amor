@@ -13,26 +13,21 @@ dependencies:
     sdk: flutter
   firebase_core: ^3.10.1
   cloud_firestore: ^5.6.3
-
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
   url_launcher: ^6.3.0
   intl: ^0.19.0
-
   pdf: ^3.10.7
   printing: ^5.11.1
-
   #login
   firebase_auth: ^5.0.0
   connectivity_plus: ^6.1.0
-
   # HTTP client for API communication
   http: ^1.1.0
-
   # State management
   provider: ^6.1.1
-
   # Image picking for animal registration
   image_picker: ^1.0.7
-
   # Material Design icons
   cupertino_icons: ^1.0.2
   flutter_dotenv: ^6.0.0

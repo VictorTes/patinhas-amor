@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
+import 'package:patinhas_amor/screens/occurrences_map_screen.dart'; // Tela que criaremos
 import 'package:patinhas_amor/widgets/app_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -11,7 +12,6 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      // O Drawer precisa estar aqui para ser reconhecido pelo Scaffold
       drawer: const AppDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -20,12 +20,11 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              // Passamos o contexto para o header conseguir abrir o drawer
               _buildHeader(context),
               const SizedBox(height: 24),
               _buildLiveSummarySection(),
               const SizedBox(height: 24),
-              _buildMapPreview(),
+              _buildMapPreview(context), // Passando o contexto aqui
               const SizedBox(height: 32),
               _buildGridNavigation(context),
               const SizedBox(height: 32),
@@ -40,7 +39,6 @@ class HomeScreen extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        // O Builder é essencial para o Scaffold.of(context) funcionar fora de uma AppBar
         Builder(
           builder: (innerContext) => GestureDetector(
             onTap: () => Scaffold.of(innerContext).openDrawer(),
@@ -50,11 +48,9 @@ class HomeScreen extends StatelessWidget {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.orange[100],
-                  // Se a imagem não carregar, ele mostra o ícone de menu
                   backgroundImage: const AssetImage('assets/images/logo.png'),
                   child: const Icon(Icons.menu, color: Colors.orange, size: 20),
                 ),
-                // Pequeno badge indicando que é um menu
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
@@ -200,7 +196,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMapPreview() {
+  /// Preview do Mapa que agora é um botão para a tela interativa
+  Widget _buildMapPreview(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -209,14 +206,67 @@ class HomeScreen extends StatelessWidget {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const OccurrencesMapScreen()),
+            );
+          },
           child: Container(
             height: 160,
             width: double.infinity,
-            color: Colors.blue[50],
-            child: const Center(
-              child: Icon(Icons.map_outlined, size: 50, color: Colors.blueAccent),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.blue[50],
+              image: const DecorationImage(
+                // Use uma imagem de mapa real nos assets para ficar bonito
+                image: AssetImage('assets/images/map_static_preview.png'), 
+                fit: BoxFit.cover,
+                opacity: 0.7,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                )
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Overlay para garantir leitura do botão
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.black.withOpacity(0.1),
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.location_on, size: 40, color: Colors.redAccent),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: const Text(
+                        "EXPLORAR MAPA",
+                        style: TextStyle(
+                          fontSize: 12, 
+                          fontWeight: FontWeight.bold, 
+                          color: Colors.blueAccent,
+                          letterSpacing: 1.1
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

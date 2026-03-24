@@ -30,6 +30,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               decoration: const InputDecoration(
                 labelText: "Nome",
                 contentPadding: EdgeInsets.symmetric(vertical: 8), // Margem interna
+                border: OutlineInputBorder(),
               ),
             ),
             
@@ -42,6 +43,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               keyboardType: TextInputType.phone, // Melhora a UX para telefone
               decoration: const InputDecoration(
                 labelText: "Telefone",
+                border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(vertical: 8), // Margem interna
               ),
             ),
