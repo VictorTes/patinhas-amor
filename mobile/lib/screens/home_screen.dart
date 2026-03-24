@@ -70,10 +70,9 @@ class HomeScreen extends StatelessWidget {
             Text(
               'Patinhas e Amor',
               style: TextStyle(
-                fontSize: 22, 
-                fontWeight: FontWeight.bold, 
-                color: Colors.orange
-              ),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange),
             ),
             Text(
               'Painel Administrativo',
@@ -132,7 +131,7 @@ class HomeScreen extends StatelessWidget {
     bool isTotalCount = false,
   }) {
     Query query = FirebaseFirestore.instance.collection(collection);
-    
+
     if (!isTotalCount && field != null && value != null) {
       query = query.where(field, isEqualTo: value);
     }
@@ -164,29 +163,24 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   count,
                   style: TextStyle(
-                    fontSize: 20, 
-                    fontWeight: FontWeight.bold, 
-                    color: color
-                  ),
+                      fontSize: 20, fontWeight: FontWeight.bold, color: color),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 12, 
-                    fontWeight: FontWeight.bold, 
-                    color: Colors.black87
-                  ),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 9, 
-                    color: Colors.grey[500], 
-                    fontStyle: FontStyle.italic
-                  ),
+                      fontSize: 9,
+                      color: Colors.grey[500],
+                      fontStyle: FontStyle.italic),
                 ),
               ],
             ),
@@ -197,74 +191,107 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Preview do Mapa que agora é um botão para a tela interativa
+  /// Preview do Mapa estilizado para o tema da ONG
   Widget _buildMapPreview(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Mapa de Ocorrências',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          'Ocorrências em Tempo Real',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 12),
         GestureDetector(
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const OccurrencesMapScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const OccurrencesMapScreen()),
             );
           },
           child: Container(
             height: 160,
             width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(24),
+              // Gradiente que mistura o azul de mapa com o laranja da ONG
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.blue[400]!,
+                  Colors.blue[700]!,
+                ],
+              ),
               image: const DecorationImage(
-                // Use uma imagem de mapa real nos assets para ficar bonito
-                image: AssetImage('assets/images/map_static_preview.png'), 
+                // Certifique-se de que esta imagem existe nos assets.
+                // Se não tiver uma, pode remover esta linha e usar apenas o gradiente.
+                image: AssetImage('assets/images/map_static_preview.png'),
                 fit: BoxFit.cover,
-                opacity: 0.7,
+                opacity: 0.4, // Deixa a imagem sutil ao fundo
+                colorFilter: ColorFilter.mode(Colors.black26, BlendMode.darken),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  color: Colors.blue.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
                 )
               ],
             ),
             child: Stack(
-              alignment: Alignment.center,
               children: [
-                // Overlay para garantir leitura do botão
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.black.withOpacity(0.1),
-                  ),
+                // Detalhe visual: Círculos decorativos para parecer um radar/mapa
+                Positioned(
+                  right: -20,
+                  top: -20,
+                  child: Icon(Icons.circle, size: 100, color: Colors.white10),
                 ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.location_on, size: 40, color: Colors.redAccent),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Ícone de Pin com efeito de sombra
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.map_outlined,
+                            size: 32, color: Colors.white),
                       ),
-                      child: const Text(
-                        "EXPLORAR MAPA",
-                        style: TextStyle(
-                          fontSize: 12, 
-                          fontWeight: FontWeight.bold, 
-                          color: Colors.blueAccent,
-                          letterSpacing: 1.1
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "EXPLORAR MAPA",
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.blue[800],
+                                  letterSpacing: 0.5),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(Icons.arrow_forward_ios,
+                                size: 12, color: Colors.blue[800]),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -288,27 +315,23 @@ class HomeScreen extends StatelessWidget {
           'Ocorrências',
           Icons.notification_important_outlined,
           Colors.orange,
-          () => Navigator.push(
-            context, 
-            MaterialPageRoute(builder: (c) => const OccurrencesListScreen())
-          ),
+          () => Navigator.push(context,
+              MaterialPageRoute(builder: (c) => const OccurrencesListScreen())),
         ),
         _buildMenuItem(
           context,
           'Animais',
           Icons.pets_outlined,
           Colors.green,
-          () => Navigator.push(
-            context, 
-            MaterialPageRoute(builder: (c) => const AnimalsListScreen())
-          ),
+          () => Navigator.push(context,
+              MaterialPageRoute(builder: (c) => const AnimalsListScreen())),
         ),
         _buildMenuItem(
           context,
           'Relatórios',
           Icons.analytics_outlined,
           Colors.blueAccent,
-          () => _showComingSoon(context), 
+          () => _showComingSoon(context),
         ),
         _buildMenuItem(
           context,
@@ -321,13 +344,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(
-    BuildContext context, 
-    String title, 
-    IconData icon, 
-    Color color, 
-    VoidCallback onTap
-  ) {
+  Widget _buildMenuItem(BuildContext context, String title, IconData icon,
+      Color color, VoidCallback onTap) {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(20),
@@ -346,7 +364,8 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ],
           ),
