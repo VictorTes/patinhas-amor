@@ -43,7 +43,7 @@ class AuthService {
     }
   }
 
-  // --- GERENCIAMENTO DE DADOS ---
+  // --- GERENCIAMENTO DO PERFIL LOGADO ---
 
   /// Buscar dados do perfil do usuário logado
   Future<Map<String, dynamic>?> getUserData() async {
@@ -60,7 +60,6 @@ class AuthService {
   }
 
   /// Altera a senha e marca 'mustChangePassword' como false.
-  /// A ordem aqui é CRÍTICA para evitar o bug de sessão perdida.
   Future<void> updatePasswordAndRelease(String newPassword) async {
     try {
       User? user = _auth.currentUser;
@@ -68,32 +67,71 @@ class AuthService {
 
       final String uid = user.uid;
 
-      // 1. PRIMEIRO: Atualiza o Firestore.
-      // Fazemos isso enquanto o token de acesso ainda é válido.
       await _db.collection('users').doc(uid).update({
         'mustChangePassword': false,
       });
 
-      // 2. DEPOIS: Atualiza a senha no Authentication.
-      // Esta operação invalida o token atual imediatamente.
       await user.updatePassword(newPassword);
-
-      // 3. FINALIZA: Força o logout.
-      // Mesmo que o Firebase dê erro de "token inválido" aqui, o catch vai garantir o logout.
       await logout();
 
     } on FirebaseAuthException catch (e) {
-      // Caso a senha tenha sido alterada mas o logout falhou por token, forçamos o deslogue.
       await logout();
-      
       if (e.code == 'requires-recent-login') {
         throw 'Por segurança, saia e entre novamente antes de definir a nova senha.';
       }
       throw _handleAuthError(e);
     } catch (e) {
-      // Erro genérico: desloga para não deixar o app em estado inconsistente
       await logout();
       throw 'Erro ao atualizar dados: $e';
+    }
+  }
+
+  // --- FUNÇÕES ADMINISTRATIVAS (GERENCIAR OUTROS USUÁRIOS) ---
+
+  /// Lista todos os usuários cadastrados no Firestore
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    try {
+      QuerySnapshot snapshot = await _db.collection('users').orderBy('name').get();
+      return snapshot.docs.map((doc) {
+        return {
+          'uid': doc.id,
+          ...doc.data() as Map<String, dynamic>
+        };
+      }).toList();
+    } catch (e) {
+      throw 'Erro ao listar usuários: $e';
+    }
+  }
+
+  /// Atualiza Nome e Telefone de um voluntário
+  Future<void> updateUserDetails(String uid, String name, String phone) async {
+    try {
+      await _db.collection('users').doc(uid).update({
+        'name': name.trim(),
+        'phone': phone.trim(),
+      });
+    } catch (e) {
+      throw 'Erro ao atualizar usuário: $e';
+    }
+  }
+
+  /// Ativa ou Desativa o acesso de um usuário
+  Future<void> updateUserStatus(String uid, bool isActive) async {
+    try {
+      await _db.collection('users').doc(uid).update({
+        'isActive': isActive,
+      });
+    } catch (e) {
+      throw 'Erro ao mudar status: $e';
+    }
+  }
+
+  /// Exclui o documento do usuário no Firestore
+  Future<void> deleteUser(String uid) async {
+    try {
+      await _db.collection('users').doc(uid).delete();
+    } catch (e) {
+      throw 'Erro ao excluir usuário: $e';
     }
   }
 

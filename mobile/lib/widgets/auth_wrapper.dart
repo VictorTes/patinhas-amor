@@ -27,35 +27,39 @@ class AuthWrapper extends StatelessWidget {
           return const LoginScreen();
         }
 
-        // 3. Se houver usuário autenticado, validamos a existência no Firestore
-        // O FutureBuilder garante que buscaremos os dados reais do usuário (role, mustChangePassword)
+        // 3. Se houver usuário autenticado, validamos os dados no Firestore
         return FutureBuilder<Map<String, dynamic>?>(
           future: authService.getUserData(),
           builder: (context, userSnapshot) {
-            // Enquanto busca os dados no Firestore
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator(color: Colors.orange)),
               );
             }
 
-            // SE OS DADOS NÃO EXISTIREM (Usuário deletado ou banido no banco Firestore)
+            // SE OS DADOS NÃO EXISTIREM (Usuário deletado)
             if (!userSnapshot.hasData || userSnapshot.data == null) {
-              // Correção técnica: O logout deve ser agendado após o build para evitar erros de ciclo de vida
               Future.microtask(() => authService.logout());
               return const LoginScreen();
             }
 
-            // SE OS DADOS EXISTIREM, pegamos o mapa de informações
             final userData = userSnapshot.data!;
 
+            // --- NOVO BLOQUEIO DE SEGURANÇA ---
+            // Verifica se o campo 'isActive' é falso. 
+            // Se for falso, o ADM desativou a conta, então expulsamos o usuário.
+            if (userData['isActive'] == false) {
+              Future.microtask(() => authService.logout());
+              return const LoginScreen();
+            }
+            // ----------------------------------
+
             // 4. Verificação de Troca de Senha Obrigatória
-            // Se o campo for true, redirecionamos para a tela de troca
             if (userData['mustChangePassword'] == true) {
               return const ChangePasswordScreen();
             }
 
-            // 5. TUDO OK: Usuário autenticado, existente no banco e com senha em dia
+            // 5. TUDO OK: Usuário autenticado, ativo e com senha em dia
             return const HomeScreen();
           },
         );

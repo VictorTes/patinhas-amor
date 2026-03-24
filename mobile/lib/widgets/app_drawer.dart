@@ -3,6 +3,7 @@ import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/volunteer_register_screen.dart';
+import 'package:patinhas_amor/screens/UserManagementScreen.dart'; // Importe a nova tela
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -42,7 +43,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
-          // LISTA DE OPÇÕES DE NAVEGAÇÃO
+          // LISTA DE OPÇÕES DE NAVEGAÇÃO COMUNS
           ListTile(
             leading: const Icon(Icons.home_outlined),
             title: const Text('Início'),
@@ -54,7 +55,7 @@ class AppDrawer extends StatelessWidget {
                 color: Colors.orange),
             title: const Text('Ocorrências'),
             onTap: () {
-              Navigator.pop(context); // Fecha o drawer
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -67,7 +68,7 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.pets_outlined, color: Colors.green),
             title: const Text('Animais Resgatados'),
             onTap: () {
-              Navigator.pop(context); // Fecha o drawer
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -76,18 +77,16 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
-          // ÁREA EXCLUSIVA PARA ADMIN (Verifica a Role no Firestore)
+          // ÁREA EXCLUSIVA PARA ADMIN
           FutureBuilder<Map<String, dynamic>?>(
             future: authService.getUserData(),
             builder: (context, snapshot) {
-              // Verifica se os dados chegaram e se a role é 'admin'
               if (snapshot.hasData && snapshot.data?['role'] == 'admin') {
                 return Column(
                   children: [
                     const Divider(),
                     const Padding(
-                      padding:
-                          EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                      padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -99,12 +98,13 @@ class AppDrawer extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // OPÇÃO 1: CADASTRAR NOVO
                     ListTile(
                       leading: const Icon(Icons.person_add_alt_1_outlined,
                           color: Colors.blueAccent),
                       title: const Text('Cadastrar Voluntário'),
                       onTap: () {
-                        Navigator.pop(context); // Fecha o drawer
+                        Navigator.pop(context);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -113,15 +113,29 @@ class AppDrawer extends StatelessWidget {
                         );
                       },
                     ),
+                    // OPÇÃO 2: GERENCIAR EXISTENTES
+                    ListTile(
+                      leading: const Icon(Icons.manage_accounts_outlined,
+                          color: Colors.indigo),
+                      title: const Text('Gerenciar Voluntários'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const UserManagementScreen()),
+                        );
+                      },
+                    ),
                   ],
                 );
               }
-              // Se não for admin, retorna um widget vazio
               return const SizedBox.shrink();
             },
           ),
 
-          const Spacer(), // Empurra o botão de Sair para o rodapé
+          const Spacer(),
 
           const Divider(),
           ListTile(
@@ -130,7 +144,6 @@ class AppDrawer extends StatelessWidget {
                 style: TextStyle(color: Colors.redAccent)),
             onTap: () async {
               await authService.logout();
-              // O listener de autenticação no seu main.dart cuidará do redirecionamento
             },
           ),
           const SizedBox(height: 20),
