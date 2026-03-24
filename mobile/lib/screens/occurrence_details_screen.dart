@@ -143,7 +143,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
               final text = _resolutionController.text.trim();
               Navigator.pop(context);
               _updateStatus(
-                _occurrence.status, // Mantém o status atual
+                _occurrence.status,
                 resolution: text.isEmpty ? null : text,
               );
             },
@@ -221,7 +221,6 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                   _buildTextCard(_occurrence.description),
 
                   const SizedBox(height: 32),
-                  // --- SEÇÃO DE OBSERVAÇÃO / RESOLUÇÃO SEMPRE VISÍVEL ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -265,18 +264,31 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     );
   }
 
-  // --- AUXILIARES ---
+  // --- AUXILIARES CORRIGIDOS ---
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Row(children: [
-        Icon(icon, color: Colors.orange),
-        const SizedBox(width: 16),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ])
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start, // Alinha o ícone no topo do texto
+        children: [
+          Icon(icon, color: Colors.orange),
+          const SizedBox(width: 16),
+          // O Expanded aqui resolve o erro de Right Overflow
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, 
+              children: [
+                Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(
+                  value, 
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  softWrap: true, // Garante que o texto quebre linhas
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 
@@ -313,7 +325,6 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
       items: OccurrenceStatus.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label))).toList(),
       onChanged: (val) {
         if (val == null || val == _occurrence.status) return;
-        // Agora apenas atualiza o status, sem forçar o diálogo de resolução
         _updateStatus(val, resolution: _occurrence.resolutionDescription);
       },
     );
