@@ -5,8 +5,9 @@ import 'package:patinhas_amor/widgets/error_message.dart';
 import 'package:patinhas_amor/widgets/loading_indicator.dart';
 import 'package:patinhas_amor/widgets/occurrence_card.dart';
 import 'package:patinhas_amor/screens/occurrence_details_screen.dart';
+// ADICIONE ESTA IMPORTAÇÃO:
+import 'package:patinhas_amor/screens/register_occurrence_screen.dart'; 
 
-/// Tela que exibe a listagem de ocorrências em tempo real vindas do Firestore.
 class OccurrencesListScreen extends StatefulWidget {
   const OccurrencesListScreen({super.key});
 
@@ -17,7 +18,6 @@ class OccurrencesListScreen extends StatefulWidget {
 class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
   final OccurrenceService _occurrenceService = OccurrenceService();
 
-  /// Filtro selecionado atualmente ('all' ou OccurrenceStatus)
   dynamic _selectedFilter = 'all';
 
   final List<Map<String, dynamic>> _filterOptions = [
@@ -33,6 +33,16 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
     });
   }
 
+  // MÉTODO PARA NAVEGAR PARA O CADASTRO
+  void _navigateToRegister() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RegisterOccurrenceScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,19 +50,24 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
         title: const Text('Ocorrências'),
         elevation: 0,
       ),
+      // --- ADICIONADO O BOTÃO FLUTUANTE ---
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _navigateToRegister,
+        backgroundColor: Colors.orange,
+        icon: const Icon(Icons.add_location_alt_outlined, color: Colors.white),
+        label: const Text('Nova Ocorrência', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
       body: Column(
         children: [
-          // Chips de Filtro
           _buildFilterChips(),
           
-          // Lista em Tempo Real com StreamBuilder
           Expanded(
             child: StreamBuilder<List<Occurrence>>(
               stream: _occurrenceService.getOccurrencesStream(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return ErrorMessage(
-                    message: 'Erro ao carcingar dados do Firebase.',
+                    message: 'Erro ao carregar dados do Firebase.',
                     onRetry: () => setState(() {}),
                   );
                 }
@@ -63,7 +78,6 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
 
                 final allOccurrences = snapshot.data ?? [];
                 
-                // Aplica o filtro na lista que veio do Stream
                 final filteredList = _selectedFilter == 'all'
                     ? allOccurrences
                     : allOccurrences
@@ -75,7 +89,7 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.only(top: 8, bottom: 80), // Padding extra no fundo para o FAB não cobrir o último item
                   itemCount: filteredList.length,
                   itemBuilder: (context, index) {
                     final occurrence = filteredList[index];
@@ -93,6 +107,8 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
     );
   }
 
+  // ... (Restante dos seus métodos _buildFilterChips, _buildEmptyState e _navigateToDetails permanecem iguais)
+  
   Widget _buildFilterChips() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -133,7 +149,7 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.assignment_turned_in_outlined, 
-                 size: 80, color: Colors.grey[300]),
+                  size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
               _selectedFilter == 'all'
@@ -155,8 +171,5 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
         builder: (context) => OccurrenceDetailsScreen(occurrence: occurrence),
       ),
     );
-    // Nota: Não precisamos mais checar o 'result == true' e dar refresh,
-    // pois o StreamBuilder atualiza a lista automaticamente quando o 
-    // status muda no banco!
   }
 }

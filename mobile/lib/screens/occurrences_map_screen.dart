@@ -180,7 +180,7 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mapa de Resgates"),
+        title: const Text("Mapa de Ocorrências"),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         elevation: 0,

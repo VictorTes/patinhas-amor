@@ -2,23 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // 1. Importe o dotenv
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:patinhas_amor/models/animal.dart';
 
-/// Service class responsible for handling all Firestore and Cloudinary communication
+/// Service responsável por gerenciar os animais da ONG no Firestore e Cloudinary.
 class AnimalService {
   // Referência para a coleção "animals" no Firestore
   final CollectionReference _animalsRef =
       FirebaseFirestore.instance.collection('animals');
 
   // --- CONFIGURAÇÃO CLOUDINARY VIA DOTENV ---
-  // 2. Buscamos as chaves do arquivo .env
   final String _cloudName = dotenv.get('CLOUDINARY_CLOUD_NAME', fallback: '');
   final String _uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
 
-  /// Faz o upload de uma imagem para o Cloudinary e retorna a URL segura.
+  /// Faz o upload de uma imagem para o Cloudinary na pasta específica 'animais_ong'.
   Future<String?> uploadAnimalImage(File imageFile) async {
-    // Verificação de segurança caso as chaves não existam
     if (_cloudName.isEmpty) {
       print('Erro: CLOUDINARY_CLOUD_NAME não encontrado no arquivo .env');
       return null;
@@ -29,28 +27,26 @@ class AnimalService {
       
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = _uploadPreset
+        ..fields['folder'] = 'animais_ong' // <--- ORGANIZA EM PASTA NO CLOUDINARY
         ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
 
       final response = await request.send();
-
-      // Lendo a resposta do stream
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final jsonMap = jsonDecode(responseBody);
         return jsonMap['secure_url'] as String;
       } else {
-        // Log detalhado para te ajudar a debugar se o erro 400 voltar
         print('Erro Cloudinary (${response.statusCode}): $responseBody');
         return null;
       }
     } catch (e) {
-      print('Erro ao subir imagem: $e');
+      print('Erro ao subir imagem do animal: $e');
       return null;
     }
   }
 
-  /// Fetches all animals registered in Firestore.
+  /// Busca todos os animais registrados no Firestore (chamada única).
   Future<List<Animal>> fetchAnimals() async {
     try {
       final QuerySnapshot snapshot = await _animalsRef.get();
@@ -62,11 +58,11 @@ class AnimalService {
         );
       }).toList();
     } catch (e) {
-      throw Exception('Failed to load animals from Firestore: $e');
+      throw Exception('Falha ao carregar animais do Firestore: $e');
     }
   }
 
-  /// Creates a new animal record in Firestore.
+  /// Cria um novo registro de animal no Firestore.
   Future<Animal> createAnimal(Animal animal) async {
     try {
       final DocumentReference docRef = await _animalsRef.add(animal.toJson());
@@ -77,7 +73,7 @@ class AnimalService {
         docId: doc.id,
       );
     } catch (e) {
-      throw Exception('Failed to create animal in Firestore: $e');
+      throw Exception('Falha ao criar animal no Firestore: $e');
     }
   }
 
@@ -100,7 +96,7 @@ class AnimalService {
     }
   }
 
-  /// Stream para ouvir mudanças em tempo real (Real-time)
+  /// Stream para ouvir mudanças em tempo real (Real-time).
   Stream<List<Animal>> getAnimalsStream() {
     return _animalsRef.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -113,6 +109,6 @@ class AnimalService {
   }
 
   void dispose() {
-    // Firestore e Cloudinary gerenciam o ciclo de vida automaticamente
+    // Recursos gerenciados automaticamente pelo Firebase/HTTP
   }
 }

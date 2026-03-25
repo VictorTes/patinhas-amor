@@ -46,7 +46,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     final pdf = pw.Document();
     pw.MemoryImage? profileImage;
 
-    if (_occurrence.imageUrl != null) {
+    if (_occurrence.imageUrl != null && _occurrence.imageUrl!.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(_occurrence.imageUrl!));
         if (response.statusCode == 200) {
@@ -109,7 +109,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
 
   // --- MÉTODOS DE AÇÃO ---
   Future<void> _openInMaps() async {
-    if (_occurrence.latitude == null) return;
+    if (_occurrence.latitude == null || _occurrence.longitude == null) return;
     final Uri uri = Uri.parse('geo:${_occurrence.latitude},${_occurrence.longitude}?q=${_occurrence.latitude},${_occurrence.longitude}');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       _showErrorSnackBar('Não foi possível abrir o mapa.');
@@ -157,9 +157,10 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
   Future<void> _updateStatus(OccurrenceStatus newStatus, {String? resolution}) async {
     setState(() => _isLoading = true);
     try {
+      // CORREÇÃO: Passando newStatus diretamente, sem o .value
       await _occurrenceService.updateOccurrenceStatus(
         _occurrence.id!,
-        newStatus.value,
+        newStatus,
         resolutionDescription: resolution,
       );
       
@@ -171,6 +172,9 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
           );
           _isLoading = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dados atualizados com sucesso!'), backgroundColor: Colors.green)
+        );
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -182,7 +186,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalhes'),
+        title: const Text('Detalhes da Ocorrência'),
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
@@ -198,10 +202,20 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_occurrence.imageUrl != null) ...[
+                  if (_occurrence.imageUrl != null && _occurrence.imageUrl!.isNotEmpty) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Image.network(_occurrence.imageUrl!, height: 250, width: double.infinity, fit: BoxFit.cover),
+                      child: Image.network(
+                        _occurrence.imageUrl!, 
+                        height: 250, 
+                        width: double.infinity, 
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 150,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image, size: 50),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -212,9 +226,14 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                   if (_occurrence.latitude != null)
                     Padding(
                       padding: const EdgeInsets.only(left: 40, bottom: 16),
-                      child: OutlinedButton.icon(onPressed: _openInMaps, icon: const Icon(Icons.map), label: const Text('MAPA')),
+                      child: OutlinedButton.icon(
+                        onPressed: _openInMaps, 
+                        icon: const Icon(Icons.map), 
+                        label: const Text('VER NO GOOGLE MAPS'),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.blue),
+                      ),
                     ),
-                  _buildDetailRow(Icons.event, 'Data', _formatDate(_occurrence.createdAt!)),
+                  _buildDetailRow(Icons.event, 'Data do Registro', _formatDate(_occurrence.createdAt ?? DateTime.now())),
                   const Divider(height: 40),
                   const Text('Descrição da Denúncia', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
@@ -244,7 +263,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => _showResolutionDialog(),
                         icon: const Icon(Icons.add_comment),
-                        label: const Text('ADICIONAR OBSERVAÇÃO'),
+                        label: const Text('ADICIONAR OBSERVAÇÃO / RELATO'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.green,
                           side: const BorderSide(color: Colors.green),
@@ -264,16 +283,15 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     );
   }
 
-  // --- AUXILIARES CORRIGIDOS ---
+  // --- AUXILIARES ---
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start, // Alinha o ícone no topo do texto
+        crossAxisAlignment: CrossAxisAlignment.start, 
         children: [
           Icon(icon, color: Colors.orange),
           const SizedBox(width: 16),
-          // O Expanded aqui resolve o erro de Right Overflow
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, 
@@ -282,7 +300,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
                 Text(
                   value, 
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  softWrap: true, // Garante que o texto quebre linhas
+                  softWrap: true,
                 ),
               ],
             ),

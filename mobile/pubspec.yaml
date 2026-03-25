@@ -19,6 +19,8 @@ dependencies:
   flutter_map: ^6.1.0
   latlong2: any
 
+  geolocator: ^13.0.0
+
   # Utilidades
   url_launcher: ^6.3.0
   intl: ^0.19.0
