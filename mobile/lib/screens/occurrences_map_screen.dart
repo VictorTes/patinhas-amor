@@ -1,9 +1,9 @@
-import 'dart:async'; // Necessário para o StreamSubscription
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart'; // Importante!
+import 'package:geolocator/geolocator.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 import 'package:patinhas_amor/screens/occurrence_details_screen.dart';
 
@@ -14,69 +14,108 @@ class OccurrencesMapScreen extends StatefulWidget {
   State<OccurrencesMapScreen> createState() => _OccurrencesMapScreenState();
 }
 
-class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
+class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with TickerProviderStateMixin {
   final LatLng _initialCenter = LatLng(-26.2295, -51.0878);
   final MapController _mapController = MapController();
   
-  LatLng? _currentPalyerLocation; // Onde o usuário está agora
+  LatLng? _currentPalyerLocation; 
   StreamSubscription<Position>? _positionStream;
+
+  // Controlador da animação de pulso
+  late AnimationController _pulseController;
+  bool _isControllerInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    
+    // 1. Inicializa a animação primeiro
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    
+    _pulseController.repeat(reverse: true);
+    
+    setState(() {
+      _isControllerInitialized = true;
+    });
+
+    // 2. Inicia o GPS
     _initLocationService();
   }
 
   @override
   void dispose() {
-    _positionStream?.cancel(); // Limpa o stream ao sair da tela
+    _positionStream?.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
-  // --- LÓGICA DE LOCALIZAÇÃO DO USUÁRIO ---
-
   Future<void> _initLocationService() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // 1. Verifica se o GPS do celular está ligado
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
 
-    // 2. Verifica/Pede permissão
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return;
     }
 
-    if (permission == LocationPermission.deniedForever) return;
-
-    // 3. Começa a escutar a posição em tempo real
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // Atualiza a cada 10 metros
+        accuracy: LocationAccuracy.high, 
+        distanceFilter: 5, // Atualiza a cada 5 metros para ser mais suave
       ),
     ).listen((Position position) {
-      setState(() {
-        _currentPalyerLocation = LatLng(position.latitude, position.longitude);
-      });
+      if (mounted) {
+        LatLng newLocation = LatLng(position.latitude, position.longitude);
+        setState(() {
+          _currentPalyerLocation = newLocation;
+        });
+
+        // FAZ O MAPA SEGUIR O USUÁRIO AUTOMATICAMENTE
+        _mapController.move(newLocation, _mapController.camera.zoom);
+      }
     });
   }
 
   // --- WIDGETS VISUAIS ---
 
   Widget _buildUserLocationMarker() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.8),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: [
-          BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, spreadRadius: 5),
-        ],
-      ),
+    if (!_isControllerInitialized) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Efeito de pulsação/brilho
+            Container(
+              width: 20 + (_pulseController.value * 25),
+              height: 20 + (_pulseController.value * 25),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.4 * (1 - _pulseController.value)),
+                shape: BoxShape.circle,
+              ),
+            ),
+            // Ponto central
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.blueAccent,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -102,9 +141,15 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
     }
   }
 
-  
+  String _getStatusLabel(String status) {
+    switch (status) {
+      case 'pending': return 'PENDENTE';
+      case 'in_progress': return 'EM ANDAMENTO';
+      default: return 'DESCONHECIDO';
+    }
+  }
 
-  // --- MODAL DE DETALHES (Resumido para o exemplo) ---
+  // --- MODAL DE DETALHES ---
 
   void _showOccurrenceDetails(Map<String, dynamic> data, String docId) {
     showModalBottomSheet(
@@ -126,9 +171,26 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
                   child: Image.network(data['imageUrl'], height: 200, width: double.infinity, fit: BoxFit.cover),
                 ),
               const SizedBox(height: 20),
-              Text(data['type'] ?? 'Ocorrência', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(data['type'] ?? 'Ocorrência', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getMarkerColor(data['status'] ?? '').withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _getStatusLabel(data['status'] ?? ''),
+                      style: TextStyle(color: _getMarkerColor(data['status'] ?? ''), fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               Text(data['description'] ?? '', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, minimumSize: const Size(double.infinity, 50)),
                 onPressed: () {
@@ -160,19 +222,19 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
         builder: (context, snapshot) {
           List<Marker> markers = [];
 
-          // 1. Adiciona o Ponto Azul do Usuário (se a localização foi capturada)
+          // 1. Marcador do Usuário (Animado)
           if (_currentPalyerLocation != null) {
             markers.add(
               Marker(
                 point: _currentPalyerLocation!,
-                width: 25,
-                height: 25,
+                width: 60,
+                height: 60,
                 child: _buildUserLocationMarker(),
               ),
             );
           }
 
-          // 2. Adiciona as Ocorrências do Firebase
+          // 2. Marcadores das Ocorrências
           if (snapshot.hasData) {
             for (var doc in snapshot.data!.docs) {
               final data = doc.data() as Map<String, dynamic>;
@@ -211,12 +273,11 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
           );
         },
       ),
-      // Botão flutuante para centralizar no usuário
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.white,
         onPressed: () {
           if (_currentPalyerLocation != null) {
-            _mapController.move(_currentPalyerLocation!, 16.0);
+            _mapController.move(_currentPalyerLocation!, 17.0);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Aguardando sinal do GPS...")),
