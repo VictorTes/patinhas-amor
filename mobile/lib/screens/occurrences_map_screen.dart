@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-// Verifique se os caminhos dos imports estão corretos conforme seu projeto
 import 'package:patinhas_amor/models/occurrence.dart'; 
 import 'package:patinhas_amor/screens/occurrence_details_screen.dart'; 
 
@@ -14,27 +13,45 @@ class OccurrencesMapScreen extends StatefulWidget {
 }
 
 class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
-  // Coordenadas iniciais (ajuste conforme a necessidade da sua região)
   final LatLng _initialCenter = LatLng(-26.2295, -51.0878);
 
   String _getStatusLabel(String status) {
     switch (status) {
       case 'pending': return 'PENDENTE';
       case 'in_progress': return 'EM ANDAMENTO';
-      case 'resolved': 
-      case 'completed': return 'RESOLVIDA';
       default: return 'DESCONHECIDO';
     }
   }
 
   Color _getMarkerColor(String status) {
     switch (status) {
-      case 'pending': return Colors.red;
-      case 'in_progress': return Colors.blue;
-      case 'resolved':
-      case 'completed': return Colors.green;
+      case 'pending': return Colors.redAccent;
+      case 'in_progress': return Colors.blueAccent;
       default: return Colors.orange;
     }
+  }
+
+  // Widget de marcador personalizado mais moderno
+  Widget _buildCustomMarker(String status) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _getMarkerColor(status),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.pets, // Ícone de patinha combinando com o app
+        size: 20,
+        color: Colors.white,
+      ),
+    );
   }
 
   void _showOccurrenceDetails(Map<String, dynamic> data, String docId) {
@@ -65,8 +82,6 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
                   ),
                 ),
               ),
-
-              // Imagem da Ocorrência
               if (data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(15),
@@ -86,7 +101,6 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
                 ),
 
               const SizedBox(height: 20),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -113,31 +127,24 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 16),
-              const Text("Descrição da Situação:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 4),
+              const Text("Descrição:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               Text(data['description'] ?? 'Sem descrição.', style: TextStyle(fontSize: 15, color: Colors.grey[800])),
-
               const SizedBox(height: 32),
               
-              // --- BOTÕES DE AÇÃO ---
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
+                        backgroundColor: Colors.orange[700],
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       ),
                       onPressed: () {
-                        Navigator.pop(context); // Fecha o modal
-                        
-                        // CORREÇÃO: Usando o método fromJson da sua Model
+                        Navigator.pop(context);
                         final occurrence = Occurrence.fromJson(data, docId: docId);
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -149,16 +156,15 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // BOTÃO VOLTAR
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                        side: const BorderSide(color: Colors.orange),
+                        side: BorderSide(color: Colors.grey[400]!),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text("VOLTAR", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                      child: Text("FECHAR", style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -174,13 +180,17 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mapa de Ocorrências"),
+        title: const Text("Mapa de Resgates"),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('occurrences').snapshots(),
+        // FILTRO APLICADO: Onde o status NÃO É IGUAL a 'resolved'
+        stream: FirebaseFirestore.instance
+            .collection('occurrences')
+            .where('status', whereNotIn: ['resolved', 'completed'])
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) return const Center(child: Text("Erro ao carregar mapa."));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Colors.orange));
@@ -194,16 +204,11 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> {
 
             return Marker(
               point: LatLng(lat, lng),
-              width: 50, height: 50,
+              width: 40, 
+              height: 40,
               child: GestureDetector(
                 onTap: () => _showOccurrenceDetails(data, docId),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(Icons.location_on, size: 45, color: _getMarkerColor(data['status'] ?? 'pending')),
-                    const Positioned(top: 10, child: Icon(Icons.circle, size: 12, color: Colors.white)),
-                  ],
-                ),
+                child: _buildCustomMarker(data['status'] ?? 'pending'),
               ),
             );
           }).toList();
