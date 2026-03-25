@@ -6,18 +6,18 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Stream que avisa o app se o usuário está logado ou não
   Stream<User?> get userStream => _auth.authStateChanges();
 
   // --- AUTENTICAÇÃO ---
 
-  /// Função para Logar
   Future<UserCredential> login(String email, String password) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      UserCredential credential = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password.trim(),
       );
+      await credential.user?.reload();
+      return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     } catch (e) {
@@ -25,7 +25,6 @@ class AuthService {
     }
   }
 
-  /// Função para Deslogar
   Future<void> logout() async {
     try {
       await _auth.signOut();
@@ -34,7 +33,6 @@ class AuthService {
     }
   }
 
-  /// Resetar senha (Esqueci minha senha)
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
@@ -43,15 +41,24 @@ class AuthService {
     }
   }
 
-  // --- GERENCIAMENTO DO PERFIL LOGADO ---
+  // --- GERENCIAMENTO DO PERFIL LOGADO EM TEMPO REAL ---
 
-  /// Buscar dados do perfil do usuário logado
+  Stream<Map<String, dynamic>?> getUserDataStream() {
+    User? user = _auth.currentUser;
+    if (user == null) return Stream.value(null);
+
+    return _db.collection('users').doc(user.uid).snapshots().map((doc) {
+      // Removido o 'as Map<String, dynamic>?' pois o .data() já retorna este tipo
+      return doc.data(); 
+    });
+  }
+
   Future<Map<String, dynamic>?> getUserData() async {
     try {
       User? user = _auth.currentUser;
       if (user != null) {
-        DocumentSnapshot doc = await _db.collection('users').doc(user.uid).get();
-        return doc.exists ? doc.data() as Map<String, dynamic>? : null;
+        DocumentSnapshot<Map<String, dynamic>> doc = await _db.collection('users').doc(user.uid).get();
+        return doc.data(); // Cast removido aqui também
       }
     } catch (e) {
       debugPrint("Erro ao buscar dados: $e");
@@ -59,15 +66,12 @@ class AuthService {
     return null;
   }
 
-  /// Altera a senha e marca 'mustChangePassword' como false.
   Future<void> updatePasswordAndRelease(String newPassword) async {
     try {
       User? user = _auth.currentUser;
       if (user == null) throw 'Sessão expirada. Faça login novamente.';
 
-      final String uid = user.uid;
-
-      await _db.collection('users').doc(uid).update({
+      await _db.collection('users').doc(user.uid).update({
         'mustChangePassword': false,
       });
 
@@ -86,16 +90,18 @@ class AuthService {
     }
   }
 
-  // --- FUNÇÕES ADMINISTRATIVAS (GERENCIAR OUTROS USUÁRIOS) ---
+  // --- FUNÇÕES ADMINISTRATIVAS ---
 
-  /// Lista todos os usuários cadastrados no Firestore
   Future<List<Map<String, dynamic>>> getAllUsers() async {
     try {
-      QuerySnapshot snapshot = await _db.collection('users').orderBy('name').get();
+      // Especificamos o tipo na busca para evitar casts no map
+      QuerySnapshot<Map<String, dynamic>> snapshot = 
+          await _db.collection('users').orderBy('name').get();
+          
       return snapshot.docs.map((doc) {
         return {
           'uid': doc.id,
-          ...doc.data() as Map<String, dynamic>
+          ...doc.data(), // Cast removido aqui
         };
       }).toList();
     } catch (e) {
@@ -103,7 +109,6 @@ class AuthService {
     }
   }
 
-  /// Atualiza Nome e Telefone de um voluntário
   Future<void> updateUserDetails(String uid, String name, String phone) async {
     try {
       await _db.collection('users').doc(uid).update({
@@ -115,7 +120,6 @@ class AuthService {
     }
   }
 
-  /// Ativa ou Desativa o acesso de um usuário
   Future<void> updateUserStatus(String uid, bool isActive) async {
     try {
       await _db.collection('users').doc(uid).update({
@@ -126,7 +130,6 @@ class AuthService {
     }
   }
 
-  /// Exclui o documento do usuário no Firestore
   Future<void> deleteUser(String uid) async {
     try {
       await _db.collection('users').doc(uid).delete();
@@ -134,8 +137,6 @@ class AuthService {
       throw 'Erro ao excluir usuário: $e';
     }
   }
-
-  // --- UTILITÁRIOS ---
 
   String _handleAuthError(FirebaseAuthException e) {
     switch (e.code) {

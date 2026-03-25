@@ -14,22 +14,22 @@ class AuthWrapper extends StatelessWidget {
 
     return StreamBuilder<User?>(
       stream: authService.userStream,
-      builder: (context, snapshot) {
-        // 1. Enquanto verifica a conexão inicial com o Firebase Auth
-        if (snapshot.connectionState == ConnectionState.waiting) {
+      builder: (context, authSnapshot) {
+        // 1. Verifica conexão inicial com Firebase Auth
+        if (authSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator(color: Colors.orange)),
           );
         }
 
-        // 2. Se NÃO houver usuário autenticado no Firebase (Token inexistente ou Logout)
-        if (!snapshot.hasData || snapshot.data == null) {
+        // 2. Se não houver usuário logado (Token expirado ou Logout)
+        if (!authSnapshot.hasData || authSnapshot.data == null) {
           return const LoginScreen();
         }
 
-        // 3. Se houver usuário autenticado, validamos os dados no Firestore
-        return FutureBuilder<Map<String, dynamic>?>(
-          future: authService.getUserData(),
+        // 3. Usuário logado: Agora ouvimos os dados do Firestore EM TEMPO REAL
+        return StreamBuilder<Map<String, dynamic>?>(
+          stream: authService.getUserDataStream(), // Usando o novo Stream
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
@@ -37,7 +37,7 @@ class AuthWrapper extends StatelessWidget {
               );
             }
 
-            // SE OS DADOS NÃO EXISTIREM (Usuário deletado)
+            // Se o documento do usuário não existir (deletado do banco)
             if (!userSnapshot.hasData || userSnapshot.data == null) {
               Future.microtask(() => authService.logout());
               return const LoginScreen();
@@ -45,21 +45,19 @@ class AuthWrapper extends StatelessWidget {
 
             final userData = userSnapshot.data!;
 
-            // --- NOVO BLOQUEIO DE SEGURANÇA ---
-            // Verifica se o campo 'isActive' é falso. 
-            // Se for falso, o ADM desativou a conta, então expulsamos o usuário.
+            // --- BLOQUEIO EM TEMPO REAL ---
+            // Se isActive mudar para false no banco, o app volta para o Login instantaneamente
             if (userData['isActive'] == false) {
               Future.microtask(() => authService.logout());
               return const LoginScreen();
             }
-            // ----------------------------------
 
-            // 4. Verificação de Troca de Senha Obrigatória
+            // Verificação de Troca de Senha Obrigatória
             if (userData['mustChangePassword'] == true) {
               return const ChangePasswordScreen();
             }
 
-            // 5. TUDO OK: Usuário autenticado, ativo e com senha em dia
+            // TUDO OK
             return const HomeScreen();
           },
         );
