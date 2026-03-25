@@ -21,27 +21,19 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
   LatLng? _currentPalyerLocation; 
   StreamSubscription<Position>? _positionStream;
 
-  // Controlador da animação de pulso
+  // Controle de Animação e Estado
   late AnimationController _pulseController;
-  bool _isControllerInitialized = false;
+  bool _isLoadingLocation = true; // Controla o estado de carregamento
 
   @override
   void initState() {
     super.initState();
     
-    // 1. Inicializa a animação primeiro
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    );
-    
-    _pulseController.repeat(reverse: true);
-    
-    setState(() {
-      _isControllerInitialized = true;
-    });
+    )..repeat(reverse: true);
 
-    // 2. Inicia o GPS
     _initLocationService();
   }
 
@@ -49,58 +41,87 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
   void dispose() {
     _positionStream?.cancel();
     _pulseController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   Future<void> _initLocationService() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
+    if (!serviceEnabled) {
+      if (mounted) setState(() => _isLoadingLocation = false);
+      return;
+    }
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
+      if (permission == LocationPermission.denied) {
+        if (mounted) setState(() => _isLoadingLocation = false);
+        return;
+      }
     }
 
+    // 1. Pega a posição ATUAL rapidamente para centralizar o mapa de cara
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high
+      );
+      _updateLocalState(position);
+    } catch (e) {
+      debugPrint("Erro ao obter posição inicial: $e");
+    }
+
+    // 2. Escuta mudanças de posição (Stream)
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high, 
-        distanceFilter: 5, // Atualiza a cada 5 metros para ser mais suave
+        distanceFilter: 5,
       ),
-    ).listen((Position position) {
-      if (mounted) {
-        LatLng newLocation = LatLng(position.latitude, position.longitude);
-        setState(() {
-          _currentPalyerLocation = newLocation;
-        });
+    ).listen((Position position) => _updateLocalState(position));
+  }
 
-        // FAZ O MAPA SEGUIR O USUÁRIO AUTOMATICAMENTE
-        _mapController.move(newLocation, _mapController.camera.zoom);
-      }
-    });
+  void _updateLocalState(Position position) {
+    if (mounted) {
+      setState(() {
+        _currentPalyerLocation = LatLng(position.latitude, position.longitude);
+        _isLoadingLocation = false; // Finaliza o loading assim que recebe o primeiro sinal
+      });
+    }
   }
 
   // --- WIDGETS VISUAIS ---
 
-  Widget _buildUserLocationMarker() {
-    if (!_isControllerInitialized) return const SizedBox.shrink();
+  Widget _buildLoadingWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(color: Colors.orange, strokeWidth: 3),
+          const SizedBox(height: 20),
+          Text(
+            "carregando...",
+            style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildUserLocationMarker() {
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
         return Stack(
           alignment: Alignment.center,
           children: [
-            // Efeito de pulsação/brilho
             Container(
-              width: 20 + (_pulseController.value * 25),
-              height: 20 + (_pulseController.value * 25),
+              width: 15 + (_pulseController.value * 25),
+              height: 15 + (_pulseController.value * 25),
               decoration: BoxDecoration(
                 color: Colors.blue.withOpacity(0.4 * (1 - _pulseController.value)),
                 shape: BoxShape.circle,
               ),
             ),
-            // Ponto central
             Container(
               width: 14,
               height: 14,
@@ -108,9 +129,7 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
                 color: Colors.blueAccent,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
-                ],
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
               ),
             ),
           ],
@@ -126,10 +145,10 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 3)),
         ],
       ),
-      child: const Icon(Icons.pets, size: 20, color: Colors.white),
+      child: const Icon(Icons.pets, size: 18, color: Colors.white),
     );
   }
 
@@ -149,8 +168,6 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
     }
   }
 
-  // --- MODAL DE DETALHES ---
-
   void _showOccurrenceDetails(Map<String, dynamic> data, String docId) {
     showModalBottomSheet(
       context: context,
@@ -158,6 +175,7 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.5,
+        maxChildSize: 0.9,
         expand: false,
         builder: (_, scrollController) => SingleChildScrollView(
           controller: scrollController,
@@ -168,36 +186,32 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
               if (data['imageUrl'] != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(15),
-                  child: Image.network(data['imageUrl'], height: 200, width: double.infinity, fit: BoxFit.cover),
+                  child: Image.network(data['imageUrl'], height: 220, width: double.infinity, fit: BoxFit.cover),
                 ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(data['type'] ?? 'Ocorrência', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getMarkerColor(data['status'] ?? '').withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _getStatusLabel(data['status'] ?? ''),
-                      style: TextStyle(color: _getMarkerColor(data['status'] ?? ''), fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                  ),
+                  _buildStatusBadge(data['status'] ?? ''),
                 ],
               ),
               const SizedBox(height: 10),
-              Text(data['description'] ?? '', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 24),
+              Text(data['description'] ?? '', style: const TextStyle(fontSize: 16, color: Colors.black87)),
+              const SizedBox(height: 30),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, minimumSize: const Size(double.infinity, 50)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  minimumSize: const Size(double.infinity, 55),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => OccurrenceDetailsScreen(occurrence: Occurrence.fromJson(data, docId: docId))));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => OccurrenceDetailsScreen(
+                    occurrence: Occurrence.fromJson(data, docId: docId)
+                  )));
                 },
-                child: const Text("VER DETALHES COMPLETOS", style: TextStyle(color: Colors.white)),
+                child: const Text("DETALHES DO RESGATE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               )
             ],
           ),
@@ -206,85 +220,104 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
     );
   }
 
+  Widget _buildStatusBadge(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: _getMarkerColor(status).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        _getStatusLabel(status),
+        style: TextStyle(color: _getMarkerColor(status), fontWeight: FontWeight.bold, fontSize: 11),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mapa de Ocorrências"),
+        title: const Text("Mapa de Ocorrências", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('occurrences')
-            .where('status', whereNotIn: ['resolved', 'completed'])
-            .snapshots(),
-        builder: (context, snapshot) {
-          List<Marker> markers = [];
+      // AnimatedSwitcher faz o Cross-Fade entre o Loading e o Mapa
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        child: _isLoadingLocation 
+          ? _buildLoadingWidget()
+          : StreamBuilder<QuerySnapshot>(
+              key: const ValueKey('map_content'), // Key necessária para o AnimatedSwitcher
+              stream: FirebaseFirestore.instance
+                  .collection('occurrences')
+                  .where('status', whereNotIn: ['resolved', 'completed'])
+                  .snapshots(),
+              builder: (context, snapshot) {
+                List<Marker> markers = [];
 
-          // 1. Marcador do Usuário (Animado)
-          if (_currentPalyerLocation != null) {
-            markers.add(
-              Marker(
-                point: _currentPalyerLocation!,
-                width: 60,
-                height: 60,
-                child: _buildUserLocationMarker(),
-              ),
-            );
-          }
-
-          // 2. Marcadores das Ocorrências
-          if (snapshot.hasData) {
-            for (var doc in snapshot.data!.docs) {
-              final data = doc.data() as Map<String, dynamic>;
-              final double lat = (data['latitude'] ?? 0.0).toDouble();
-              final double lng = (data['longitude'] ?? 0.0).toDouble();
-
-              if (lat != 0.0) {
-                markers.add(
-                  Marker(
-                    point: LatLng(lat, lng),
-                    width: 40,
-                    height: 40,
-                    child: GestureDetector(
-                      onTap: () => _showOccurrenceDetails(data, doc.id),
-                      child: _buildCustomMarker(data['status'] ?? 'pending'),
+                // Marcador do Usuário
+                if (_currentPalyerLocation != null) {
+                  markers.add(
+                    Marker(
+                      point: _currentPalyerLocation!,
+                      width: 60,
+                      height: 60,
+                      child: _buildUserLocationMarker(),
                     ),
-                  ),
-                );
-              }
-            }
-          }
+                  );
+                }
 
-          return FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _initialCenter,
-              initialZoom: 14.0,
+                // Marcadores das Ocorrências
+                if (snapshot.hasData) {
+                  for (var doc in snapshot.data!.docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final double lat = (data['latitude'] ?? 0.0).toDouble();
+                    final double lng = (data['longitude'] ?? 0.0).toDouble();
+
+                    if (lat != 0.0) {
+                      markers.add(
+                        Marker(
+                          point: LatLng(lat, lng),
+                          width: 45,
+                          height: 45,
+                          child: GestureDetector(
+                            onTap: () => _showOccurrenceDetails(data, doc.id),
+                            child: _buildCustomMarker(data['status'] ?? 'pending'),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                }
+
+                return FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _currentPalyerLocation ?? _initialCenter,
+                    initialZoom: 15.0,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.patinhas_amor.app',
+                    ),
+                    MarkerLayer(markers: markers),
+                  ],
+                );
+              },
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.patinhas_amor.app',
-              ),
-              MarkerLayer(markers: markers),
-            ],
-          );
-        },
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.white,
+        elevation: 4,
         onPressed: () {
           if (_currentPalyerLocation != null) {
-            _mapController.move(_currentPalyerLocation!, 17.0);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Aguardando sinal do GPS...")),
-            );
+            _mapController.move(_currentPalyerLocation!, 16.5);
           }
         },
-        child: const Icon(Icons.my_location, color: Colors.blue),
+        child: const Icon(Icons.my_location, color: Colors.blueAccent),
       ),
     );
   }
