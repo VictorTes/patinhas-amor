@@ -60,8 +60,6 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
     super.dispose();
   }
 
-  // --- VALIDAÇÕES DE REQUISITOS ---
-
   Future<bool> _checkRequirements() async {
     var connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
@@ -103,8 +101,6 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
     );
   }
 
-  // --- LÓGICA DE LOCALIZAÇÃO ---
-
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoading = true);
     try {
@@ -126,7 +122,6 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
   void _openMapPicker() async {
     if (!await _checkRequirements()) return;
 
-    // Tenta pegar a posição atual para centralizar o mapa caso não exista uma salva
     Position? currentPos;
     try {
       currentPos = await Geolocator.getCurrentPosition(timeLimit: const Duration(seconds: 5));
@@ -135,11 +130,14 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
     double initialLat = double.tryParse(_latController.text) ?? currentPos?.latitude ?? -26.2300;
     double initialLng = double.tryParse(_lngController.text) ?? currentPos?.longitude ?? -51.0800;
 
-    LatLng? selectedPoint = await showDialog<LatLng>(
-      context: context,
-      builder: (context) => _MapPickerDialog(
-        initialCenter: LatLng(initialLat, initialLng),
-        userRealLocation: currentPos != null ? LatLng(currentPos.latitude, currentPos.longitude) : null,
+    // Alterado para Navigator.push para abrir em tela cheia
+    final LatLng? selectedPoint = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullScreenMapPicker(
+          initialCenter: LatLng(initialLat, initialLng),
+          userRealLocation: currentPos != null ? LatLng(currentPos.latitude, currentPos.longitude) : null,
+        ),
       ),
     );
 
@@ -179,8 +177,6 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
       ),
     );
   }
-
-  // --- FORMULÁRIO ---
 
   Future<void> _pickImage(ImageSource source) async {
     final image = await _imagePicker.pickImage(source: source, maxWidth: 1024, imageQuality: 85);
@@ -363,20 +359,21 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
   }
 }
 
-// --- DIÁLOGO DO MAPA ATUALIZADO ---
+// --- TELA DE MAPA EM TELA CHEIA (Corrigido e Alinhado) ---
 
-class _MapPickerDialog extends StatefulWidget {
+class FullScreenMapPicker extends StatefulWidget {
   final LatLng initialCenter;
-  final LatLng? userRealLocation; // Nova propriedade para o ponto azul
+  final LatLng? userRealLocation;
   
-  const _MapPickerDialog({required this.initialCenter, this.userRealLocation});
+  const FullScreenMapPicker({super.key, required this.initialCenter, this.userRealLocation});
 
   @override
-  State<_MapPickerDialog> createState() => _MapPickerDialogState();
+  State<FullScreenMapPicker> createState() => _FullScreenMapPickerState();
 }
 
-class _MapPickerDialogState extends State<_MapPickerDialog> {
+class _FullScreenMapPickerState extends State<FullScreenMapPicker> {
   late LatLng _selectedPoint;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -386,84 +383,93 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Selecione o local no mapa"),
-      contentPadding: EdgeInsets.zero,
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 450,
-        child: Stack(
-          children: [
-            FlutterMap(
-              options: MapOptions(
-                initialCenter: widget.initialCenter,
-                initialZoom: 15,
-                onPositionChanged: (pos, hasGesture) {
-                  if (hasGesture) {
-                    setState(() => _selectedPoint = pos.center!);
-                  }
-                },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Selecione o Local"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check, size: 30, color: Colors.green),
+            onPressed: () => Navigator.pop(context, _selectedPoint),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: widget.initialCenter,
+              initialZoom: 17,
+              onPositionChanged: (pos, hasGesture) {
+                if (hasGesture && pos.center != null) {
+                  _selectedPoint = pos.center!;
+                }
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.patinhas_amor.app',
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.patinhas_amor.app',
-                ),
-                // Camada do Ponto Azul (Onde o usuário está agora)
-                if (widget.userRealLocation != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: widget.userRealLocation!,
-                        width: 20,
-                        height: 20,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.8),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 8, spreadRadius: 2)
-                            ],
-                          ),
+              if (widget.userRealLocation != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: widget.userRealLocation!,
+                      width: 25,
+                      height: 25,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.7),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                       ),
-                    ],
-                  ),
-              ],
-            ),
-            // Ícone Vermelho (O "alvo" central que seleciona a posição)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 35),
-                child: Icon(Icons.location_on, size: 45, color: Colors.red),
-              ),
-            ),
-            // Botão flutuante para voltar a centralizar no usuário (opcional)
-            if (widget.userRealLocation != null)
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: FloatingActionButton.small(
-                  backgroundColor: Colors.white,
-                  onPressed: () {
-                    // Aqui você precisaria de um MapController para mover o mapa programaticamente.
-                    // Para simplificar, o ponto azul serve apenas como referência visual.
-                  },
-                  child: const Icon(Icons.my_location, color: Colors.blue),
+                    ),
+                  ],
                 ),
+            ],
+          ),
+          // MARCADOR CENTRAL FIXO (Alinhamento Perfeito)
+          // O marcador de seleção fica parado no meio enquanto o mapa desliza por baixo.
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 40), // Ajuste para a ponta do pin bater no centro
+              child: const Icon(Icons.location_on, size: 50, color: Colors.red),
+            ),
+          ),
+          // Botão Confirmar Flutuante
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context, _selectedPoint),
+              icon: const Icon(Icons.location_searching),
+              label: const Text("CONFIRMAR ESTE LOCAL"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
-          ],
-        ),
+            ),
+          ),
+          // Botão Centralizar no Usuário
+          if (widget.userRealLocation != null)
+            Positioned(
+              right: 20,
+              top: 20,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: Colors.white,
+                onPressed: () => _mapController.move(widget.userRealLocation!, 17),
+                child: const Icon(Icons.my_location, color: Colors.blue),
+              ),
+            ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, _selectedPoint), 
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-          child: const Text("Confirmar Local"),
-        ),
-      ],
     );
   }
 }
