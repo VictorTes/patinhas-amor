@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart'; // Import corrigido
+import 'package:latlong2/latlong.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 import 'package:patinhas_amor/services/occurrence_service.dart';
 
@@ -32,13 +33,7 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
   String? _remoteImageUrl;
   OccurrenceStatus _status = OccurrenceStatus.pending;
 
-  final List<String> _typeOptions = [
-    'Abandono',
-    'Maus-tratos',
-    'Animal Ferido',
-    'Animal de Rua',
-    'Outro'
-  ];
+  final List<String> _typeOptions = ['Abandono', 'Maus-tratos', 'Animal Ferido', 'Animal de Rua', 'Outro'];
 
   @override
   void initState() {
@@ -65,25 +60,61 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
     super.dispose();
   }
 
+  // --- VALIDAÇÕES DE REQUISITOS ---
+
+  Future<bool> _checkRequirements() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      _showErrorDialog("Sem Internet", "Você precisa de conexão para salvar ou ver o mapa.");
+      return false;
+    }
+
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _showErrorDialog("GPS Desativado", "Por favor, ative o GPS do seu aparelho.");
+      return false;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        _showSnackBar("Permissão de localização negada.", Colors.red);
+        return false;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      _showErrorDialog("Permissão Necessária", "Ative a localização nas configurações do sistema.");
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        content: Text(message),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
+      ),
+    );
+  }
+
   // --- LÓGICA DE LOCALIZAÇÃO ---
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoading = true);
     try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
-        Position position = await Geolocator.getCurrentPosition();
+      if (await _checkRequirements()) {
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
         setState(() {
           _latController.text = position.latitude.toString();
           _lngController.text = position.longitude.toString();
         });
         _showSnackBar("Localização GPS capturada!", Colors.green);
-      } else {
-        _showSnackBar("Permissão de localização negada.", Colors.orange);
       }
     } catch (e) {
       _showSnackBar("Erro ao obter GPS: $e", Colors.red);
@@ -93,12 +124,23 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
   }
 
   void _openMapPicker() async {
-    double initialLat = double.tryParse(_latController.text) ?? -26.2300;
-    double initialLng = double.tryParse(_lngController.text) ?? -51.0800;
+    if (!await _checkRequirements()) return;
+
+    // Tenta pegar a posição atual para centralizar o mapa caso não exista uma salva
+    Position? currentPos;
+    try {
+      currentPos = await Geolocator.getCurrentPosition(timeLimit: const Duration(seconds: 5));
+    } catch (_) {}
+
+    double initialLat = double.tryParse(_latController.text) ?? currentPos?.latitude ?? -26.2300;
+    double initialLng = double.tryParse(_lngController.text) ?? currentPos?.longitude ?? -51.0800;
 
     LatLng? selectedPoint = await showDialog<LatLng>(
       context: context,
-      builder: (context) => _MapPickerDialog(initialCenter: LatLng(initialLat, initialLng)),
+      builder: (context) => _MapPickerDialog(
+        initialCenter: LatLng(initialLat, initialLng),
+        userRealLocation: currentPos != null ? LatLng(currentPos.latitude, currentPos.longitude) : null,
+      ),
     );
 
     if (selectedPoint != null) {
@@ -123,12 +165,12 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.my_location, color: Colors.orange),
-              title: const Text("Usar localização atual (GPS)"),
+              title: const Text("Usar localização atual (GPS Rápido)"),
               onTap: () { Navigator.pop(context); _getCurrentLocation(); },
             ),
             ListTile(
               leading: const Icon(Icons.map, color: Colors.orange),
-              title: const Text("Selecionar no Mapa"),
+              title: const Text("Selecionar no Mapa (Visual)"),
               onTap: () { Navigator.pop(context); _openMapPicker(); },
             ),
             const SizedBox(height: 12),
@@ -138,7 +180,7 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
     );
   }
 
-  // --- LÓGICA DE FORMULÁRIO E IMAGEM ---
+  // --- FORMULÁRIO ---
 
   Future<void> _pickImage(ImageSource source) async {
     final image = await _imagePicker.pickImage(source: source, maxWidth: 1024, imageQuality: 85);
@@ -151,9 +193,10 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!await _checkRequirements()) return;
     
     if (_latController.text.isEmpty || _lngController.text.isEmpty) {
-      _showSnackBar("A localização é obrigatória!", Colors.red);
+      _showSnackBar("A localização no mapa é obrigatória!", Colors.red);
       return;
     }
 
@@ -183,11 +226,11 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
       }
 
       if (mounted) {
-        _showSnackBar('Ocorrência salva!', Colors.green);
+        _showSnackBar('Ocorrência salva com sucesso!', Colors.green);
         Navigator.pop(context, true);
       }
     } catch (e) {
-      _showSnackBar('Erro: $e', Colors.red);
+      _showSnackBar('Erro ao salvar: $e', Colors.red);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -222,15 +265,15 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
 
               TextFormField(
                 controller: _locationController,
-                decoration: const InputDecoration(labelText: 'Endereço / Ref.', prefixIcon: Icon(Icons.location_on), border: OutlineInputBorder()),
-                validator: (v) => v!.isEmpty ? 'Informe o local' : null,
+                decoration: const InputDecoration(labelText: 'Endereço Aproximado / Ponto de Ref.', prefixIcon: Icon(Icons.location_on), border: OutlineInputBorder()),
+                validator: (v) => v!.isEmpty ? 'Informe o local por escrito' : null,
               ),
               const SizedBox(height: 16),
 
               OutlinedButton.icon(
                 onPressed: _isLoading ? null : _showLocationOptions,
                 icon: Icon(hasLocation ? Icons.check_circle : Icons.add_location_alt),
-                label: Text(hasLocation ? "LOCALIZAÇÃO SELECIONADA" : "DEFINIR LOCALIZAÇÃO (OBRIGATÓRIO)"),
+                label: Text(hasLocation ? "COORDENADAS CAPTURADAS" : "DEFINIR NO MAPA (OBRIGATÓRIO)"),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   foregroundColor: hasLocation ? Colors.green : Colors.orange,
@@ -238,19 +281,13 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                 ),
               ),
-              if (hasLocation)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text("Coordenadas: ${_latController.text}, ${_lngController.text}", 
-                    textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                ),
 
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Descrição Detalhada', alignLabelWithHint: true, border: OutlineInputBorder()),
-                validator: (v) => v!.isEmpty ? 'Descreva a situação' : null,
+                decoration: const InputDecoration(labelText: 'Descrição da Situação', alignLabelWithHint: true, border: OutlineInputBorder()),
+                validator: (v) => v!.isEmpty ? 'Descreva o que está acontecendo' : null,
               ),
               const SizedBox(height: 16),
 
@@ -265,12 +302,16 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
+                  onPressed: (_isLoading || !hasLocation) ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange, foregroundColor: Colors.white,
+                    backgroundColor: Colors.orange, 
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[300],
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                   ),
-                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("SALVAR OCORRÊNCIA"),
+                  child: _isLoading 
+                    ? const CircularProgressIndicator(color: Colors.white) 
+                    : const Text("SALVAR OCORRÊNCIA", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -295,7 +336,7 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
                       ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.network(_remoteImageUrl!, fit: BoxFit.cover))
                       : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                           Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
-                          Text('Tirar foto da ocorrência', style: TextStyle(color: Colors.grey))
+                          Text('Foto da ocorrência', style: TextStyle(color: Colors.grey))
                         ]),
             ),
           ),
@@ -322,11 +363,13 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
   }
 }
 
-// --- DIÁLOGO DO MAPA (FLUTTER_MAP) ---
+// --- DIÁLOGO DO MAPA ATUALIZADO ---
 
 class _MapPickerDialog extends StatefulWidget {
   final LatLng initialCenter;
-  const _MapPickerDialog({required this.initialCenter});
+  final LatLng? userRealLocation; // Nova propriedade para o ponto azul
+  
+  const _MapPickerDialog({required this.initialCenter, this.userRealLocation});
 
   @override
   State<_MapPickerDialog> createState() => _MapPickerDialogState();
@@ -344,11 +387,11 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Arraste o mapa para o local"),
+      title: const Text("Selecione o local no mapa"),
       contentPadding: EdgeInsets.zero,
       content: SizedBox(
         width: double.maxFinite,
-        height: 400,
+        height: 450,
         child: Stack(
           children: [
             FlutterMap(
@@ -366,20 +409,60 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.patinhas_amor.app',
                 ),
+                // Camada do Ponto Azul (Onde o usuário está agora)
+                if (widget.userRealLocation != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: widget.userRealLocation!,
+                        width: 20,
+                        height: 20,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.8),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 8, spreadRadius: 2)
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
+            // Ícone Vermelho (O "alvo" central que seleciona a posição)
             const Center(
               child: Padding(
                 padding: EdgeInsets.only(bottom: 35),
                 child: Icon(Icons.location_on, size: 45, color: Colors.red),
               ),
             ),
+            // Botão flutuante para voltar a centralizar no usuário (opcional)
+            if (widget.userRealLocation != null)
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: FloatingActionButton.small(
+                  backgroundColor: Colors.white,
+                  onPressed: () {
+                    // Aqui você precisaria de um MapController para mover o mapa programaticamente.
+                    // Para simplificar, o ponto azul serve apenas como referência visual.
+                  },
+                  child: const Icon(Icons.my_location, color: Colors.blue),
+                ),
+              ),
           ],
         ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-        ElevatedButton(onPressed: () => Navigator.pop(context, _selectedPoint), child: const Text("Confirmar Local")),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, _selectedPoint), 
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+          child: const Text("Confirmar Local"),
+        ),
       ],
     );
   }

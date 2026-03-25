@@ -15,6 +15,7 @@ dependencies:
   cloud_firestore: ^5.6.3
   firebase_auth: ^5.0.0
 
+
   # Mapas (Gratuitos)
   flutter_map: ^6.1.0
   latlong2: any
