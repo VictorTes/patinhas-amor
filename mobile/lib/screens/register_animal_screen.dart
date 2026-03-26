@@ -20,6 +20,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
+  late TextEditingController _locationController; // Localização atual do animal
   late TextEditingController _adopterNameController;
   late TextEditingController _adopterAddressController;
   late TextEditingController _adopterPhoneController;
@@ -46,6 +47,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.animal?.name ?? '');
     _descriptionController = TextEditingController(text: widget.animal?.description ?? '');
+    _locationController = TextEditingController(text: widget.animal?.currentLocation ?? '');
     _adopterNameController = TextEditingController(text: widget.animal?.adopterName ?? '');
     _adopterAddressController = TextEditingController(text: widget.animal?.adopterAddress ?? '');
     _adopterPhoneController = TextEditingController(text: widget.animal?.adopterPhone ?? '');
@@ -65,6 +67,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _locationController.dispose();
     _adopterNameController.dispose();
     _adopterAddressController.dispose();
     _adopterPhoneController.dispose();
@@ -130,6 +133,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
         species: _species ?? 'Outro',
         age: _age,
         description: _descriptionController.text.trim(),
+        currentLocation: _locationController.text.trim(), // NOVO CAMPO
         status: _status,
         imageUrl: finalImageUrl,
         rescueDate: widget.animal?.rescueDate ?? DateTime.now(),
@@ -183,7 +187,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildImagePicker(), // AGORA ESTÁ IGUAL AO DA OCORRÊNCIA
+              _buildImagePicker(),
               const SizedBox(height: 32),
               
               _buildSectionTitle("Informações Básicas"),
@@ -191,6 +195,18 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Nome', prefixIcon: Icon(Icons.pets), border: OutlineInputBorder()),
                 validator: (value) => value == null || value.isEmpty ? 'Informe o nome' : null,
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(
+                  labelText: 'Localização Atual (Onde ele está?)',
+                  hintText: 'Ex: Lar Temporário, Clínica, Casa do Adotante',
+                  prefixIcon: Icon(Icons.location_on, color: Colors.orange),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value == null || value.isEmpty ? 'Informe onde o animal se encontra' : null,
               ),
               const SizedBox(height: 16),
               
@@ -270,8 +286,8 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
           GestureDetector(
             onTap: _showImageSourceOptions,
             child: Container(
-              width: double.infinity, // LARGURA TOTAL IGUAL OCORRÊNCIA
-              height: 200,            // ALTURA IGUAL OCORRÊNCIA
+              width: double.infinity, 
+              height: 220, // Altura padronizada com a tela de ocorrência
               decoration: BoxDecoration(
                 color: Colors.grey[200], 
                 borderRadius: BorderRadius.circular(16),
@@ -294,7 +310,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
                       : const Column(
                           mainAxisAlignment: MainAxisAlignment.center, 
                           children: [
-                            Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
+                            Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
                             SizedBox(height: 8),
                             Text('Adicionar Foto do Animal', style: TextStyle(color: Colors.grey))
                           ]

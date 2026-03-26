@@ -40,6 +40,13 @@ dependencies:
   # Ícones
   cupertino_icons: ^1.0.2
 
+  # Para Excel
+  excel: ^4.0.0
+
+  # Para salvar os arquivos no celular
+  path_provider: ^2.1.1
+  share_plus: ^7.1.0 # Opcional: para já abrir o menu de compartilhar o arquivo
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

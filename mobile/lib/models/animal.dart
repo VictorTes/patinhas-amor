@@ -39,9 +39,13 @@ class Animal {
   final String? sex;
   final String? size;
   
+  // Dados do Adotante (Existentes)
   final String? adopterName;
   final String? adopterAddress;
   final String? adopterPhone;
+
+  // --- NOVO CAMPO DE TEXTO ---
+  final String? currentLocation; // Ex: "Lar Temporário - Casa da Maria" ou "Clínica Vet Vida"
 
   Animal({
     this.id,
@@ -57,11 +61,10 @@ class Animal {
     this.adopterName,
     this.adopterAddress,
     this.adopterPhone,
+    this.currentLocation,
   });
 
   factory Animal.fromJson(Map<String, dynamic> json, {String? docId}) {
-    // Função auxiliar interna para tratar strings vazias como nulas
-    // Isso evita que o Dropdown trave ao tentar ler "" do Firebase
     String? _nullIfEmpty(dynamic value) {
       if (value == null || (value is String && value.isEmpty)) return null;
       return value.toString();
@@ -76,14 +79,13 @@ class Animal {
       status: _parseStatus(json['status'] as String? ?? ''),
       imageUrl: _nullIfEmpty(json['imageUrl']),
       rescueDate: _parseDate(json['rescueDate']),
-      
-      // Aplicando a trava de segurança para campos de Dropdown
       sex: _nullIfEmpty(json['sex']),
       size: _nullIfEmpty(json['size']),
-      
       adopterName: _nullIfEmpty(json['adopterName']),
       adopterAddress: _nullIfEmpty(json['adopterAddress']),
       adopterPhone: _nullIfEmpty(json['adopterPhone']),
+      // Novo campo com trava de segurança
+      currentLocation: _nullIfEmpty(json['currentLocation']),
     );
   }
 
@@ -101,6 +103,8 @@ class Animal {
       'adopterName': adopterName,
       'adopterAddress': adopterAddress,
       'adopterPhone': adopterPhone,
+      // Salva o novo campo no Firebase
+      'currentLocation': currentLocation,
     };
   }
 

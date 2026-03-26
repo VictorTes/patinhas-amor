@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
-import 'package:patinhas_amor/screens/occurrences_map_screen.dart'; // Tela que criaremos
+import 'package:patinhas_amor/screens/occurrences_map_screen.dart';
+import 'package:patinhas_amor/screens/reports_screen.dart'; // Import da tela de relatórios
 import 'package:patinhas_amor/widgets/app_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -24,7 +25,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _buildLiveSummarySection(),
               const SizedBox(height: 24),
-              _buildMapPreview(context), // Passando o contexto aqui
+              _buildMapPreview(context),
               const SizedBox(height: 32),
               _buildGridNavigation(context),
               const SizedBox(height: 32),
@@ -49,7 +50,6 @@ class HomeScreen extends StatelessWidget {
                   radius: 30,
                   backgroundColor: Colors.orange[100],
                   backgroundImage: const AssetImage('assets/images/logo.png'),
-                  child: const Icon(Icons.menu, color: Colors.orange, size: 20),
                 ),
                 Container(
                   padding: const EdgeInsets.all(4),
@@ -190,8 +190,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Preview do Mapa que agora é um botão para a tela interativa
-  /// Preview do Mapa estilizado para o tema da ONG
   Widget _buildMapPreview(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +216,6 @@ class HomeScreen extends StatelessWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              // Gradiente que mistura o azul de mapa com o laranja da ONG
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -228,11 +225,9 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               image: const DecorationImage(
-                // Certifique-se de que esta imagem existe nos assets.
-                // Se não tiver uma, pode remover esta linha e usar apenas o gradiente.
                 image: AssetImage('assets/images/map_static_preview.png'),
                 fit: BoxFit.cover,
-                opacity: 0.4, // Deixa a imagem sutil ao fundo
+                opacity: 0.4,
                 colorFilter: ColorFilter.mode(Colors.black26, BlendMode.darken),
               ),
               boxShadow: [
@@ -245,7 +240,6 @@ class HomeScreen extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                // Detalhe visual: Círculos decorativos para parecer um radar/mapa
                 Positioned(
                   right: -20,
                   top: -20,
@@ -255,10 +249,9 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Ícone de Pin com efeito de sombra
                       Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.white24,
                           shape: BoxShape.circle,
                         ),
@@ -331,7 +324,8 @@ class HomeScreen extends StatelessWidget {
           'Relatórios',
           Icons.analytics_outlined,
           Colors.blueAccent,
-          () => _showComingSoon(context),
+          () => Navigator.push(context,
+              MaterialPageRoute(builder: (c) => const ReportsScreen())),
         ),
         _buildMenuItem(
           context,
