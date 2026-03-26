@@ -57,25 +57,25 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     if (picked != null) setState(() => _selectedDateRange = picked);
   }
 
-  // --- LÓGICA DE EXPORTAÇÃO DE ANIMAIS ---
+  // --- LÓGICA DE EXPORTAÇÃO DE ANIMAIS (CORRIGIDA) ---
   Future<void> _exportAnimals({required String type, required bool isPdf}) async {
     setState(() => _isExporting = true);
     try {
       List<Animal> animals = await _animalService.fetchAnimals();
       
-      // Filtros baseados no status definido no seu Model/Enum
+      // Filtros corrigidos: Comparando DIRETAMENTE com o Enum!
       if (type == 'na_ong') {
-        // Remove quem já saiu da ONG por adoção ou sumiço
+        // Na ONG = Não está adotado e não está desaparecido
         animals = animals.where((a) => 
-          a.status.name.toLowerCase() != 'adotado' && 
-          a.status.name.toLowerCase() != 'desaparecido'
+          a.status != AnimalStatus.adopted && 
+          a.status != AnimalStatus.missing
         ).toList();
       } else if (type == 'adotados') {
-        animals = animals.where((a) => a.status.name.toLowerCase() == 'adotado').toList();
+        animals = animals.where((a) => a.status == AnimalStatus.adopted).toList();
       } else if (type == 'desaparecidos') {
-        animals = animals.where((a) => a.status.name.toLowerCase() == 'desaparecido').toList();
+        animals = animals.where((a) => a.status == AnimalStatus.missing).toList();
       } else if (type == 'disponiveis') {
-        animals = animals.where((a) => a.status.name.toLowerCase() == 'disponivel').toList();
+        animals = animals.where((a) => a.status == AnimalStatus.availableForAdoption).toList();
       }
 
       final String title = "Relatório de Animais - ${type.replaceAll('_', ' ').toUpperCase()}";
@@ -104,18 +104,21 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     }
   }
 
-  // --- LÓGICA DE EXPORTAÇÃO DE OCORRÊNCIAS ---
+  // --- LÓGICA DE EXPORTAÇÃO DE OCORRÊNCIAS (AJUSTADA) ---
   Future<void> _exportOccurrences({required bool concluded, required bool isPdf}) async {
     setState(() => _isExporting = true);
     try {
       List<Occurrence> data = await _occurrenceService.fetchOccurrences();
       
       if (concluded) {
-        data = data.where((o) => o.status.name.toLowerCase() == 'resolved').toList();
+        // Considerando que o Enum ou a propriedade de string se chame 'resolved'
+        data = data.where((o) => o.status.name == 'resolved').toList();
       } else {
+        // Considerando 'pending' e 'inProgress' (camelCase, que é o padrão do Dart para enums)
         data = data.where((o) => 
-          o.status.name.toLowerCase() == 'pending' || 
-          o.status.name.toLowerCase() == 'in_progress'
+          o.status.name == 'pending' || 
+          o.status.name == 'inProgress' ||
+          o.status.name == 'in_progress' // Garantia caso esteja usando uma string bruta
         ).toList();
       }
 
