@@ -93,20 +93,6 @@ export function Home() {
                 🚨 Fazer Denúncia
               </Link>
             </div>
-
-            {/* Stats */}
-            <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
-              {[
-                { value: '500+', label: 'Resgates' },
-                { value: '300+', label: 'Adoções' },
-                { value: '50+', label: 'Voluntários' },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-white mb-1">{stat.value}</div>
-                  <div className="text-white/80 text-sm">{stat.label}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
