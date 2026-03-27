@@ -17,7 +17,7 @@ const PENDING_OCCURRENCES_COLLECTION = 'pending_occurrences';
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
- * Interface para os dados vindos do formulário (Alinhada com as Rules)
+ * Interface atualizada para incluir coordenadas do mapa
  */
 export interface OccurrenceFormData {
   reporterName: string;
@@ -26,13 +26,12 @@ export interface OccurrenceFormData {
   location: string;
   description: string;
   imageUrl: string;
+  latitude?: number;  // Adicionado
+  longitude?: number; // Adicionado
 }
 
 // --- FUNÇÕES DE BUSCA (ANIMAIS) ---
 
-/**
- * Converte um documento do Firestore para a interface Animal
- */
 function parseAnimalDoc(doc: { id: string; data: () => DocumentData }): Animal {
   const data = doc.data();
   return {
@@ -128,6 +127,9 @@ export async function uploadOccurrenceImage(file: File): Promise<string> {
 
 // --- FUNÇÕES DE CRIAÇÃO (OCORRÊNCIAS) ---
 
+/**
+ * Cria a ocorrência no Firestore incluindo os dados geográficos
+ */
 export async function createPendingOccurrence(formData: OccurrenceFormData): Promise<void> {
   try {
     const secureData = {
@@ -139,6 +141,9 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
       type: formData.type || 'Não especificado',
       location: formData.location.trim() || 'Não informada',
       description: formData.description.trim() || '',
+      // Novos campos de localização exata
+      latitude: formData.latitude ?? null,
+      longitude: formData.longitude ?? null,
       createdAt: serverTimestamp(),
       submittedAt: new Date().toISOString(),
       userAgent: navigator.userAgent

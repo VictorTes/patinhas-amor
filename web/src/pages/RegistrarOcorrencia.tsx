@@ -10,6 +10,9 @@ import {
   type OccurrenceFormData,
 } from '../services/firebaseService';
 
+// Importamos o novo componente de mapa
+import { LocationPicker } from '../components/LocationPicker';
+
 const occurrenceTypes = [
   { value: '', label: 'Selecione o tipo' },
   { value: 'Desaparecido', label: '🔍 Animal Desaparecido' },
@@ -20,13 +23,15 @@ const occurrenceTypes = [
 ];
 
 export function RegistrarOcorrencia() {
-  // Form state
+  // Form state - Adicionado lat e lng
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     type: '',
     location: '',
     description: '',
+    lat: undefined as number | undefined,
+    lng: undefined as number | undefined,
   });
 
   // Image state
@@ -139,6 +144,7 @@ export function RegistrarOcorrencia() {
         setUploadProgress('Foto enviada!');
       }
 
+      // Montando objeto final com coordenadas
       const occurrenceData: OccurrenceFormData = {
         reporterName: formData.fullName.trim(),
         reporterPhone: unmaskPhone(formData.phone),
@@ -146,13 +152,23 @@ export function RegistrarOcorrencia() {
         location: formData.location.trim(),
         description: formData.description.trim(),
         imageUrl: imageUrl,
+        latitude: formData.lat, // Enviando para o Firebase
+        longitude: formData.lng, // Enviando para o Firebase
       };
 
       await createPendingOccurrence(occurrenceData);
       setIsSuccess(true);
 
-      // Reset
-      setFormData({ fullName: '', phone: '', type: '', location: '', description: '' });
+      // Reset completo incluindo lat/lng
+      setFormData({ 
+        fullName: '', 
+        phone: '', 
+        type: '', 
+        location: '', 
+        description: '',
+        lat: undefined,
+        lng: undefined
+      });
       setSelectedFile(null);
       setImagePreview(null);
       if (fileInputRef.current) {
@@ -198,6 +214,7 @@ export function RegistrarOcorrencia() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Campo Nome */}
           <div data-error={!!errors.fullName}>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               Seu Nome Completo <span className="text-red-500">*</span>
@@ -214,13 +231,10 @@ export function RegistrarOcorrencia() {
                 ${errors.fullName ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
               `}
             />
-            {errors.fullName && (
-              <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                {errors.fullName}
-              </p>
-            )}
+            {errors.fullName && <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>}
           </div>
 
+          {/* Campo Telefone */}
           <div data-error={!!errors.phone}>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               Seu Telefone / WhatsApp <span className="text-red-500">*</span>
@@ -235,11 +249,10 @@ export function RegistrarOcorrencia() {
                 ${errors.phone ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
               `}
             />
-            {errors.phone && (
-              <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
-            )}
+            {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
           </div>
 
+          {/* Campo Tipo */}
           <div data-error={!!errors.type}>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               O que aconteceu? <span className="text-red-500">*</span>
@@ -256,61 +269,60 @@ export function RegistrarOcorrencia() {
                 `}
               >
                 {occurrenceTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
+                  <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             </div>
-
-            {/* Aviso específico para animal desaparecido */}
-            {formData.type === 'Desaparecido' && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex gap-3 animate-in fade-in slide-in-from-top-2">
-                <span className="text-xl">💡</span>
-                <p className="text-sm text-blue-700 leading-tight">
-                  Se você <strong>perdeu seu animal</strong>, descreva abaixo detalhes como cor da coleira, cicatrizes, nome pelo qual ele atende e a última vez que foi visto.
-                </p>
-              </div>
-            )}
-
-            {errors.type && (
-              <p className="mt-1 text-sm text-red-500">{errors.type}</p>
-            )}
           </div>
 
-          <div data-error={!!errors.location}>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Localização aproximada <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, location: e.target.value }));
-                  if (errors.location) setErrors((prev) => ({ ...prev, location: '' }));
-                }}
-                placeholder="Rua, bairro ou ponto de referência"
-                className={`w-full h-14 px-4 pl-12 text-base rounded-xl border-2 transition-all duration-200
-                  ${errors.location ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
-                `}
-              />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                </svg>
+          {/* Campo Localização com Mapa Integrado */}
+          <div data-error={!!errors.location} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Localização (Endereço ou Referência) <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => {
+                    setFormData((prev) => ({ ...prev, location: e.target.value }));
+                    if (errors.location) setErrors((prev) => ({ ...prev, location: '' }));
+                  }}
+                  placeholder="Rua, bairro ou ponto de referência"
+                  className={`w-full h-14 px-4 pl-12 text-base rounded-xl border-2 transition-all duration-200
+                    ${errors.location ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
+                  `}
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  </svg>
+                </div>
               </div>
+              {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
             </div>
-            {errors.location && (
-              <p className="mt-1 text-sm text-red-500">{errors.location}</p>
-            )}
+
+            {/* SEÇÃO DO MAPA */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+               <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                 <span className="text-orange-500">📍</span> Selecionar ponto exato no mapa
+               </label>
+               <LocationPicker 
+                onLocationSelect={(lat, lng) => setFormData(prev => ({ ...prev, lat, lng }))} 
+               />
+               <p className="mt-2 text-[11px] text-slate-400 italic">
+                 Dica: Toque no mapa para marcar o local exato ou use o botão de GPS acima do mapa.
+               </p>
+            </div>
           </div>
 
+          {/* Campo Descrição */}
           <div data-error={!!errors.description}>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               Descrição Detalhada <span className="text-red-500">*</span>
@@ -321,20 +333,19 @@ export function RegistrarOcorrencia() {
                 setFormData((prev) => ({ ...prev, description: e.target.value }));
                 if (errors.description) setErrors((prev) => ({ ...prev, description: '' }));
               }}
-              placeholder={formData.type === 'Desaparecido' ? "Dê detalhes físicos do animal, comportamento e informações que ajudem na identificação..." : "Descreva a situação, estado do animal e qualquer detalhe relevante..."}
+              placeholder="Descreva a situação, estado do animal e detalhes relevantes..."
               rows={5}
               className={`w-full px-4 py-3 text-base rounded-xl border-2 transition-all duration-200 resize-none
                 ${errors.description ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
               `}
             />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-500">{errors.description}</p>
-            )}
+            {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
           </div>
 
+          {/* Upload de Foto */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Foto do Local / Animal <span className="text-slate-400 font-normal">(opcional, máx 2MB)</span>
+              Foto do Local / Animal <span className="text-slate-400 font-normal">(opcional)</span>
             </label>
 
             {!imagePreview ? (
@@ -350,12 +361,12 @@ export function RegistrarOcorrencia() {
                 <span className="text-sm text-slate-600 font-medium">Toque para adicionar foto</span>
               </div>
             ) : (
-              <div className="relative rounded-xl overflow-hidden">
+              <div className="relative rounded-xl overflow-hidden shadow-md">
                 <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:text-red-500 transition-colors"
+                  className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-600 hover:text-red-500 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -371,11 +382,9 @@ export function RegistrarOcorrencia() {
               onChange={handleImageChange}
               className="hidden"
             />
-            {errors.image && (
-              <p className="mt-2 text-sm text-red-500">{errors.image}</p>
-            )}
           </div>
 
+          {/* Botão de Envio */}
           <div className="pt-4">
             <button
               type="submit"
