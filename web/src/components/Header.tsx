@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import logoOng from '../assets/logo.png';
 
 export function Header() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [, setIsMobile] = useState(false);
 
   // Detectar se é mobile
   useEffect(() => {
@@ -48,9 +49,11 @@ export function Header() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-orange-200 transition-shadow">
-                <span className="text-xl">🐾</span>
-              </div>
+              <img
+                src={logoOng}
+                alt="Logo Patinhas e Amor"
+                className="w-20 h-20 object-contain transition-transform group-hover:scale-105"
+              />
               <div className="hidden sm:block">
                 <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
                   Patinhas e Amor
@@ -68,10 +71,9 @@ export function Header() {
                     to={link.path}
                     className={`
                       relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                      ${
-                        isActive
-                          ? 'text-orange-600 bg-orange-50'
-                          : 'text-slate-600 hover:text-orange-500 hover:bg-slate-50'
+                      ${isActive
+                        ? 'text-orange-600 bg-orange-50'
+                        : 'text-slate-600 hover:text-orange-500 hover:bg-slate-50'
                       }
                     `}
                   >
@@ -103,19 +105,16 @@ export function Header() {
             >
               <div className="relative w-6 h-5">
                 <span
-                  className={`absolute left-0 w-6 h-0.5 bg-slate-700 transition-all duration-300 ${
-                    isMenuOpen ? 'top-2.5 rotate-45' : 'top-0'
-                  }`}
+                  className={`absolute left-0 w-6 h-0.5 bg-slate-700 transition-all duration-300 ${isMenuOpen ? 'top-2.5 rotate-45' : 'top-0'
+                    }`}
                 />
                 <span
-                  className={`absolute left-0 top-2 w-6 h-0.5 bg-slate-700 transition-all duration-300 ${
-                    isMenuOpen ? 'opacity-0' : 'opacity-100'
-                  }`}
+                  className={`absolute left-0 top-2 w-6 h-0.5 bg-slate-700 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : 'opacity-100'
+                    }`}
                 />
                 <span
-                  className={`absolute left-0 w-6 h-0.5 bg-slate-700 transition-all duration-300 ${
-                    isMenuOpen ? 'top-2.5 -rotate-45' : 'top-4'
-                  }`}
+                  className={`absolute left-0 w-6 h-0.5 bg-slate-700 transition-all duration-300 ${isMenuOpen ? 'top-2.5 -rotate-45' : 'top-4'
+                    }`}
                 />
               </div>
             </button>
@@ -125,9 +124,8 @@ export function Header() {
 
       {/* Overlay Mobile Menu */}
       <div
-        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${
-          isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
       >
         {/* Backdrop escuro */}
         <div
@@ -137,9 +135,8 @@ export function Header() {
 
         {/* Menu lateral */}
         <div
-          className={`absolute right-0 top-0 h-full w-80 max-w-full bg-white shadow-2xl transform transition-transform duration-300 ease-out ${
-            isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          className={`absolute right-0 top-0 h-full w-80 max-w-full bg-white shadow-2xl transform transition-transform duration-300 ease-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
         >
           <div className="flex flex-col h-full">
             {/* Header do menu */}
@@ -168,10 +165,9 @@ export function Header() {
                       onClick={() => setIsMenuOpen(false)}
                       className={`
                         flex items-center gap-4 px-4 py-4 rounded-xl text-lg font-medium transition-all duration-200
-                        ${
-                          isActive
-                            ? 'bg-orange-50 text-orange-600 border-2 border-orange-200'
-                            : 'text-slate-700 hover:bg-slate-50 border-2 border-transparent'
+                        ${isActive
+                          ? 'bg-orange-50 text-orange-600 border-2 border-orange-200'
+                          : 'text-slate-700 hover:bg-slate-50 border-2 border-transparent'
                         }
                       `}
                     >
