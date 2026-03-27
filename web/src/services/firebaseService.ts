@@ -10,14 +10,14 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { Animal, AnimalStatus } from '../types';
+import type { Animal, AnimalStatus, Occurrence } from '../types';
 
 const ANIMALS_COLLECTION = 'animals';
 const PENDING_OCCURRENCES_COLLECTION = 'pending_occurrences';
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
- * Interface atualizada para incluir coordenadas do mapa
+ * Interface para os dados vindos dos formulários Web (com upload e mapa)
  */
 export interface OccurrenceFormData {
   reporterName: string;
@@ -26,12 +26,15 @@ export interface OccurrenceFormData {
   location: string;
   description: string;
   imageUrl: string;
-  latitude?: number;  // Adicionado
-  longitude?: number; // Adicionado
+  latitude?: number;
+  longitude?: number;
 }
 
 // --- FUNÇÕES DE BUSCA (ANIMAIS) ---
 
+/**
+ * Converte um documento bruto do Firestore para o tipo Animal com segurança
+ */
 function parseAnimalDoc(doc: { id: string; data: () => DocumentData }): Animal {
   const data = doc.data();
   return {
@@ -128,7 +131,7 @@ export async function uploadOccurrenceImage(file: File): Promise<string> {
 // --- FUNÇÕES DE CRIAÇÃO (OCORRÊNCIAS) ---
 
 /**
- * Cria a ocorrência no Firestore incluindo os dados geográficos
+ * Função unificada para criar ocorrências no Firestore
  */
 export async function createPendingOccurrence(formData: OccurrenceFormData): Promise<void> {
   try {
@@ -141,7 +144,6 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
       type: formData.type || 'Não especificado',
       location: formData.location.trim() || 'Não informada',
       description: formData.description.trim() || '',
-      // Novos campos de localização exata
       latitude: formData.latitude ?? null,
       longitude: formData.longitude ?? null,
       createdAt: serverTimestamp(),
@@ -155,6 +157,23 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
     console.error('[Firebase] Erro ao criar ocorrência:', error);
     throw error;
   }
+}
+
+/**
+ * Função createOccurrence (mantida para compatibilidade com códigos antigos)
+ * Agora ela apenas redireciona para a createPendingOccurrence
+ */
+export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Promise<void> {
+  return createPendingOccurrence({
+    reporterName: "Usuário Web",
+    reporterPhone: occurrence.reporterPhone,
+    type: occurrence.type,
+    location: occurrence.location,
+    description: occurrence.description,
+    imageUrl: '',
+    latitude: occurrence.latitude,
+    longitude: occurrence.longitude
+  });
 }
 
 // --- HELPERS DE FORMATAÇÃO ---

@@ -1,5 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
+// --- TIPOS DE ANIMAIS ---
+
 export type AnimalStatus =
   | 'under_treatment'
   | 'available_for_adoption'
@@ -25,6 +27,8 @@ export interface Animal {
   adopterPhone?: string;
 }
 
+// --- TIPOS DE OCORRÊNCIAS ---
+
 export type OccurrenceType = 'Bravos' | 'Perdidos' | 'Maus Tratos' | 'Outros';
 
 export type OccurrenceStatus = 'pending' | 'in_progress' | 'resolved';
@@ -35,6 +39,11 @@ export interface Occurrence {
   location: string;
   description: string;
   status: OccurrenceStatus;
-  createdAt: Timestamp;
+  createdAt: Timestamp | any; // 'any' ajuda com serverTimestamp() do Firebase
   reporterPhone: string;
+  reporterName?: string; // Adicionado para o novo formulário
+  // NOVOS CAMPOS PARA O MAPA:
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;    // Adicionado para suportar fotos nas ocorrências
 }
