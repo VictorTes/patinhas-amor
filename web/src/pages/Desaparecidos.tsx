@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Animal } from '../types';
-import { getAnimalsByStatus } from '../services/firestore';
+import { getAnimalsByStatus } from '../services/firebaseService';
 import { AnimalGrid } from '../components/AnimalGrid';
 
 export function Desaparecidos() {
