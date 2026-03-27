@@ -13,7 +13,7 @@ export function Adocao() {
   // Estado para o Animal Selecionado (Modal)
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
 
-  // --- ALTERE O NÚMERO ABAIXO ---
+  // --- ALTERE O NÚMERO ABAIXO PARA O WHATSAPP DA ONG ---
   const ONG_PHONE = "5500000000000"; 
 
   useEffect(() => {
@@ -81,8 +81,8 @@ export function Adocao() {
         ) : (
           <AnimalGrid
             animals={filteredAnimals}
-            onAnimalClick={(animal) => setSelectedAnimal(animal)} // Clique no card: abre modal
-            onAdoptClick={handleAdoptClick} // <--- ADICIONE ESTA LINHA: Clique no botão: vai pro WhatsApp
+            onAnimalClick={(animal) => setSelectedAnimal(animal)}
+            onAdoptClick={handleAdoptClick}
             emptyMessage="Nenhum animal encontrado com os filtros selecionados."
           />
         )}
@@ -90,44 +90,57 @@ export function Adocao() {
 
       {/* MODAL DE DETALHES */}
       {selectedAnimal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="relative h-64 sm:h-80">
-              <img src={selectedAnimal.imageUrl} alt={selectedAnimal.name} className="w-full h-full object-cover" />
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedAnimal(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Área da Imagem Quadrada */}
+            <div className="relative aspect-square bg-slate-100">
+              <img 
+                src={selectedAnimal.imageUrl} 
+                alt={selectedAnimal.name} 
+                className="w-full h-full object-cover" 
+              />
               <button 
                 onClick={() => setSelectedAnimal(null)}
-                className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+                className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
               >
                 ✕
               </button>
             </div>
             
-            <div className="p-6 sm:p-8">
+            <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h2 className="text-3xl font-bold text-slate-800">{selectedAnimal.name}</h2>
-                  <p className="text-orange-600 font-medium">{selectedAnimal.species} • {selectedAnimal.sex}</p>
+                  <p className="text-orange-600 font-medium">
+                    {selectedAnimal.species} • {selectedAnimal.sex}
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-3 gap-3 mb-6">
                 <div className="bg-slate-50 p-3 rounded-2xl text-center">
-                  <p className="text-xs text-slate-500 uppercase font-bold">Idade</p>
-                  <p className="text-slate-800 font-semibold">{selectedAnimal.age} Anos</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Idade</p>
+                  <p className="text-slate-800 font-semibold text-sm">{selectedAnimal.age} Anos</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-2xl text-center">
-                  <p className="text-xs text-slate-500 uppercase font-bold">Porte</p>
-                  <p className="text-slate-800 font-semibold">{selectedAnimal.size}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Porte</p>
+                  <p className="text-slate-800 font-semibold text-sm">{selectedAnimal.size}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-2xl text-center">
-                  <p className="text-xs text-slate-500 uppercase font-bold">Sexo</p>
-                  <p className="text-slate-800 font-semibold">{selectedAnimal.sex}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Sexo</p>
+                  <p className="text-slate-800 font-semibold text-sm">{selectedAnimal.sex}</p>
                 </div>
               </div>
 
-              <div className="mb-8">
-                <h4 className="font-bold text-slate-800 mb-2">Sobre o animal</h4>
-                <p className="text-slate-600 leading-relaxed">{selectedAnimal.description}</p>
+              <div className="mb-6">
+                <h4 className="font-bold text-slate-800 mb-1 text-sm uppercase tracking-wide">Sobre</h4>
+                <p className="text-slate-600 text-sm leading-relaxed">{selectedAnimal.description}</p>
               </div>
 
               <button
