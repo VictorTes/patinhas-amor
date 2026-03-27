@@ -4,7 +4,8 @@ import { AnimalCard } from './AnimalCard';
 interface AnimalGridProps {
   animals: Animal[];
   variant?: 'default' | 'urgent';
-  onAnimalClick?: (animal: Animal) => void;
+  onAnimalClick?: (animal: Animal) => void; // Abre o Modal
+  onAdoptClick?: (animal: Animal) => void;  // Vai direto pro Whats
   emptyMessage?: string;
   columns?: 2 | 3 | 4;
 }
@@ -13,6 +14,7 @@ export function AnimalGrid({
   animals,
   variant = 'default',
   onAnimalClick,
+  onAdoptClick,
   emptyMessage = 'Nenhum animal encontrado.',
   columns = 4,
 }: AnimalGridProps) {
@@ -29,9 +31,6 @@ export function AnimalGrid({
           <span className="text-4xl">🐾</span>
         </div>
         <p className="text-slate-500 text-lg font-medium mb-2">{emptyMessage}</p>
-        <p className="text-slate-400 text-sm">
-          Volte em breve para ver novos animais disponíveis!
-        </p>
       </div>
     );
   }
@@ -44,6 +43,7 @@ export function AnimalGrid({
           animal={animal}
           variant={variant}
           onClick={onAnimalClick}
+          onAdopt={onAdoptClick} // Nova prop
         />
       ))}
     </div>

@@ -50,6 +50,8 @@ function parseAnimalDoc(doc: { id: string; data: () => DocumentData }): Animal {
     size: data.size || 'Médio',
     adopterName: data.adopterName,
     adopterPhone: data.adopterPhone,
+    age: data.age,
+
   } as Animal;
 }
 

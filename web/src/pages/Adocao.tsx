@@ -9,6 +9,12 @@ export function Adocao() {
   const [loading, setLoading] = useState(true);
   const [selectedSpecies, setSelectedSpecies] = useState<string>('all');
   const [selectedSex, setSelectedSex] = useState<string>('all');
+  
+  // Estado para o Animal Selecionado (Modal)
+  const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
+
+  // --- ALTERE O NÚMERO ABAIXO ---
+  const ONG_PHONE = "5500000000000"; 
 
   useEffect(() => {
     async function fetchAnimals() {
@@ -22,27 +28,26 @@ export function Adocao() {
         setLoading(false);
       }
     }
-
     fetchAnimals();
   }, []);
 
   useEffect(() => {
     let filtered = animals;
-
     if (selectedSpecies !== 'all') {
-      filtered = filtered.filter(
-        (animal) => animal.species.toLowerCase() === selectedSpecies.toLowerCase()
-      );
+      filtered = filtered.filter(a => a.species.toLowerCase() === selectedSpecies.toLowerCase());
     }
-
     if (selectedSex !== 'all') {
-      filtered = filtered.filter(
-        (animal) => animal.sex.toLowerCase() === selectedSex.toLowerCase()
-      );
+      filtered = filtered.filter(a => a.sex.toLowerCase() === selectedSex.toLowerCase());
     }
-
     setFilteredAnimals(filtered);
   }, [selectedSpecies, selectedSex, animals]);
+
+  // Função que abre o WhatsApp
+  const handleAdoptClick = (animal: Animal) => {
+    const message = `Olá! Vi o(a) ${animal.name} no site Patinhas e Amor. Ele(a) é um ${animal.species} ${animal.sex} de porte ${animal.size} e gostaria de saber mais sobre a adoção!`;
+    const whatsappUrl = `https://wa.me/${ONG_PHONE}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -54,50 +59,87 @@ export function Adocao() {
           Encontre seu novo melhor amigo! Todos esses animais estão esperando por um lar amoroso.
         </p>
 
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-8 flex flex-wrap gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Espécie
-            </label>
-            <select
-              value={selectedSpecies}
-              onChange={(e) => setSelectedSpecies(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="all">Todas</option>
-              <option value="cão">Cão</option>
-              <option value="gato">Gato</option>
-            </select>
-          </div>
+        {/* Filtros */}
+        <div className="bg-white p-4 rounded-xl shadow-sm mb-8 flex flex-wrap gap-4">
+          <select value={selectedSpecies} onChange={(e) => setSelectedSpecies(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2">
+            <option value="all">Todas as Espécies</option>
+            <option value="cachorro">Cães</option>
+            <option value="gato">Gatos</option>
+          </select>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Sexo
-            </label>
-            <select
-              value={selectedSex}
-              onChange={(e) => setSelectedSex(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="all">Todos</option>
-              <option value="macho">Macho</option>
-              <option value="fêmea">Fêmea</option>
-            </select>
-          </div>
+          <select value={selectedSex} onChange={(e) => setSelectedSex(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2">
+            <option value="all">Todos os Sexos</option>
+            <option value="macho">Macho</option>
+            <option value="fêmea">Fêmea</option>
+          </select>
         </div>
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
           </div>
         ) : (
           <AnimalGrid
             animals={filteredAnimals}
+            onAnimalClick={(animal) => setSelectedAnimal(animal)} // Clique no card: abre modal
+            onAdoptClick={handleAdoptClick} // <--- ADICIONE ESTA LINHA: Clique no botão: vai pro WhatsApp
             emptyMessage="Nenhum animal encontrado com os filtros selecionados."
           />
         )}
       </div>
+
+      {/* MODAL DE DETALHES */}
+      {selectedAnimal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="relative h-64 sm:h-80">
+              <img src={selectedAnimal.imageUrl} alt={selectedAnimal.name} className="w-full h-full object-cover" />
+              <button 
+                onClick={() => setSelectedAnimal(null)}
+                className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-6 sm:p-8">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-slate-800">{selectedAnimal.name}</h2>
+                  <p className="text-orange-600 font-medium">{selectedAnimal.species} • {selectedAnimal.sex}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-slate-50 p-3 rounded-2xl text-center">
+                  <p className="text-xs text-slate-500 uppercase font-bold">Idade</p>
+                  <p className="text-slate-800 font-semibold">{selectedAnimal.age} Anos</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-2xl text-center">
+                  <p className="text-xs text-slate-500 uppercase font-bold">Porte</p>
+                  <p className="text-slate-800 font-semibold">{selectedAnimal.size}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-2xl text-center">
+                  <p className="text-xs text-slate-500 uppercase font-bold">Sexo</p>
+                  <p className="text-slate-800 font-semibold">{selectedAnimal.sex}</p>
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h4 className="font-bold text-slate-800 mb-2">Sobre o animal</h4>
+                <p className="text-slate-600 leading-relaxed">{selectedAnimal.description}</p>
+              </div>
+
+              <button
+                onClick={() => handleAdoptClick(selectedAnimal)}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-orange-200 transition-all active:scale-[0.98]"
+              >
+                Quero Adotar o(a) {selectedAnimal.name}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

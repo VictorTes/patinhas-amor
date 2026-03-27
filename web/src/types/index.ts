@@ -21,6 +21,7 @@ export interface Animal {
   imageUrl: string;
   rescueDate: Timestamp;
   currentLocation: string;
+  age: String;
   sex: AnimalSex;
   size: AnimalSize;
   adopterName?: string;
