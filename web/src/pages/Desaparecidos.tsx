@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import type { Animal } from '../types';
 import { getAnimalsByStatus, ANIMAL_PLACEHOLDER_IMAGE } from '../services/firebaseService';
 import { AnimalGrid } from '../components/AnimalGrid';
+import { formatPhoneNumber } from '../utils/formatPhoneNumber'
+
 
 export function Desaparecidos() {
   const [animals, setAnimals] = useState<Animal[]>([]);
@@ -124,7 +126,7 @@ export function Desaparecidos() {
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Contato do tutor:</p>
-                      <p className="text-lg font-bold text-slate-800 tracking-tight">{selectedAnimal.adopterPhone}</p>
+                      <p className="text-lg font-bold text-slate-800 tracking-tight">{formatPhoneNumber(selectedAnimal.adopterPhone)}</p>
                     </div>
                   </div>
                   

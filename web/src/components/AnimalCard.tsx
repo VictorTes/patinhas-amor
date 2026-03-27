@@ -1,5 +1,6 @@
 import type { Animal } from '../types';
 import { formatRescueDate, ANIMAL_PLACEHOLDER_IMAGE } from '../services/firebaseService';
+import { formatPhoneNumber } from '../utils/formatPhoneNumber'
 
 interface AnimalCardProps {
   animal: Animal;
@@ -137,7 +138,7 @@ export function AnimalCard({
         {isUrgent && animal.adopterPhone && (
           <div className="mt-4 p-3 bg-red-50 rounded-xl border border-red-100">
             <p className="text-red-700 text-sm font-bold flex items-center gap-2">
-              📞 Contato: {animal.adopterPhone}
+              📞 Contato: {formatPhoneNumber(animal.adopterPhone)}
             </p>
           </div>
         )}
