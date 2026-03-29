@@ -4,12 +4,9 @@ import { getAnimalsByStatus, ANIMAL_PLACEHOLDER_IMAGE } from '../services/fireba
 import { AnimalGrid } from '../components/AnimalGrid';
 import { formatPhoneNumber } from '../utils/formatPhoneNumber'
 
-
 export function Desaparecidos() {
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Estado para controlar qual animal está sendo visualizado no Modal
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
 
   useEffect(() => {
@@ -23,38 +20,42 @@ export function Desaparecidos() {
         setLoading(false);
       }
     }
-
     fetchAnimals();
   }, []);
 
   return (
-    <div className="min-h-screen bg-red-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white border-l-4 border-red-500 p-6 mb-8 rounded-r-2xl shadow-sm">
-          <h1 className="text-3xl md:text-4xl font-bold text-red-900 mb-2 flex items-center gap-3">
-            <span className="animate-pulse">⚠️</span> Animais Desaparecidos
-          </h1>
-          <p className="text-red-700 text-lg">
-            Esses animais estão longe de casa. Se você tiver **qualquer** informação, 
-            por favor, entre em contato pelo telefone disponível no card ou nos detalhes.
-          </p>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+    /* AJUSTE 1: Container principal como Flexbox vertical e altura mínima da tela */
+    <div className="min-h-screen flex flex-col bg-red-50">
+      
+      {/* AJUSTE 2: Main com flex-grow para empurrar o footer para baixo */}
+      <main className="flex-grow py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white border-l-4 border-red-500 p-6 mb-8 rounded-r-2xl shadow-sm">
+            <h1 className="text-3xl md:text-4xl font-bold text-red-900 mb-2 flex items-center gap-3">
+              <span className="animate-pulse">⚠️</span> Animais Desaparecidos
+            </h1>
+            <p className="text-red-700 text-lg">
+              Esses animais estão longe de casa. Se você tiver **qualquer** informação, 
+              por favor, entre em contato pelo telefone disponível no card ou nos detalhes.
+            </p>
           </div>
-        ) : (
-          <AnimalGrid
-            animals={animals}
-            variant="urgent"
-            onAnimalClick={(animal) => setSelectedAnimal(animal)}
-            emptyMessage="Nenhum animal desaparecido cadastrado no momento."
-          />
-        )}
-      </div>
 
-      {/* MODAL DE DETALHES */}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+            </div>
+          ) : (
+            <AnimalGrid
+              animals={animals}
+              variant="urgent"
+              onAnimalClick={(animal) => setSelectedAnimal(animal)}
+              emptyMessage="Nenhum animal desaparecido cadastrado no momento."
+            />
+          )}
+        </div>
+      </main>
+
+      {/* MODAL DE DETALHES (Permanece igual) */}
       {selectedAnimal && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -64,7 +65,6 @@ export function Desaparecidos() {
             className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Área da Imagem - Proporção Quadrada (1:1) */}
             <div className="relative aspect-square bg-slate-100 overflow-hidden">
               <img 
                 src={selectedAnimal.imageUrl || ANIMAL_PLACEHOLDER_IMAGE} 
@@ -74,8 +74,6 @@ export function Desaparecidos() {
                   (e.target as HTMLImageElement).src = ANIMAL_PLACEHOLDER_IMAGE;
                 }}
               />
-              
-              {/* Botão Fechar */}
               <button 
                 onClick={() => setSelectedAnimal(null)}
                 className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all group z-10"
@@ -84,13 +82,11 @@ export function Desaparecidos() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-
               <div className="absolute bottom-4 left-4 bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2">
                 <span className="animate-ping w-2 h-2 bg-white rounded-full"></span> DESAPARECIDO
               </div>
             </div>
             
-            {/* Área de Conteúdo */}
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -104,7 +100,6 @@ export function Desaparecidos() {
                 </div>
               </div>
 
-              {/* Informações */}
               <div className="mb-5">
                 <h4 className="font-bold text-slate-800 mb-2 flex items-center gap-2 text-xs uppercase tracking-wide">
                   <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +112,6 @@ export function Desaparecidos() {
                 </div>
               </div>
 
-              {/* CONTATO */}
               {selectedAnimal.adopterPhone && (
                 <div className="bg-white p-4 rounded-2xl border-2 border-dashed border-red-200 flex flex-col gap-4">
                   <div className="flex items-center gap-3">
@@ -129,7 +123,6 @@ export function Desaparecidos() {
                       <p className="text-lg font-bold text-slate-800 tracking-tight">{formatPhoneNumber(selectedAnimal.adopterPhone)}</p>
                     </div>
                   </div>
-                  
                   <a 
                     href={`tel:${selectedAnimal.adopterPhone.replace(/\D/g, '')}`} 
                     className="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all text-center shadow-md active:scale-95 text-sm"
@@ -142,6 +135,20 @@ export function Desaparecidos() {
           </div>
         </div>
       )}
+
+      {/* Footer (fixo na base graças ao flex-grow do main acima) */}
+      <footer className="bg-slate-900 text-slate-400 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-2xl">🐾</span>
+            <span className="text-xl font-bold text-white">Patinhas e Amor</span>
+          </div>
+          <p className="text-sm">
+            ONG dedicada ao resgate e adoção de animais abandonados.
+          </p>
+          <p className="text-sm mt-2">© 2025 Patinhas e Amor. Todos os direitos reservados.</p>
+        </div>
+      </footer>
     </div>
   );
 }

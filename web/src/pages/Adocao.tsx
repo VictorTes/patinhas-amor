@@ -9,11 +9,8 @@ export function Adocao() {
   const [loading, setLoading] = useState(true);
   const [selectedSpecies, setSelectedSpecies] = useState<string>('all');
   const [selectedSex, setSelectedSex] = useState<string>('all');
-  
-  // Estado para o Animal Selecionado (Modal)
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
 
-  // --- ALTERE O NÚMERO ABAIXO PARA O WHATSAPP DA ONG ---
   const ONG_PHONE = "5500000000000"; 
 
   useEffect(() => {
@@ -42,7 +39,6 @@ export function Adocao() {
     setFilteredAnimals(filtered);
   }, [selectedSpecies, selectedSex, animals]);
 
-  // Função que abre o WhatsApp
   const handleAdoptClick = (animal: Animal) => {
     const message = `Olá! Vi o(a) ${animal.name} no site Patinhas e Amor. Ele(a) é um ${animal.species} ${animal.sex} de porte ${animal.size} e gostaria de saber mais sobre a adoção!`;
     const whatsappUrl = `https://wa.me/${ONG_PHONE}?text=${encodeURIComponent(message)}`;
@@ -50,45 +46,56 @@ export function Adocao() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-          🐕 Animais para Adoção
-        </h1>
-        <p className="text-gray-600 mb-8">
-          Encontre seu novo melhor amigo! Todos esses animais estão esperando por um lar amoroso.
-        </p>
+    /* MUDANÇA CHAVE 1:
+       'min-h-screen flex flex-col' garante que a div ocupe toda a altura da tela 
+       e permita que os filhos se organizem em coluna.
+    */
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      
+      {/* MUDANÇA CHAVE 2:
+         'flex-grow' faz com que esta div principal "estique" para ocupar todo 
+         o espaço disponível, empurrando o footer para o final.
+      */}
+      <main className="flex-grow py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+            🐕 Animais para Adoção
+          </h1>
+          <p className="text-gray-600 mb-8">
+            Encontre seu novo melhor amigo! Todos esses animais estão esperando por um lar amoroso.
+          </p>
 
-        {/* Filtros */}
-        <div className="bg-white p-4 rounded-xl shadow-sm mb-8 flex flex-wrap gap-4">
-          <select value={selectedSpecies} onChange={(e) => setSelectedSpecies(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2">
-            <option value="all">Todas as Espécies</option>
-            <option value="cachorro">Cães</option>
-            <option value="gato">Gatos</option>
-          </select>
+          {/* Filtros */}
+          <div className="bg-white p-4 rounded-xl shadow-sm mb-8 flex flex-wrap gap-4">
+            <select value={selectedSpecies} onChange={(e) => setSelectedSpecies(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2">
+              <option value="all">Todas as Espécies</option>
+              <option value="cachorro">Cães</option>
+              <option value="gato">Gatos</option>
+            </select>
 
-          <select value={selectedSex} onChange={(e) => setSelectedSex(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2">
-            <option value="all">Todos os Sexos</option>
-            <option value="macho">Macho</option>
-            <option value="fêmea">Fêmea</option>
-          </select>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
+            <select value={selectedSex} onChange={(e) => setSelectedSex(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2">
+              <option value="all">Todos os Sexos</option>
+              <option value="macho">Macho</option>
+              <option value="fêmea">Fêmea</option>
+            </select>
           </div>
-        ) : (
-          <AnimalGrid
-            animals={filteredAnimals}
-            onAnimalClick={(animal) => setSelectedAnimal(animal)}
-            onAdoptClick={handleAdoptClick}
-            emptyMessage="Nenhum animal encontrado com os filtros selecionados."
-          />
-        )}
-      </div>
 
-      {/* MODAL DE DETALHES */}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
+            </div>
+          ) : (
+            <AnimalGrid
+              animals={filteredAnimals}
+              onAnimalClick={(animal) => setSelectedAnimal(animal)}
+              onAdoptClick={handleAdoptClick}
+              emptyMessage="Nenhum animal encontrado com os filtros selecionados."
+            />
+          )}
+        </div>
+      </main>
+
+      {/* MODAL DE DETALHES (Permanece igual) */}
       {selectedAnimal && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -98,7 +105,6 @@ export function Adocao() {
             className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Área da Imagem Quadrada */}
             <div className="relative aspect-square bg-slate-100">
               <img 
                 src={selectedAnimal.imageUrl} 
@@ -153,6 +159,20 @@ export function Adocao() {
           </div>
         </div>
       )}
+
+      {/* Footer agora sempre ficará na base */}
+      <footer className="bg-slate-900 text-slate-400 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-2xl">🐾</span>
+            <span className="text-xl font-bold text-white">Patinhas e Amor</span>
+          </div>
+          <p className="text-sm">
+            ONG dedicada ao resgate e adoção de animais abandonados.
+          </p>
+          <p className="text-sm mt-2">© 2025 Patinhas e Amor. Todos os direitos reservados.</p>
+        </div>
+      </footer>
     </div>
   );
 }
