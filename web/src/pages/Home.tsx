@@ -90,7 +90,7 @@ export function Home() {
                 to="/registrar-ocorrencia"
                 className="inline-flex items-center justify-center gap-2 bg-orange-700/50 backdrop-blur-sm text-white border border-white/30 px-8 py-4 rounded-full font-semibold text-lg hover:bg-orange-700/70 hover:scale-105 transition-all duration-200"
               >
-                🚨 Fazer Denúncia
+                🚨 Registrar ocorrência
               </Link>
             </div>
           </div>
@@ -226,18 +226,18 @@ export function Home() {
               },
               {
                 icon: '🚨',
-                title: 'Denuncie',
+                title: 'Ocorrências',
                 description:
-                  'Avise-nos sobre animais em situação de risco, abandono ou maus tratos.',
+                  'Avise-nos sobre animais em situação de risco, abandono, maus tratos ou desaparecimento.',
                 link: '/registrar-ocorrencia',
-                linkText: 'Fazer denúncia',
+                linkText: 'Fazer ocorrência',
                 color: 'red',
               },
               {
                 icon: '📢',
                 title: 'Divulgue',
                 description:
-                  'Compartilhe nossos animais desaparecidos e ajude a reunir famílias.',
+                  'Compartilhe os animais desaparecidos e ajude a reunir famílias.',
                 link: '/desaparecidos',
                 linkText: 'Ver desaparecidos',
                 color: 'blue',
@@ -280,7 +280,6 @@ export function Home() {
         </div>
       </section>
 
-      {/* Footer simples */}
       <footer className="bg-slate-900 text-slate-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
