@@ -450,7 +450,7 @@ export function RegistrarOcorrencia() {
           <p className="text-sm">
             ONG dedicada ao resgate e adoção de animais abandonados.
           </p>
-          <p className="text-sm mt-2">© 2025 Patinhas e Amor. Todos os direitos reservados.</p>
+          <p className="text-sm mt-2">© 2026 Patinhas e Amor. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>
