@@ -40,6 +40,8 @@ export function Header() {
     { path: '/adocao', label: 'Adoção', icon: '🐾' },
     { path: '/desaparecidos', label: 'Desaparecidos', icon: '🔍' },
     { path: '/registrar-ocorrencia', label: 'Registrar Ocorrência', icon: '🚨' },
+    { path: '/sobre', label: 'Sobre', icon: 'ℹ️' },
+
   ];
 
   return (
