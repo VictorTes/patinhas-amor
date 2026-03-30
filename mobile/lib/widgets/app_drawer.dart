@@ -3,7 +3,7 @@ import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/volunteer_register_screen.dart';
-import 'package:patinhas_amor/screens/UserManagementScreen.dart';
+import 'package:patinhas_amor/screens/user_management_screen.dart';
 import 'package:patinhas_amor/screens/moderation_list_screen.dart'; // Import da nova tela
 
 class AppDrawer extends StatelessWidget {

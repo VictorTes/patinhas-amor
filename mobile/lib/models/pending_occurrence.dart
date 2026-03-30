@@ -28,19 +28,28 @@ class PendingOccurrence {
   });
 
   factory PendingOccurrence.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    // Pegamos os dados, mas usamos um Map vazio caso o documento esteja nulo por algum erro
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
     return PendingOccurrence(
       id: doc.id,
-      description: data['description'] ?? '',
-      imageUrl: data['imageUrl'] ?? '',
-      location: data['location'] ?? '',
-      reporterName: data['reporterName'] ?? '',
-      reporterPhone: data['reporterPhone'] ?? '',
-      type: data['type'] ?? '',
-      latitude: (data['latitude'] as num).toDouble(),
-      longitude: (data['longitude'] as num).toDouble(),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      status: data['status'] ?? 'pending',
+      description: data['description']?.toString() ?? '',
+      imageUrl: data['imageUrl']?.toString() ?? '',
+      location: data['location']?.toString() ?? '',
+      reporterName: data['reporterName']?.toString() ?? 'Anônimo',
+      reporterPhone: data['reporterPhone']?.toString() ?? '',
+      type: data['type']?.toString() ?? 'Geral',
+      
+      // TRATAMENTO PARA NÚMEROS (Evita o erro 'Null is not a subtype of num')
+      latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
+      
+      // TRATAMENTO PARA DATA (Usa a data atual caso o campo createdAt falhe)
+      createdAt: data['createdAt'] is Timestamp 
+          ? (data['createdAt'] as Timestamp).toDate() 
+          : DateTime.now(),
+          
+      status: data['status']?.toString() ?? 'pending',
     );
   }
 }
