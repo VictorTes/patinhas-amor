@@ -225,7 +225,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildReportSection("Todos os Animais na ONG", "na_ong"),
+        _buildReportSection("Todos os Animais na ONG (não adotados e não desaparecidos)", "na_ong"),
         _buildReportSection("Animais Adotados", "adotados"),
         _buildReportSection("Animais Desaparecidos", "desaparecidos"),
         _buildReportSection("Animais Disponíveis", "disponiveis"),
