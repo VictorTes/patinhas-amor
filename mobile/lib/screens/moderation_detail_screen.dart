@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/pending_occurrence.dart';
 import '../../services/moderation_service.dart';
+import '../../widgets/role_guard.dart'; // Import para proteção
 
 class ModerationDetailScreen extends StatefulWidget {
   final PendingOccurrence occurrence;
@@ -32,22 +33,53 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
     super.dispose();
   }
 
-  // Função para abrir o aplicativo de mapas do celular
+  // Função corrigida para abrir o GPS do celular nas coordenadas exatas
   Future<void> _openMap() async {
     final lat = widget.occurrence.latitude;
     final lng = widget.occurrence.longitude;
-    final Uri url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+    // Tenta abrir no Google Maps (Android/iOS) ou Apple Maps (iOS)
+    final Uri googleMapsUrl = Uri.parse("google.navigation:q=$lat,$lng");
+    final Uri genericMapUrl = Uri.parse("geo:$lat,$lng?q=$lat,$lng");
+
+    try {
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl);
+      } else if (await canLaunchUrl(genericMapUrl)) {
+        await launchUrl(genericMapUrl);
+      } else {
+        throw 'Não foi possível abrir o mapa.';
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível abrir o mapa.')),
+          SnackBar(content: Text(e.toString())),
         );
       }
     }
   }
 
   Future<void> _handleAction(bool isApprove) async {
+    // Confirmação para evitar cliques acidentais
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isApprove ? "Aprovar Ocorrência?" : "Recusar Ocorrência?"),
+        content: Text(isApprove 
+          ? "A ocorrência ficará visível para todos os usuários." 
+          : "Esta ocorrência será excluída permanentemente."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: Text(isApprove ? "Aprovar" : "Recusar", style: TextStyle(color: isApprove ? Colors.green : Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     setState(() => _isLoading = true);
     try {
       if (isApprove) {
@@ -58,7 +90,12 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
       } else {
         await _service.rejectOccurrence(widget.occurrence.id);
       }
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(isApprove ? "Aprovada com sucesso!" : "Recusada com sucesso!")),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -72,120 +109,133 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Detalhes da Ocorrência"),
-        backgroundColor: Colors.orange[800],
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Imagem da Ocorrência
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    widget.occurrence.imageUrl,
-                    height: 250,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => 
-                      Container(
-                        height: 250,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image_not_supported, size: 50),
-                      ),
+    return RoleGuard(
+      // Proteção extra caso alguém tente forçar a rota
+      fallback: const Scaffold(body: Center(child: Text("Acesso Negado"))),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Detalhes da Ocorrência"),
+          backgroundColor: Colors.orange[800],
+        ),
+        body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Imagem da Ocorrência
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      widget.occurrence.imageUrl,
+                      height: 250,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => 
+                        Container(
+                          height: 250,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.image_not_supported, size: 50),
+                        ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // Card de Informações do Relator
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
+                  // Dados do Relator
+                  Card(
+                    elevation: 0,
+                    color: Colors.orange[50],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.orange.shade200),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Tipo: ${widget.occurrence.type}", 
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.orange)),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          Text("Reportado por: ${widget.occurrence.reporterName}"),
+                          const SizedBox(height: 4),
+                          Text("Telefone: ${widget.occurrence.reporterPhone}"),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 20),
+
+                  // Campos para o Admin Corrigir Textos
+                  TextField(
+                    controller: _descController, 
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: "Descrição (Você pode ajustar o texto)",
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  TextField(
+                    controller: _locController, 
+                    decoration: const InputDecoration(
+                      labelText: "Referência de Localização",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Botão de Mapa
+                  ElevatedButton.icon(
+                    onPressed: _openMap,
+                    icon: const Icon(Icons.location_on),
+                    label: const Text("Abrir no GPS (Ver local exato)"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Botões de Ação
+                  Row(
                     children: [
-                      Text("Tipo: ${widget.occurrence.type}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Text("Reportado por: ${widget.occurrence.reporterName}"),
-                      Text("Telefone: ${widget.occurrence.reporterPhone}"),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            foregroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: () => _handleAction(false),
+                          icon: const Icon(Icons.close),
+                          label: const Text("Recusar"),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: () => _handleAction(true),
+                          icon: const Icon(Icons.check),
+                          label: const Text("Aprovar"),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 20),
-
-                // Campos Editáveis
-                TextField(
-                  controller: _descController, 
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: "Descrição (Editável)",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                TextField(
-                  controller: _locController, 
-                  decoration: const InputDecoration(
-                    labelText: "Localização de Referência (Editável)",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Botão de Mapa
-                OutlinedButton.icon(
-                  onPressed: _openMap,
-                  icon: const Icon(Icons.map),
-                  label: const Text("Ver Coordenadas no Mapa"),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Botões de Ação
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[50],
-                          foregroundColor: Colors.red,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        onPressed: () => _handleAction(false),
-                        icon: const Icon(Icons.close),
-                        label: const Text("Recusar"),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        onPressed: () => _handleAction(true),
-                        icon: const Icon(Icons.check),
-                        label: const Text("Aprovar"),
-                      ),
-                    ),
-                  ],
-                )
-              ],
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
-          ),
+      ),
     );
   }
 }
