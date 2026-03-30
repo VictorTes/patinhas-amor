@@ -3,7 +3,8 @@ import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/volunteer_register_screen.dart';
-import 'package:patinhas_amor/screens/UserManagementScreen.dart'; // Importe a nova tela
+import 'package:patinhas_amor/screens/UserManagementScreen.dart';
+import 'package:patinhas_amor/screens/moderation_list_screen.dart'; // Import da nova tela
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -98,7 +99,23 @@ class AppDrawer extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // OPÇÃO 1: CADASTRAR NOVO
+                    
+                    // NOVA OPÇÃO: MODERAÇÃO DE OCORRÊNCIAS
+                    ListTile(
+                      leading: const Icon(Icons.fact_check_outlined,
+                          color: Colors.orange),
+                      title: const Text('Moderar Ocorrências'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>  ModerationListScreen()),
+                        );
+                      },
+                    ),
+
+                    // OPÇÃO: CADASTRAR NOVO VOLUNTÁRIO
                     ListTile(
                       leading: const Icon(Icons.person_add_alt_1_outlined,
                           color: Colors.blueAccent),
@@ -113,7 +130,8 @@ class AppDrawer extends StatelessWidget {
                         );
                       },
                     ),
-                    // OPÇÃO 2: GERENCIAR EXISTENTES
+
+                    // OPÇÃO: GERENCIAR EXISTENTES
                     ListTile(
                       leading: const Icon(Icons.manage_accounts_outlined,
                           color: Colors.indigo),
