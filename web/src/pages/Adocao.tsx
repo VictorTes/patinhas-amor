@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import type { Animal } from '../types';
-import { getAnimalsByStatus } from '../services/firebaseService';
+import { getAnimalsByStatus, ANIMAL_PLACEHOLDER_IMAGE } from '../services/firebaseService';
 import { AnimalGrid } from '../components/AnimalGrid';
 import { FadeIn } from '../components/FadeIn';
 
@@ -47,6 +48,27 @@ export function Adocao() {
     window.open(whatsappUrl, '_blank');
   };
 
+  // Variantes otimizadas (GPU accelerated)
+  const modalVariants: Variants = {
+    hidden: { 
+      opacity: 0, 
+      y: 15,
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        duration: 0.25,
+        ease: [0.4, 0, 0.2, 1] 
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      y: 10,
+      transition: { duration: 0.15 } 
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-grow py-8">
@@ -64,7 +86,7 @@ export function Adocao() {
             </p>
           </FadeIn>
 
-          {/* Filtros com Animação */}
+          {/* Filtros */}
           <FadeIn direction="up" delay={0.2}>
             <div className="bg-white p-4 rounded-2xl shadow-sm mb-8 flex flex-wrap gap-4 border border-gray-100">
               <div className="flex flex-col gap-1">
@@ -97,103 +119,99 @@ export function Adocao() {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                className="h-12 w-12 border-4 border-orange-600 border-t-transparent rounded-full mb-4"
-              />
-              <p className="text-gray-500 animate-pulse">Buscando amiguinhos...</p>
+              <div className="h-12 w-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-gray-500 animate-pulse italic">Buscando amiguinhos...</p>
             </div>
           ) : (
-            <motion.div
-              layout
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
+            <FadeIn delay={0.2}>
               <AnimalGrid
                 animals={filteredAnimals}
                 onAnimalClick={(animal) => setSelectedAnimal(animal)}
                 onAdoptClick={handleAdoptClick}
                 emptyMessage="Nenhum animal encontrado com os filtros selecionados."
               />
-            </motion.div>
+            </FadeIn>
           )}
         </div>
       </main>
 
-      {/* MODAL DE DETALHES ANIMADO */}
       <AnimatePresence>
         {selectedAnimal && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setSelectedAnimal(null)}
-          >
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Overlay - Sem blur para manter 60 FPS */}
             <motion.div 
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedAnimal(null)}
+              className="absolute inset-0 bg-slate-900/60"
+            />
+
+            {/* Modal Card - GPU Accelerated */}
+            <motion.div 
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden transform-gpu will-change-transform"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative aspect-square bg-slate-100">
                 <img 
-                  src={selectedAnimal.imageUrl} 
+                  src={selectedAnimal.imageUrl || ANIMAL_PLACEHOLDER_IMAGE} 
                   alt={selectedAnimal.name} 
                   className="w-full h-full object-cover" 
                 />
                 <button 
                   onClick={() => setSelectedAnimal(null)}
-                  className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+                  className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all z-10"
                 >
                   ✕
                 </button>
               </div>
               
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
+              <div className="p-6 md:p-8 max-h-[60vh] overflow-y-auto scrollbar-hide">
+                <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className="text-3xl font-bold text-slate-800">{selectedAnimal.name}</h2>
-                    <p className="text-orange-600 font-medium">
+                    <h2 className="text-3xl font-black text-slate-800 uppercase leading-none mb-1">{selectedAnimal.name}</h2>
+                    <p className="text-orange-600 font-bold text-sm">
                       {selectedAnimal.species} • {selectedAnimal.sex}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-slate-50 p-3 rounded-2xl text-center">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Idade</p>
-                    <p className="text-slate-800 font-semibold text-sm">{selectedAnimal.age} Anos</p>
+                <div className="grid grid-cols-3 gap-2 mb-8">
+                  <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100">
+                    <p className="text-[9px] text-slate-400 uppercase font-black tracking-wider">Idade</p>
+                    <p className="text-slate-800 font-bold text-xs">{selectedAnimal.age} Anos</p>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-2xl text-center">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Porte</p>
-                    <p className="text-slate-800 font-semibold text-sm">{selectedAnimal.size}</p>
+                  <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100">
+                    <p className="text-[9px] text-slate-400 uppercase font-black tracking-wider">Porte</p>
+                    <p className="text-slate-800 font-bold text-xs">{selectedAnimal.size}</p>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-2xl text-center">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Sexo</p>
-                    <p className="text-slate-800 font-semibold text-sm">{selectedAnimal.sex}</p>
+                  <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100">
+                    <p className="text-[9px] text-slate-400 uppercase font-black tracking-wider">Sexo</p>
+                    <p className="text-slate-800 font-bold text-xs">{selectedAnimal.sex}</p>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <h4 className="font-bold text-slate-800 mb-1 text-sm uppercase tracking-wide">Sobre</h4>
-                  <p className="text-slate-600 text-sm leading-relaxed">{selectedAnimal.description}</p>
+                <div className="mb-8">
+                  <h4 className="font-black text-slate-400 text-[10px] uppercase tracking-[0.2em] mb-2">Sobre</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed italic">
+                    "{selectedAnimal.description || "Sem descrição disponível."}"
+                  </p>
                 </div>
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleAdoptClick(selectedAnimal)}
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-orange-200 transition-all"
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-100 transition-all"
                 >
-                  Quero Adotar o(a) {selectedAnimal.name}
+                  Quero Adotar
                 </motion.button>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -201,12 +219,11 @@ export function Adocao() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <span className="text-2xl">🐾</span>
-            <span className="text-xl font-bold text-white">Patinhas e Amor</span>
+            <span className="text-xl font-bold text-white uppercase tracking-tighter">Patinhas e Amor</span>
           </div>
-          <p className="text-sm">
-            ONG dedicada ao resgate e adoção de animais abandonados.
+          <p className="text-[10px] uppercase tracking-widest opacity-60 mt-4 italic">
+            © 2026 • Porto União
           </p>
-          <p className="text-sm mt-2">© 2026 Patinhas e Amor. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>
