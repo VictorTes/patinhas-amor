@@ -217,13 +217,14 @@ export function Adocao() {
 
       <footer className="bg-slate-900 text-slate-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="text-2xl">🐾</span>
-            <span className="text-xl font-bold text-white uppercase tracking-tighter">Patinhas e Amor</span>
-          </div>
-          <p className="text-[10px] uppercase tracking-widest opacity-60 mt-4 italic">
-            © 2026 • Porto União
-          </p>
+          <FadeIn direction="up">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-2xl">🐾</span>
+              <span className="text-xl font-bold text-white">Patinhas e Amor</span>
+            </div>
+            <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
+            <p className="text-sm mt-2">© 2026 Patinhas e Amor. Porto União - SC.</p>
+          </FadeIn>
         </div>
       </footer>
     </div>
