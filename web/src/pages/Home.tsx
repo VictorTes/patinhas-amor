@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion'; // Importação do Framer Motion
+import { motion } from 'framer-motion';
 import { AnimalGrid } from '../components/AnimalGrid';
-import { FadeIn } from '../components/FadeIn'; // Seu componente de FadeIn
+import { FadeIn } from '../components/FadeIn';
 import { getAnimalsByStatus } from '../services/firebaseService';
 import type { Animal } from '../types';
 
@@ -16,6 +16,7 @@ export function Home() {
     async function fetchAnimals() {
       try {
         const available = await getAnimalsByStatus('available_for_adoption');
+        // Limita a 4 animais na Home
         setAvailableAnimals(available.slice(0, 4));
       } catch (error) {
         console.error('[Home] Erro ao buscar disponíveis:', error);
@@ -25,7 +26,8 @@ export function Home() {
 
       try {
         const missing = await getAnimalsByStatus('missing');
-        setMissingAnimals(missing);
+        // Limita a no máximo 4 cards de desaparecidos
+        setMissingAnimals(missing.slice(0, 4));
       } catch (error) {
         console.error('[Home] Erro ao buscar desaparecidos:', error);
       } finally {
@@ -43,7 +45,6 @@ export function Home() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600" />
 
-        {/* Círculos Decorativos Animados (Efeito de flutuação) */}
         <div className="absolute inset-0 opacity-10">
           <motion.div 
             animate={{ y: [0, 20, 0], x: [0, 10, 0] }}
@@ -128,7 +129,7 @@ export function Home() {
             <FadeIn direction="left" delay={0.2}>
               <Link
                 to="/adocao"
-                className="inline-flex items-center gap-2 text-orange-600 font-semibold hover:text-orange-700 group"
+                className="hidden sm:inline-flex items-center gap-2 text-orange-600 font-semibold hover:text-orange-700 group"
               >
                 Ver todos os animais
                 <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,13 +144,24 @@ export function Home() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
             </div>
           ) : (
-            <FadeIn delay={0.4}>
-              <AnimalGrid
-                animals={availableAnimals}
-                emptyMessage="Nenhum animal disponível para adoção no momento."
-                columns={4}
-              />
-            </FadeIn>
+            <>
+              <FadeIn delay={0.4}>
+                <AnimalGrid
+                  animals={availableAnimals}
+                  emptyMessage="Nenhum animal disponível para adoção no momento."
+                  columns={4}
+                />
+              </FadeIn>
+              {/* Botão Mobile para Adoção */}
+              <div className="mt-8 block md:hidden">
+                <Link
+                  to="/adocao"
+                  className="flex items-center justify-center w-full bg-white border-2 border-orange-100 text-orange-600 py-4 rounded-2xl font-bold shadow-sm"
+                >
+                  Ver todos os animais →
+                </Link>
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -176,7 +188,7 @@ export function Home() {
                   </div>
                   <Link
                     to="/desaparecidos"
-                    className="inline-flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+                    className="hidden md:inline-flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors"
                   >
                     Ver todos
                   </Link>
@@ -189,14 +201,26 @@ export function Home() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500" />
               </div>
             ) : (
-              <FadeIn delay={0.3}>
-                <AnimalGrid
-                  animals={missingAnimals}
-                  variant="urgent"
-                  emptyMessage="Nenhum animal desaparecido no momento."
-                  columns={4}
-                />
-              </FadeIn>
+              <>
+                <FadeIn delay={0.3}>
+                  <AnimalGrid
+                    animals={missingAnimals}
+                    variant="urgent"
+                    emptyMessage="Nenhum animal desaparecido no momento."
+                    columns={4}
+                  />
+                </FadeIn>
+
+                {/* Botão Mobile para Desaparecidos */}
+                <div className="mt-8 block md:hidden">
+                  <Link
+                    to="/desaparecidos"
+                    className="flex items-center justify-center w-full bg-red-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-red-100"
+                  >
+                    Ver todos os desaparecidos →
+                  </Link>
+                </div>
+              </>
             )}
           </div>
         </section>
