@@ -5,10 +5,12 @@ import { Adocao } from './pages/Adocao';
 import { Desaparecidos } from './pages/Desaparecidos';
 import { RegistrarOcorrencia } from './pages/RegistrarOcorrencia';
 import { Sobre } from './pages/Sobre';
+import { ScrollToTop } from './components/ScrollToTop';
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <div className="min-h-screen bg-gray-50">
         <Header />
         <Routes>

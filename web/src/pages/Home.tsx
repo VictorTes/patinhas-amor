@@ -1,10 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AnimalGrid } from '../components/AnimalGrid';
 import { FadeIn } from '../components/FadeIn';
 import { getAnimalsByStatus } from '../services/firebaseService';
 import type { Animal } from '../types';
+
+// Componente auxiliar para forçar o scroll ao topo em cada navegação
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 export function Home() {
   const [availableAnimals, setAvailableAnimals] = useState<Animal[]>([]);
@@ -16,7 +27,6 @@ export function Home() {
     async function fetchAnimals() {
       try {
         const available = await getAnimalsByStatus('available_for_adoption');
-        // Limita a 4 animais na Home
         setAvailableAnimals(available.slice(0, 4));
       } catch (error) {
         console.error('[Home] Erro ao buscar disponíveis:', error);
@@ -26,7 +36,7 @@ export function Home() {
 
       try {
         const missing = await getAnimalsByStatus('missing');
-        // Limita a no máximo 4 cards de desaparecidos
+        // Limite de no máximo 4 cards conforme solicitado
         setMissingAnimals(missing.slice(0, 4));
       } catch (error) {
         console.error('[Home] Erro ao buscar desaparecidos:', error);
@@ -41,6 +51,11 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Adicionamos o ScrollToTop aqui. 
+         Ele não renderiza nada visualmente, mas monitora a URL.
+      */}
+      <ScrollToTop />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600" />
