@@ -36,8 +36,8 @@ export function Sobre() {
 
       {/* Conteúdo Principal */}
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <FadeIn>
-          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+          <FadeIn>
             <div>
               <h2 className="text-2xl font-bold text-slate-800 mb-4">Quem Somos?</h2>
               <p className="text-slate-600 mb-4">
@@ -50,6 +50,9 @@ export function Sobre() {
                 carinho e, eventualmente, um lar definitivo.
               </p>
             </div>
+          </FadeIn>
+          
+          <FadeIn>
             <div className="rounded-3xl overflow-hidden shadow-xl rotate-2 hover:rotate-0 transition-transform duration-500">
               <img 
                 src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=800" 
@@ -57,8 +60,8 @@ export function Sobre() {
                 className="w-full h-full object-cover"
               />
             </div>
-          </div>
-        </FadeIn>
+          </FadeIn>
+        </div>
       </div>
 
       {/* Seção Como Ajudar / CTA */}
@@ -80,7 +83,6 @@ export function Sobre() {
         </FadeIn>
       </div>
 
-      {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn>
@@ -89,11 +91,9 @@ export function Sobre() {
               <span className="text-xl font-bold text-white">Patinhas e Amor</span>
             </div>
             <p className="text-sm">
-              ONG dedicada ao resgate e adoção de animais abandonados em Porto União e região.
+              ONG dedicada ao resgate e adoção de animais abandonados.
             </p>
-            <p className="text-sm mt-4 border-t border-slate-800 pt-4">
-              © 2026 Patinhas e Amor. Todos os direitos reservados.
-            </p>
+            <p className="text-sm mt-2">© 2026 Patinhas e Amor. Todos os direitos reservados.</p>
           </FadeIn>
         </div>
       </footer>
