@@ -41,6 +41,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Excluir Animal'),
         content: Text('Tem certeza que deseja remover "${animal.name}"?'),
         actions: [
@@ -48,10 +49,15 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancelar'),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () async {
               Navigator.pop(ctx);
-              Navigator.pop(context); // Fecha o BottomSheet
+              Navigator.pop(context); // Fecha o BottomSheet se estiver aberto
               
               try {
                 await _animalService.deleteAnimal(animal.id!);
@@ -68,7 +74,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                 }
               }
             },
-            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+            child: const Text('Excluir'),
           ),
         ],
       ),
@@ -78,9 +84,13 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Animais Resgatados'),
+        title: const Text('Animais Resgatados', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black87,
       ),
       body: Column(
         children: [
@@ -91,13 +101,13 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return ErrorMessage(
-                    message: 'Erro ao carregar dados do Firebase.',
+                    message: 'Erro ao carregar dados.',
                     onRetry: () => setState(() {}),
                   );
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const LoadingIndicator(message: 'Carregando...');
+                  return const LoadingIndicator(message: 'Buscando amiguinhos...');
                 }
 
                 final allAnimals = snapshot.data ?? [];
@@ -112,15 +122,21 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                 return RefreshIndicator(
                   onRefresh: () async => setState(() {}),
                   child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                     itemCount: filteredAnimals.length,
                     itemBuilder: (context, index) {
                       final animal = filteredAnimals[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: AnimalCard(
-                          animal: animal,
-                          onTap: () => _showAnimalDetails(animal),
+                      // Usando o componente nativo de Opacidade para uma entrada suave
+                      return AnimatedOpacity(
+                        duration: Duration(milliseconds: 300 + (index * 50).clamp(0, 500)),
+                        opacity: 1.0,
+                        curve: Curves.easeIn,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: AnimalCard(
+                            animal: animal,
+                            onTap: () => _showAnimalDetails(animal),
+                          ),
                         ),
                       );
                     },
@@ -136,6 +152,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Cadastrar'),
         backgroundColor: Colors.orange,
+        elevation: 4,
       ),
     );
   }
@@ -143,26 +160,32 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
   Widget _buildFilterChips() {
     return Container(
       height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListView(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
-        children: _filterOptions.map((option) {
+        itemCount: _filterOptions.length,
+        itemBuilder: (context, index) {
+          final option = _filterOptions[index];
           final isSelected = _selectedFilter == option['value'];
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
+            child: ChoiceChip(
               label: Text(option['label']),
               selected: isSelected,
               onSelected: (_) => _onFilterChanged(option['value']),
-              selectedColor: Colors.orange.withOpacity(0.2),
-              checkmarkColor: Colors.orange,
+              selectedColor: Colors.orange,
+              backgroundColor: Colors.white,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.orange[800] : Colors.black87,
+                color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
+              elevation: isSelected ? 4 : 0,
+              pressElevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -172,9 +195,12 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.pets_outlined, size: 64, color: Colors.grey[400]),
+          Icon(Icons.pets_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          Text('Nenhum animal encontrado.', style: TextStyle(color: Colors.grey[600])),
+          Text(
+            'Nenhum animal nesta categoria.',
+            style: TextStyle(color: Colors.grey[600], fontSize: 16),
+          ),
         ],
       ),
     );
@@ -193,99 +219,93 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
           builder: (_, controller) => Container(
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             ),
             child: ListView(
               controller: controller,
               padding: const EdgeInsets.all(24),
               children: [
-                // Barra de arraste
                 Center(
                   child: Container(
-                    width: 40, height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                    width: 50, height: 5,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
                 
-                // Imagem Principal
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 10,
-                    child: animal.imageUrl != null && animal.imageUrl!.isNotEmpty
-                        ? Image.network(animal.imageUrl!, fit: BoxFit.cover)
-                        : Container(color: Colors.grey[200], child: const Icon(Icons.pets, size: 80, color: Colors.grey)),
+                // Hero nativo para transição de imagem (garanta que o AnimalCard tenha o mesmo Hero Tag)
+                Hero(
+                  tag: 'animal_image_${animal.id}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: AspectRatio(
+                      aspectRatio: 1.5,
+                      child: animal.imageUrl != null && animal.imageUrl!.isNotEmpty
+                          ? Image.network(animal.imageUrl!, fit: BoxFit.cover)
+                          : Container(color: Colors.grey[200], child: const Icon(Icons.pets, size: 80, color: Colors.grey)),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                // Nome e Ações
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(animal.name, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.orange),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _navigateToRegisterAnimal(context, animal: animal);
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => _confirmDelete(context, animal),
-                    ),
-                  ],
-                ),
-                
-                _buildStatusBadge(animal.status),
                 const SizedBox(height: 24),
 
-                // Seção: Onde o animal está?
-                _buildInfoSection(
-                  title: "Localização Atual",
-                  icon: Icons.location_on,
-                  content: animal.currentLocation ?? "Não informada",
-                  color: Colors.orange,
-                ),
-                const SizedBox(height: 16),
-
-                // Seção: Características
-                const Text("Características", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildFeatureChip(Icons.category, animal.species),
-                    _buildFeatureChip(Icons.wc, animal.sex ?? "Não inf."),
-                    _buildFeatureChip(Icons.straighten, animal.size ?? "Porte desconhecido"),
-                    _buildFeatureChip(Icons.cake, animal.age != null ? "${animal.age} anos" : "Idade desconhecida"),
+                    Expanded(
+                      child: Text(animal.name, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                    ),
+                    Row(
+                      children: [
+                        _buildCircleActionButton(
+                          icon: Icons.edit_outlined, 
+                          color: Colors.orange,
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _navigateToRegisterAnimal(context, animal: animal);
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                        _buildCircleActionButton(
+                          icon: Icons.delete_outline, 
+                          color: Colors.red,
+                          onPressed: () => _confirmDelete(context, animal),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildStatusBadge(animal.status),
+                const Divider(height: 48),
+
+                _buildInfoSection(
+                  title: "Localização",
+                  icon: Icons.location_on_rounded,
+                  content: animal.currentLocation ?? "Não informada",
+                  color: Colors.blueAccent,
+                ),
+                const SizedBox(height: 24),
+
+                const Text("Características", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12, runSpacing: 12,
+                  children: [
+                    _buildFeatureChip(Icons.category_rounded, animal.species),
+                    _buildFeatureChip(Icons.wc_rounded, animal.sex ?? "Não inf."),
+                    _buildFeatureChip(Icons.straighten_rounded, animal.size ?? "Porte"),
+                    _buildFeatureChip(Icons.cake_rounded, animal.age != null ? "${animal.age} anos" : "Idade"),
                   ],
                 ),
 
-                if (animal.status == AnimalStatus.adopted || animal.status == AnimalStatus.missing) ...[
-                  const Divider(height: 40),
-                  Text(
-                    animal.status == AnimalStatus.missing ? 'Contato para Resgate' : 'Dados do Adotante',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildDetailRow('Nome', animal.adopterName ?? 'Não informado'),
-                  _buildDetailRow('Telefone', animal.adopterPhone ?? 'Não informado'),
-                  _buildDetailRow('Endereço', animal.adopterAddress ?? 'Não informado'),
-                ],
-
-                const Divider(height: 40),
-                const Text('Descrição / História', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 32),
+                const Text('Descrição', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
                 Text(
-                  animal.description.isEmpty ? 'Nenhuma descrição fornecida.' : animal.description,
-                  style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
+                  animal.description.isEmpty ? 'Sem descrição.' : animal.description,
+                  style: TextStyle(fontSize: 16, height: 1.6, color: Colors.grey[800]),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -294,73 +314,62 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
     );
   }
 
-  Widget _buildInfoSection({required String title, required IconData icon, required String content, required Color color}) {
+  Widget _buildCircleActionButton({required IconData icon, required Color color, required VoidCallback onPressed}) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold)),
-                Text(content, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+      child: IconButton(icon: Icon(icon, color: color), onPressed: onPressed),
+    );
+  }
+
+  Widget _buildInfoSection({required String title, required IconData icon, required String content, required Color color}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(15)),
+          child: Icon(icon, color: color),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            Text(content, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _buildFeatureChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(30)),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.grey[700]),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: Colors.grey[800], fontSize: 13)),
+          Icon(icon, size: 18, color: Colors.orange),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 
   Widget _buildStatusBadge(AnimalStatus status) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          color: _getStatusColor(status).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _getStatusColor(status).withOpacity(0.5)),
-        ),
-        child: Text(
-          status.label.toUpperCase(),
-          style: TextStyle(color: _getStatusColor(status), fontWeight: FontWeight.bold, fontSize: 12),
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: _getStatusColor(status).withOpacity(0.2),
+        borderRadius: BorderRadius.circular(10),
       ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-          Text(value, style: const TextStyle(color: Colors.black87)),
-        ],
+      child: Text(
+        status.label.toUpperCase(),
+        style: TextStyle(color: _getStatusColor(status), fontWeight: FontWeight.bold, fontSize: 12),
       ),
     );
   }
@@ -375,9 +384,13 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
   }
 
   void _navigateToRegisterAnimal(BuildContext context, {Animal? animal}) {
+    // Usando PageRouteBuilder nativo para uma transição de Fade sem pacotes externos
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => RegisterAnimalScreen(animal: animal)),
+      PageRouteBuilder(
+        pageBuilder: (c, a1, a2) => RegisterAnimalScreen(animal: animal),
+        transitionsBuilder: (c, anim, a2, child) => FadeTransition(opacity: anim, child: child),
+      ),
     );
   }
 }
