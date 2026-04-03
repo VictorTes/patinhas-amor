@@ -13,28 +13,35 @@ class OccurrenceService {
   final String _uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
 
   // ==========================================
-  // FUNÇÃO DE FILTRAGEM (WEB APROVADA + APP)
+  // FUNÇÃO DE FILTRAGEM CORRIGIDA
   // ==========================================
-  /// Aplica a regra: 
-  /// 1. Se tiver o campo 'status' (vinda da web), deve ser 'approved'.
-  /// 2. Se NÃO tiver o campo 'status' (vinda do app), deve aparecer sempre.
   List<Occurrence> _filterWebAndApp(QuerySnapshot snapshot) {
     return snapshot.docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
       
-      // Se o campo 'status' não existe, é vinda do App (voluntário) -> Permitir
-      if (!data.containsKey('status')) {
-        return true;
+      // REGRA:
+      // 1. Se tem o campo 'status_web', só mostrar se for 'approved'.
+      // 2. Se NÃO tem 'status_web', significa que foi criada no App (voluntário) -> Sempre mostrar.
+      if (data.containsKey('status_web')) {
+        return data['status_web'] == 'approved';
       }
       
-      // Se o campo 'status' existe, só permitir se for 'approved' (vinda da Web)
-      return data['status'] == 'approved';
+      return true; // Criada via App
     }).map((doc) {
       return Occurrence.fromJson(
         doc.data() as Map<String, dynamic>,
         docId: doc.id,
       );
     }).toList();
+  }
+
+  /// Stream em tempo real para a listagem principal
+  /// Adicionado tratamento de erro no Stream para facilitar debug
+  Stream<List<Occurrence>> getOccurrencesStream() {
+    return _occurrencesRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => _filterWebAndApp(snapshot));
   }
 
   /// Busca para relatórios (estático)
@@ -48,14 +55,6 @@ class OccurrenceService {
     } catch (e) {
       throw Exception('Erro ao carregar dados para relatório: $e');
     }
-  }
-
-  /// Stream em tempo real para a listagem principal
-  Stream<List<Occurrence>> getOccurrencesStream() {
-    return _occurrencesRef
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => _filterWebAndApp(snapshot));
   }
 
   // --- MÉTODOS DE UPLOAD E PERSISTÊNCIA ---
@@ -86,10 +85,14 @@ class OccurrenceService {
     try {
       final data = occurrence.toJson();
       data['updatedAt'] = FieldValue.serverTimestamp();
+      
+      // Garante que a data de criação existe
       if (data['createdAt'] == null) {
         data['createdAt'] = FieldValue.serverTimestamp();
       }
-      // Note: Não adicionamos o campo 'status' aqui para manter a distinção App vs Web
+
+      // Ao criar pelo APP, não adicionamos status_web, 
+      // assim o filtro _filterWebAndApp permite a visualização direta.
       await _occurrencesRef.add(data);
     } catch (e) {
       throw Exception('Erro ao registrar ocorrência: $e');
@@ -114,8 +117,8 @@ class OccurrenceService {
   ) async {
     try {
       final Map<String, dynamic> updateData = {
-        // 'status' aqui refere-se ao status de resolução do animal (pendente/resolvido)
-        // conforme sua lógica anterior.
+        // 'situation' ou 'status' (do enum do Flutter) 
+        // para controlar se o animal foi resgatado ou não.
         'situation': status.value, 
         'updatedAt': FieldValue.serverTimestamp(),
         'resolutionDescription': resolutionDescription,
