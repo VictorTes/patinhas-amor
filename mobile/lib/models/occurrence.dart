@@ -37,6 +37,9 @@ class Occurrence {
   final double? latitude;
   final double? longitude;
   final String? resolutionDescription;
+  
+  // Campo que identifica a moderação vinda da Web
+  final String? statusWeb; 
 
   Occurrence({
     this.id,
@@ -49,15 +52,14 @@ class Occurrence {
     this.latitude,
     this.longitude,
     this.resolutionDescription,
+    this.statusWeb,
   });
 
-  // Factory específico para DocumentSnapshot (usado para ler do Firestore)
   factory Occurrence.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     return Occurrence.fromJson(data, docId: doc.id);
   }
 
-  // Factory para converter JSON em Objeto
   factory Occurrence.fromJson(Map<String, dynamic> json, {String? docId}) {
     return Occurrence(
       id: docId ?? json['id'] as String?,
@@ -67,14 +69,14 @@ class Occurrence {
       imageUrl: json['imageUrl'] as String?,
       status: _parseStatus(json['status'] as String? ?? 'pending'),
       createdAt: _parseDate(json['createdAt'] ?? json['timestamp']),
-      // Proteção garantindo conversão de num para double
       latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
       longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
       resolutionDescription: json['resolutionDescription'] as String?,
+      // Mapeia o campo vindo do Firestore (geralmente status_web)
+      statusWeb: json['status_web'] as String? ?? json['statusWeb'] as String?,
     );
   }
 
-  // Converte o objeto para JSON (usado para salvar no Firestore)
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       'type': type,
@@ -85,10 +87,9 @@ class Occurrence {
       'latitude': latitude,
       'longitude': longitude,
       'resolutionDescription': resolutionDescription,
+      'status_web': statusWeb, // Salva de volta se necessário
     };
 
-    // Se o createdAt for nulo, deixamos para o Service usar FieldValue.serverTimestamp()
-    // Isso evita que o app quebre ao tentar serializar o FieldValue localmente.
     if (createdAt != null) {
       data['createdAt'] = Timestamp.fromDate(createdAt!);
     }
@@ -96,7 +97,6 @@ class Occurrence {
     return data;
   }
 
-  // Permite criar uma cópia do objeto alterando apenas campos específicos
   Occurrence copyWith({
     String? id,
     String? type,
@@ -107,7 +107,8 @@ class Occurrence {
     DateTime? createdAt,
     double? latitude,
     double? longitude,
-    Object? resolutionDescription = _sentinel, 
+    Object? resolutionDescription = _sentinel,
+    String? statusWeb,
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -119,6 +120,7 @@ class Occurrence {
       createdAt: createdAt ?? this.createdAt,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      statusWeb: statusWeb ?? this.statusWeb,
       resolutionDescription: resolutionDescription == _sentinel 
           ? this.resolutionDescription 
           : resolutionDescription as String?,
@@ -127,18 +129,17 @@ class Occurrence {
 
   static const _sentinel = Object();
 
-  // Helper para converter String do DB em Enum
   static OccurrenceStatus _parseStatus(String status) {
     switch (status) {
       case 'pending': return OccurrenceStatus.pending;
-      case 'in_progress': return OccurrenceStatus.inProgress;
+      case 'in_progress': 
+      case 'inProgress': return OccurrenceStatus.inProgress;
       case 'resolved': 
       case 'completed': return OccurrenceStatus.resolved;
       default: return OccurrenceStatus.pending;
     }
   }
 
-  // Helper para lidar com diferentes formatos de data do Firebase/JSON
   static DateTime? _parseDate(dynamic date) {
     if (date == null) return null;
     if (date is Timestamp) return date.toDate();

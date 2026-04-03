@@ -28,7 +28,6 @@ class PendingOccurrence {
   });
 
   factory PendingOccurrence.fromFirestore(DocumentSnapshot doc) {
-    // Pegamos os dados, mas usamos um Map vazio caso o documento esteja nulo por algum erro
     final data = doc.data() as Map<String, dynamic>? ?? {};
 
     return PendingOccurrence(
@@ -40,14 +39,16 @@ class PendingOccurrence {
       reporterPhone: data['reporterPhone']?.toString() ?? '',
       type: data['type']?.toString() ?? 'Geral',
       
-      // TRATAMENTO PARA NÚMEROS (Evita o erro 'Null is not a subtype of num')
+      // Conversão segura de num para double
       latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
       
-      // TRATAMENTO PARA DATA (Usa a data atual caso o campo createdAt falhe)
+      // Conversão segura de data
       createdAt: data['createdAt'] is Timestamp 
           ? (data['createdAt'] as Timestamp).toDate() 
-          : DateTime.now(),
+          : (data['timestamp'] is Timestamp 
+              ? (data['timestamp'] as Timestamp).toDate() 
+              : DateTime.now()),
           
       status: data['status']?.toString() ?? 'pending',
     );
