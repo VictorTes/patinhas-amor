@@ -12,9 +12,9 @@ import {
 import { db } from '../config/firebase';
 import type { Animal, AnimalStatus, Occurrence } from '../types';
 
-// Alterado para a coleção principal que o App consome
+// Coleções
 const ANIMALS_COLLECTION = 'animals';
-const OCCURRENCES_COLLECTION = 'occurrences'; 
+const OCCURRENCES_COLLECTION = 'occurrences'; // Alterado para bater com a coleção que o App consome
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
@@ -79,14 +79,36 @@ export async function getAllAnimals(): Promise<Animal[]> {
 
 // --- FUNÇÕES DE APOIO E UPLOAD (CLOUDINARY) ---
 
+/**
+ * Valida se o arquivo está dentro do limite de tamanho
+ */
+export function validateFileSize(file: File): boolean {
+  return file.size <= MAX_FILE_SIZE;
+}
+
+/**
+ * Formata o tamanho do arquivo para exibição legível
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 export async function uploadOccurrenceImage(file: File): Promise<string> {
   try {
-    if (file.size > MAX_FILE_SIZE) {
+    if (!validateFileSize(file)) {
       throw new Error(`Arquivo muito grande. Máximo permitido: 2MB`);
     }
 
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Configuração do Cloudinary ausente no .env');
+    }
 
     const formData = new FormData();
     formData.append('file', file);
@@ -98,7 +120,11 @@ export async function uploadOccurrenceImage(file: File): Promise<string> {
       { method: 'POST', body: formData }
     );
 
-    if (!response.ok) throw new Error('Falha no upload para o Cloudinary');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Falha no upload para o Cloudinary');
+    }
+
     const data = await response.json();
     return data.secure_url;
   } catch (error) {
@@ -110,40 +136,38 @@ export async function uploadOccurrenceImage(file: File): Promise<string> {
 // --- FUNÇÕES DE CRIAÇÃO (OCORRÊNCIAS) ---
 
 /**
- * Cria a ocorrência na coleção principal com status_web pendente.
+ * Cria a ocorrência com os campos necessários para o App e Moderação
  */
 export async function createPendingOccurrence(formData: OccurrenceFormData): Promise<void> {
   try {
     const secureData = {
-      // Identificadores de Moderação Web
-      status_web: 'pending', // Campo que o App usará para filtrar
-      
-      // Dados da Ocorrência
+      // Dados do Relator
       reporterName: formData.reporterName.trim(),
       reporterPhone: formData.reporterPhone.trim(),
-      imageUrl: formData.imageUrl,
       
-      // Status de resolução do animal (compatível com o App)
-      status: 'pending', 
-      
+      // Dados da Ocorrência
       type: formData.type || 'Não especificado',
       location: formData.location.trim() || 'Não informada',
       description: formData.description.trim() || '',
+      imageUrl: formData.imageUrl || '',
       latitude: formData.latitude ?? null,
       longitude: formData.longitude ?? null,
       
-      // Timestamps
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      // Controle de Moderação e Status
+      status: 'pending',     // Status para o fluxo do App
+      status_web: 'pending', // Tag específica para moderação web
+      isValidated: false,    // Controle de segurança
       
-      // Metadados
+      // Metadados e Timestamps
+      createdAt: serverTimestamp(),
+      submittedAt: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      source: 'web' // Tag extra para facilitar buscas futuras
+      source: 'web'
     };
 
-    // Salvando na mesma coleção que o App lê ('occurrences')
+    // Salvando na coleção 'occurrences' para visibilidade imediata (ou conforme sua lógica de moderação)
     await addDoc(collection(db, OCCURRENCES_COLLECTION), secureData);
-    console.log('[Firebase] Ocorrência Web registrada para moderação!');
+    console.log('[Firebase] Ocorrência registrada com sucesso!');
   } catch (error) {
     console.error('[Firebase] Erro ao criar ocorrência:', error);
     throw error;
@@ -151,7 +175,7 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
 }
 
 /**
- * Mantida para compatibilidade
+ * Mantida para compatibilidade com implementações antigas
  */
 export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Promise<void> {
   return createPendingOccurrence({
@@ -168,10 +192,10 @@ export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Prom
 
 // --- HELPERS DE FORMATAÇÃO ---
 
-export function formatRescueDate(timestamp: any): string {
+export function formatRescueDate(timestamp: Timestamp | Date | null | undefined): string {
   if (!timestamp) return 'Data não informada';
   try {
-    const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
+    const date = timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   } catch { return 'Data não informada'; }
 }
