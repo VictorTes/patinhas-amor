@@ -21,19 +21,16 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
   LatLng? _currentPalyerLocation; 
   StreamSubscription<Position>? _positionStream;
 
-  // Controle de Animação e Estado
   late AnimationController _pulseController;
-  bool _isLoadingLocation = true; // Controla o estado de carregamento
+  bool _isLoadingLocation = true;
 
   @override
   void initState() {
     super.initState();
-    
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-
     _initLocationService();
   }
 
@@ -61,7 +58,6 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
       }
     }
 
-    // 1. Pega a posição ATUAL rapidamente para centralizar o mapa de cara
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high
@@ -71,7 +67,6 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
       debugPrint("Erro ao obter posição inicial: $e");
     }
 
-    // 2. Escuta mudanças de posição (Stream)
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high, 
@@ -84,7 +79,7 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
     if (mounted) {
       setState(() {
         _currentPalyerLocation = LatLng(position.latitude, position.longitude);
-        _isLoadingLocation = false; // Finaliza o loading assim que recebe o primeiro sinal
+        _isLoadingLocation = false;
       });
     }
   }
@@ -99,7 +94,7 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
           const CircularProgressIndicator(color: Colors.orange, strokeWidth: 3),
           const SizedBox(height: 20),
           Text(
-            "carregando...",
+            "Carregando mapa...",
             style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.w600),
           ),
         ],
@@ -138,17 +133,38 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
     );
   }
 
-  Widget _buildCustomMarker(String status) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _getMarkerColor(status),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 3)),
-        ],
-      ),
-      child: const Icon(Icons.pets, size: 18, color: Colors.white),
+  // MODIFICADO: Agora recebe se é Web ou não
+  Widget _buildCustomMarker(String status, bool isWeb) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: _getMarkerColor(status),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 3)),
+            ],
+          ),
+          child: const Center(
+            child: Icon(Icons.pets, size: 18, color: Colors.white),
+          ),
+        ),
+        if (isWeb)
+          Positioned(
+            right: -4,
+            top: -4,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.public, size: 12, color: Colors.white),
+            ),
+          ),
+      ],
     );
   }
 
@@ -169,6 +185,8 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
   }
 
   void _showOccurrenceDetails(Map<String, dynamic> data, String docId) {
+    final bool isWeb = data['status_web'] != null || data['statusWeb'] != null;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -189,10 +207,26 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
                   child: Image.network(data['imageUrl'], height: 220, width: double.infinity, fit: BoxFit.cover),
                 ),
               const SizedBox(height: 20),
+              if (isWeb)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.public, size: 14, color: Colors.blue),
+                      const SizedBox(width: 4),
+                      Text("ORIGEM: PORTAL WEB", 
+                        style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.bold, fontSize: 10)),
+                    ],
+                  ),
+                ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(data['type'] ?? 'Ocorrência', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: Text(data['type'] ?? 'Ocorrência', 
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis),
+                  ),
                   _buildStatusBadge(data['status'] ?? ''),
                 ],
               ),
@@ -243,13 +277,12 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      // AnimatedSwitcher faz o Cross-Fade entre o Loading e o Mapa
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 600),
         child: _isLoadingLocation 
           ? _buildLoadingWidget()
           : StreamBuilder<QuerySnapshot>(
-              key: const ValueKey('map_content'), // Key necessária para o AnimatedSwitcher
+              key: const ValueKey('map_content'),
               stream: FirebaseFirestore.instance
                   .collection('occurrences')
                   .where('status', whereNotIn: ['resolved', 'completed'])
@@ -257,7 +290,6 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
               builder: (context, snapshot) {
                 List<Marker> markers = [];
 
-                // Marcador do Usuário
                 if (_currentPalyerLocation != null) {
                   markers.add(
                     Marker(
@@ -269,22 +301,24 @@ class _OccurrencesMapScreenState extends State<OccurrencesMapScreen> with Ticker
                   );
                 }
 
-                // Marcadores das Ocorrências
                 if (snapshot.hasData) {
                   for (var doc in snapshot.data!.docs) {
                     final data = doc.data() as Map<String, dynamic>;
                     final double lat = (data['latitude'] ?? 0.0).toDouble();
                     final double lng = (data['longitude'] ?? 0.0).toDouble();
+                    
+                    // Verifica se veio da web
+                    final bool isFromWeb = data['status_web'] != null || data['statusWeb'] != null;
 
                     if (lat != 0.0) {
                       markers.add(
                         Marker(
                           point: LatLng(lat, lng),
-                          width: 45,
-                          height: 45,
+                          width: 50,
+                          height: 50,
                           child: GestureDetector(
                             onTap: () => _showOccurrenceDetails(data, doc.id),
-                            child: _buildCustomMarker(data['status'] ?? 'pending'),
+                            child: _buildCustomMarker(data['status'] ?? 'pending', isFromWeb),
                           ),
                         ),
                       );
