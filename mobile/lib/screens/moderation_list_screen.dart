@@ -5,22 +5,28 @@ import '../../widgets/moderation_card.dart';
 import '../../widgets/role_guard.dart';
 import 'moderation_detail_screen.dart';
 
-class ModerationListScreen extends StatelessWidget {
+class ModerationListScreen extends StatefulWidget {
   const ModerationListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final ModerationService moderationService = ModerationService();
+  State<ModerationListScreen> createState() => _ModerationListScreenState();
+}
 
+class _ModerationListScreenState extends State<ModerationListScreen> {
+  final ModerationService moderationService = ModerationService();
+
+  // Função para forçar o rebuild se necessário (embora o Stream cuide disso)
+  Future<void> _onRefresh() async {
+    setState(() {});
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return RoleGuard(
-      // Fallback estilizado para acesso negado
       fallback: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          foregroundColor: Colors.black87,
-        ),
+        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
@@ -29,10 +35,7 @@ class ModerationListScreen extends StatelessWidget {
               children: [
                 Icon(Icons.lock_person_outlined, size: 80, color: Colors.red[300]),
                 const SizedBox(height: 24),
-                const Text(
-                  "Acesso Restrito",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
+                const Text("Acesso Restrito", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 const Text(
                   "Apenas administradores podem acessar esta área de moderação.",
@@ -47,16 +50,12 @@ class ModerationListScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
-          title: const Text(
-            "Moderação",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: const Text("Moderação", style: TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black87,
           elevation: 0,
           actions: [
-            // Badge indicativo de revisão pendente (estético)
             Container(
               margin: const EdgeInsets.only(right: 16, top: 12, bottom: 12),
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -67,11 +66,7 @@ class ModerationListScreen extends StatelessWidget {
               child: const Center(
                 child: Text(
                   "PENDENTES",
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -81,11 +76,7 @@ class ModerationListScreen extends StatelessWidget {
           stream: moderationService.getPendingOccurrences(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                ),
-              );
+              return const Center(child: CircularProgressIndicator(color: Colors.orange));
             }
 
             if (snapshot.hasError) {
@@ -95,14 +86,8 @@ class ModerationListScreen extends StatelessWidget {
                   children: [
                     Icon(Icons.error_outline, size: 60, color: Colors.red[300]),
                     const SizedBox(height: 16),
-                    const Text(
-                      "Erro ao carregar moderação",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextButton(
-                      onPressed: () {}, // Adicione lógica de retry se necessário
-                      child: const Text("Tentar novamente"),
-                    )
+                    const Text("Erro ao carregar moderação", style: TextStyle(fontWeight: FontWeight.bold)),
+                    TextButton(onPressed: () => setState(() {}), child: const Text("Tentar novamente")),
                   ],
                 ),
               );
@@ -115,24 +100,21 @@ class ModerationListScreen extends StatelessWidget {
             }
 
             return RefreshIndicator(
-              onRefresh: () async => (context as Element).markNeedsBuild(),
+              onRefresh: _onRefresh,
+              color: Colors.orange,
               child: ListView.builder(
+                // O physics garante que o scroll funcione mesmo com poucos itens (necessário para o RefreshIndicator)
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                 itemCount: occurrences.length,
                 itemBuilder: (context, index) {
                   final item = occurrences[index];
                   
-                  // Animação de entrada suave
-                  return AnimatedOpacity(
-                    duration: Duration(milliseconds: 300 + (index * 50).clamp(0, 500)),
-                    opacity: 1.0,
-                    curve: Curves.easeIn,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: ModerationCard(
-                        occurrence: item,
-                        onTap: () => _navigateToDetail(context, item),
-                      ),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: ModerationCard(
+                      occurrence: item,
+                      onTap: () => _navigateToDetail(context, item),
                     ),
                   );
                 },
@@ -149,36 +131,29 @@ class ModerationListScreen extends StatelessWidget {
       context,
       PageRouteBuilder(
         pageBuilder: (c, a1, a2) => ModerationDetailScreen(occurrence: item),
-        transitionsBuilder: (c, anim, a2, child) => 
-          FadeTransition(opacity: anim, child: child),
+        transitionsBuilder: (c, anim, a2, child) => FadeTransition(opacity: anim, child: child),
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              shape: BoxShape.circle,
+      child: SingleChildScrollView( // Adicionado para evitar erro de layout se o teclado abrir ou em telas pequenas
+        physics: const AlwaysScrollableScrollPhysics(), // Permite o pull-to-refresh mesmo vazio
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(Icons.check_circle_outline_rounded, size: 80, color: Colors.green[400]),
             ),
-            child: Icon(Icons.check_circle_outline_rounded, size: 80, color: Colors.green[400]),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            "Tudo em dia!",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Nenhuma ocorrência aguardando revisão.",
-            style: TextStyle(color: Colors.grey, fontSize: 16),
-          ),
-        ],
+            const SizedBox(height: 24),
+            const Text("Tudo em dia!", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text("Nenhuma ocorrência aguardando revisão.", style: TextStyle(color: Colors.grey, fontSize: 16)),
+          ],
+        ),
       ),
     );
   }
