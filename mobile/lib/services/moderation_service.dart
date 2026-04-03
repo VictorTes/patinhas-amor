@@ -3,17 +3,14 @@ import '../models/pending_occurrence.dart';
 
 class ModerationService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final String _collection = 'pending_occurrences';
+  final String _pendingCollection = 'pending_occurrences';
+  final String _finalCollection = 'occurrences'; // Coleção principal do App
 
-  /// Recupera as ocorrências pendentes em tempo real.
-  /// Usamos snapshots para que a lista no app atualize sozinha quando 
-  /// uma nova ocorrência for enviada pelo site ou por outro usuário.
+  /// Recupera as ocorrências pendentes da Web em tempo real.
   Stream<List<PendingOccurrence>> getPendingOccurrences() {
     return _db
-        .collection(_collection)
+        .collection(_pendingCollection)
         .where('status', isEqualTo: 'pending')
-        // Importante: Para usar o orderBy com o where, você pode precisar 
-        // criar um índice no console do Firebase se ele solicitar no log.
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -21,28 +18,53 @@ class ModerationService {
             .toList());
   }
 
-  /// Aprova uma ocorrência.
-  /// Recebe os dados editados (descrição e localização) para salvar a versão final.
-  Future<void> approveOccurrence(String docId, Map<String, dynamic> updatedData) async {
+  /// APROVAR: Migra os dados para a coleção 'occurrences' e remove de 'pending_occurrences'
+  Future<void> approveOccurrence(String docId, Map<String, dynamic> updatedData, PendingOccurrence originalData) async {
     try {
-      await _db.collection(_collection).doc(docId).update({
-        'description': updatedData['description'],
-        'location': updatedData['location'],
-        'status': 'approved',
+      // Usamos um Batch para garantir que ou as duas ações acontecem, ou nenhuma.
+      WriteBatch batch = _db.batch();
+
+      // 1. Referência para o novo documento na coleção final
+      // Dica: Você pode usar .doc() para gerar um ID novo ou .doc(docId) para manter o mesmo ID
+      DocumentReference finalDocRef = _db.collection(_finalCollection).doc();
+
+      // 2. Preparar os dados para a coleção principal
+      // Mesclamos os dados originais com as edições feitas na moderação
+      Map<String, dynamic> dataToMigrate = {
+        'reporterName': originalData.reporterName,
+        'reporterPhone': originalData.reporterPhone,
+        'imageUrl': originalData.imageUrl,
+        'type': updatedData['type'] ?? originalData.type,
+        'location': updatedData['location'] ?? originalData.location,
+        'description': updatedData['description'] ?? originalData.description,
+        'latitude': originalData.latitude,
+        'longitude': originalData.longitude,
+        // Campos de controle
+        'status': 'pending', // No app, ela entra como pendente de RESOLUÇÃO, mas visível
+        'status_web': 'approved',
         'isValidated': true,
-        'validatedAt': FieldValue.serverTimestamp(), // Auditabilidade
-      });
+        'createdAt': originalData.createdAt,
+        'approvedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Adicionar criação ao batch
+      batch.set(finalDocRef, dataToMigrate);
+
+      // 3. Deletar da coleção de pendentes (limpando a triagem)
+      DocumentReference pendingDocRef = _db.collection(_pendingCollection).doc(docId);
+      batch.delete(pendingDocRef);
+
+      // Commit das operações
+      await batch.commit();
     } catch (e) {
-      throw Exception("Erro ao aprovar ocorrência: $e");
+      throw Exception("Erro ao aprovar e migrar ocorrência: $e");
     }
   }
 
-  /// Recusa uma ocorrência.
-  /// A ocorrência permanece no banco com status 'rejected' para histórico,
-  /// mas para de aparecer na lista de pendentes e no mapa público.
+  /// RECUSAR: Apenas marca como rejeitada na coleção de triagem
   Future<void> rejectOccurrence(String docId) async {
     try {
-      await _db.collection(_collection).doc(docId).update({
+      await _db.collection(_pendingCollection).doc(docId).update({
         'status': 'rejected',
         'isValidated': false,
         'rejectedAt': FieldValue.serverTimestamp(),
@@ -52,10 +74,10 @@ class ModerationService {
     }
   }
 
-  /// Opcional: Deletar definitivamente (se você não quiser manter histórico de lixo)
+  /// EXCLUIR: Remove permanentemente da triagem
   Future<void> deleteOccurrence(String docId) async {
     try {
-      await _db.collection(_collection).doc(docId).delete();
+      await _db.collection(_pendingCollection).doc(docId).delete();
     } catch (e) {
       throw Exception("Erro ao excluir permanentemente: $e");
     }
