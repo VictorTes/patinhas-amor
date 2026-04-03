@@ -139,6 +139,7 @@ export function RegistrarOcorrencia() {
         setUploadProgress('Foto enviada!');
       }
 
+      // Os campos aqui agora batem perfeitamente com o schema do service atualizado
       const occurrenceData: OccurrenceFormData = {
         reporterName: formData.fullName.trim(),
         reporterPhone: unmaskPhone(formData.phone),
@@ -153,6 +154,7 @@ export function RegistrarOcorrencia() {
       await createPendingOccurrence(occurrenceData);
       setIsSuccess(true);
 
+      // Limpa os campos
       setFormData({ 
         fullName: '', 
         phone: '', 
@@ -425,7 +427,7 @@ export function RegistrarOcorrencia() {
                 </div>
                 <h1 className="text-2xl font-bold text-slate-800 mb-2">Recebemos sua ajuda!</h1>
                 <p className="text-slate-600 mb-8">
-                  Obrigado! Sua ocorrência foi enviada para análise da nossa equipe.
+                  Obrigado! Sua denúncia foi enviada e passará por uma rápida moderação para segurança dos voluntários.
                 </p>
                 <div className="space-y-3">
                   <Link
