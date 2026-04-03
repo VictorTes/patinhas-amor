@@ -14,7 +14,7 @@ import type { Animal, AnimalStatus, Occurrence } from '../types';
 
 // Coleções
 const ANIMALS_COLLECTION = 'animals';
-const OCCURRENCES_COLLECTION = 'occurrences'; // Alterado para bater com a coleção que o App consome
+const OCCURRENCES_COLLECTION = 'pending_occurrences'; // Alterado para bater com a coleção que o App consome
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
