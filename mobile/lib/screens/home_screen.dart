@@ -43,16 +43,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(), // Scroll mais fluido (estilo iOS)
+            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
                 _buildHeader(context),
-                const SizedBox(height: 24),
+                const SizedBox(height: 30), // Aumentado para dar mais ar
                 _buildLiveSummarySection(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 30),
                 _buildMapPreview(context),
                 const SizedBox(height: 32),
                 _buildGridNavigation(context),
@@ -71,30 +71,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Builder(
           builder: (innerContext) => GestureDetector(
             onTap: () => Scaffold.of(innerContext).openDrawer(),
-            child: TweenAnimationBuilder(
-              duration: const Duration(milliseconds: 400),
-              tween: Tween<double>(begin: 0.8, end: 1.0),
-              builder: (context, double value, child) {
-                return Transform.scale(scale: value, child: child);
-              },
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.orange[100],
-                    backgroundImage: const AssetImage('assets/images/logo.png'),
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.orange[100],
+                  backgroundImage: const AssetImage('assets/images/logo.png'),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.orange,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.menu, color: Colors.white, size: 12),
-                  ),
-                ],
-              ),
+                  child: const Icon(Icons.menu, color: Colors.white, size: 12),
+                ),
+              ],
             ),
           ),
         ),
@@ -124,35 +117,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  // --- SEÇÃO DE ESTATÍSTICAS AMPLIADA ---
   Widget _buildLiveSummarySection() {
-    return Row(
-      children: [
-        _buildCounterStream(
-          collection: 'occurrences',
-          field: 'status',
-          value: 'pending',
-          label: 'Pendentes',
-          color: Colors.redAccent,
-          description: 'Novas denúncias',
-        ),
-        const SizedBox(width: 10),
-        _buildCounterStream(
-          collection: 'occurrences',
-          field: 'status',
-          value: 'in_progress',
-          label: 'Em Curso',
-          color: Colors.blue,
-          description: 'Sendo atendidas',
-        ),
-        const SizedBox(width: 10),
-        _buildCounterStream(
-          collection: 'animals',
-          label: 'Acolhidos',
-          color: Colors.green,
-          isTotalCount: true,
-          description: 'Total na ONG',
-        ),
-      ],
+    return SizedBox(
+      height: 130, // Altura aumentada para os cards ficarem maiores
+      child: Row(
+        children: [
+          _buildCounterStream(
+            collection: 'occurrences',
+            field: 'status',
+            value: 'pending',
+            label: 'Pendentes',
+            color: Colors.redAccent,
+            description: 'Novas denúncias',
+          ),
+          const SizedBox(width: 12),
+          _buildCounterStream(
+            collection: 'occurrences',
+            field: 'status',
+            value: 'in_progress',
+            label: 'Em Curso',
+            color: Colors.blue,
+            description: 'Sendo atendidas',
+          ),
+          const SizedBox(width: 12),
+          _buildCounterStream(
+            collection: 'animals',
+            label: 'Acolhidos',
+            color: Colors.green,
+            isTotalCount: true,
+            description: 'Total na ONG',
+          ),
+        ],
+      ),
     );
   }
 
@@ -179,51 +176,65 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             count = snapshot.data!.docs.length.toString().padLeft(2, '0');
           }
 
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return ScaleTransition(scale: animation, child: child);
-            },
-            child: Container(
-              key: ValueKey<String>(count), // Importante para o AnimatedSwitcher detectar mudança
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Column(
-                children: [
-                  Text(
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                )
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animação focada apenas no número que muda
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return ScaleTransition(
+                      scale: animation,
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: Text(
                     count,
+                    key: ValueKey<String>(count),
                     style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold, color: color),
+                      fontSize: 32, // Número bem maior e destacado
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                      height: 1.1,
+                    ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                    letterSpacing: 0.5,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 9,
-                        color: Colors.grey[500],
-                        fontStyle: FontStyle.italic),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 8.5,
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
@@ -237,14 +248,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       children: [
         const Text(
           'Ocorrências em Tempo Real',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        _buildAnimatedPress(
+        GestureDetector(
           onTap: () {
             Navigator.push(
               context,
@@ -259,11 +266,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               gradient: LinearGradient(
                 colors: [Colors.blue[400]!, Colors.blue[700]!],
               ),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/map_static_preview.png'),
-                fit: BoxFit.cover,
-                opacity: 0.4,
-              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.blue.withOpacity(0.2),
@@ -272,25 +274,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 )
               ],
             ),
-            child: Center(
+            child: const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.map_outlined, size: 32, color: Colors.white),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      "EXPLORAR MAPA",
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.blue[800]),
-                    ),
+                  Icon(Icons.map_outlined, size: 32, color: Colors.white),
+                  SizedBox(height: 12),
+                  Text(
+                    "EXPLORAR MAPA",
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white),
                   ),
                 ],
               ),
@@ -308,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: 1.2,
+      childAspectRatio: 1.3,
       children: [
         _buildMenuItem(
           context,
@@ -333,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         _buildMenuItem(
           context,
-          'Configurações',
+          'Ajustes',
           Icons.settings_outlined,
           Colors.blueGrey,
           () => _showComingSoon(context),
@@ -343,13 +338,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildMenuItem(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
-    return _buildAnimatedPress(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.1)),
+          border: Border.all(color: color.withOpacity(0.05)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.02),
@@ -362,35 +358,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 32),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               title,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // Widget auxiliar para animação de clique (escala)
-  Widget _buildAnimatedPress({required Widget child, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() {}),
-      onTapUp: (_) => setState(() {}),
-      onTapCancel: () => setState(() {}),
-      onTap: onTap,
-      child: TweenAnimationBuilder(
-        tween: Tween<double>(begin: 1.0, end: 1.0),
-        duration: const Duration(milliseconds: 100),
-        builder: (context, double value, child) {
-          return InkWell( // Adiciona o efeito visual de toque (Ripple)
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(20),
-            child: child,
-          );
-        },
-        child: child,
       ),
     );
   }
