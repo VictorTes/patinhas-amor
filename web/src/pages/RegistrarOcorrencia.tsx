@@ -39,7 +39,7 @@ export function RegistrarOcorrencia() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [successData, setSuccessData] = useState({ protocol: '', code: '' }); // Para o modal
+  const [successData, setSuccessData] = useState({ protocol: '', code: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadProgress, setUploadProgress] = useState<string>('');
 
@@ -119,9 +119,10 @@ export function RegistrarOcorrencia() {
 
   const handleShareWhatsapp = () => {
     const baseUrl = window.location.origin;
+    // Link que preenche automaticamente os campos na tela de busca/acompanhamento
     const trackingLink = `${baseUrl}/acompanhar?p=${successData.protocol}&c=${successData.code}`;
     
-    const message = `🐾 *Patinhas e Amor - Ocorrência Registrada*\n\nOlá! Salve estes dados para acompanhar sua denúncia:\n\n📍 *Protocolo:* ${successData.protocol}\n🔑 *Código:* ${successData.code}\n\n🔗 *Acompanhe aqui:* ${trackingLink}`;
+    const message = `🐾 *Patinhas e Amor - Ocorrência Registrada*\n\nOlá! Salve estes dados para acompanhar sua denúncia:\n\n📍 *Protocolo:* ${successData.protocol}\n🔑 *Código PIN:* ${successData.code}\n\n🔗 *Acompanhe em tempo real por aqui:* ${trackingLink}`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -149,7 +150,7 @@ export function RegistrarOcorrencia() {
         setUploadProgress('Foto enviada!');
       }
 
-      // Gera o código de acesso de 6 dígitos
+      // Gera o código PIN de 6 dígitos
       const accessCode = Math.floor(100000 + Math.random() * 900000).toString();
 
       const occurrenceData: OccurrenceFormData = {
@@ -161,7 +162,7 @@ export function RegistrarOcorrencia() {
         imageUrl: imageUrl,
         latitude: formData.lat,
         longitude: formData.lng,
-        accessCode: accessCode, // Adicionado ao envio
+        accessCode: accessCode, 
         status: 'pending',
       };
 
@@ -170,7 +171,7 @@ export function RegistrarOcorrencia() {
       setSuccessData({ protocol: docId, code: accessCode });
       setIsSuccess(true);
 
-      // Limpa os campos
+      // Limpa os campos após o sucesso
       setFormData({ 
         fullName: '', 
         phone: '', 
@@ -182,9 +183,6 @@ export function RegistrarOcorrencia() {
       });
       setSelectedFile(null);
       setImagePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     } catch (error) {
       console.error('Erro ao enviar:', error);
       setErrors((prev) => ({
@@ -199,6 +197,7 @@ export function RegistrarOcorrencia() {
 
   return (
     <div className="min-h-screen bg-slate-50 ">
+      {/* Header Fixo */}
       <div className="bg-white border-b border-slate-100 sticky top-16 z-30">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <FadeIn>
@@ -230,6 +229,7 @@ export function RegistrarOcorrencia() {
         {!isSuccess && (
           <FadeIn>
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Nome Completo */}
               <div data-error={!!errors.fullName}>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Seu Nome Completo <span className="text-red-500">*</span>
@@ -249,6 +249,7 @@ export function RegistrarOcorrencia() {
                 {errors.fullName && <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>}
               </div>
 
+              {/* Telefone */}
               <div data-error={!!errors.phone}>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Seu Telefone / WhatsApp <span className="text-red-500">*</span>
@@ -266,6 +267,7 @@ export function RegistrarOcorrencia() {
                 {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
               </div>
 
+              {/* Tipo de Ocorrência */}
               <div data-error={!!errors.type}>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   O que aconteceu? <span className="text-red-500">*</span>
@@ -296,13 +298,14 @@ export function RegistrarOcorrencia() {
                   <div className="mt-3 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <span className="text-xl">ℹ️</span>
                     <p className="text-sm text-blue-800 leading-relaxed">
-                      Para <strong>Animais Desaparecidos</strong>, por favor, informe na descrição: 
-                      cor do pelo, se usava coleira, nome do animal e o horário aproximado em que foi visto pela última vez.
+                      Para <strong>Animais Desaparecidos</strong>, informe na descrição: 
+                      cor do pelo, se usava coleira, nome e o horário aproximado do último avistamento.
                     </p>
                   </div>
                 )}
               </div>
 
+              {/* Localização */}
               <div data-error={!!errors.location} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -338,11 +341,12 @@ export function RegistrarOcorrencia() {
                       onLocationSelect={(lat, lng) => setFormData(prev => ({ ...prev, lat, lng }))} 
                     />
                     <p className="mt-2 text-[11px] text-slate-400 italic">
-                      Dica: Toque no mapa para marcar o local exato ou use o botão de GPS acima do mapa.
+                      Dica: Toque no mapa para marcar o local exato para as equipes de resgate.
                     </p>
                 </div>
               </div>
 
+              {/* Descrição */}
               <div data-error={!!errors.description}>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Descrição Detalhada <span className="text-red-500">*</span>
@@ -362,6 +366,7 @@ export function RegistrarOcorrencia() {
                 {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
               </div>
 
+              {/* Foto */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Foto do Local / Animal <span className="text-slate-400 font-normal">(opcional)</span>
@@ -403,6 +408,7 @@ export function RegistrarOcorrencia() {
                 />
               </div>
 
+              {/* Botão de Envio */}
               <div className="pt-4">
                 <button
                   type="submit"
@@ -431,7 +437,7 @@ export function RegistrarOcorrencia() {
           </FadeIn>
         )}
 
-        {/* Modal de Sucesso Atualizado */}
+        {/* Modal de Sucesso */}
         {isSuccess && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <FadeIn>
@@ -442,25 +448,25 @@ export function RegistrarOcorrencia() {
                   </svg>
                 </div>
                 
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Denúncia Enviada!</h2>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">Enviado com Sucesso!</h2>
                 
                 <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100">
-                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Seus dados de acesso</p>
+                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Acesso para Acompanhamento</p>
                    <div className="flex justify-around items-center">
-                      <div>
-                        <p className="text-xs text-slate-500">Protocolo</p>
-                        <p className="font-mono font-bold text-slate-800">{successData.protocol.slice(0, 8)}...</p>
-                      </div>
-                      <div className="w-px h-8 bg-slate-200"></div>
-                      <div>
-                        <p className="text-xs text-slate-500">Código PIN</p>
-                        <p className="font-mono font-bold text-orange-600 text-lg">{successData.code}</p>
-                      </div>
+                     <div>
+                       <p className="text-[10px] text-slate-500">ID Protocolo</p>
+                       <p className="font-mono font-bold text-slate-800">{successData.protocol.slice(0, 8)}...</p>
+                     </div>
+                     <div className="w-px h-8 bg-slate-200"></div>
+                     <div>
+                       <p className="text-[10px] text-slate-500">Código PIN</p>
+                       <p className="font-mono font-bold text-orange-600 text-lg">{successData.code}</p>
+                     </div>
                    </div>
                 </div>
 
                 <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                  Para sua segurança, salve o link de acompanhamento no seu WhatsApp. Assim você não perde o código!
+                  Toque no botão abaixo para salvar o link de acompanhamento e o código no seu WhatsApp.
                 </p>
 
                 <div className="space-y-3">
@@ -488,7 +494,7 @@ export function RegistrarOcorrencia() {
       </div>
 
       <footer className="bg-slate-900 text-slate-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-7xl mx-auto px-4 text-center">
           <FadeIn direction="up">
             <div className="flex items-center justify-center gap-2 mb-4">
               <span className="text-2xl">🐾</span>
