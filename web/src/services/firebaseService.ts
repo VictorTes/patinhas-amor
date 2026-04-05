@@ -14,11 +14,12 @@ import type { Animal, AnimalStatus, Occurrence } from '../types';
 
 // Coleções
 const ANIMALS_COLLECTION = 'animals';
-const OCCURRENCES_COLLECTION = 'pending_occurrences'; // Alterado para bater com a coleção que o App consome
+const OCCURRENCES_COLLECTION = 'pending_occurrences'; 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
  * Interface para os dados vindos dos formulários Web
+ * ATUALIZADA: Incluído accessCode
  */
 export interface OccurrenceFormData {
   reporterName: string;
@@ -29,6 +30,7 @@ export interface OccurrenceFormData {
   imageUrl: string;
   latitude?: number;
   longitude?: number;
+  accessCode: string; // <-- Campo obrigatório para o rastreio
 }
 
 // --- FUNÇÕES DE BUSCA (ANIMAIS) ---
@@ -79,16 +81,10 @@ export async function getAllAnimals(): Promise<Animal[]> {
 
 // --- FUNÇÕES DE APOIO E UPLOAD (CLOUDINARY) ---
 
-/**
- * Valida se o arquivo está dentro do limite de tamanho
- */
 export function validateFileSize(file: File): boolean {
   return file.size <= MAX_FILE_SIZE;
 }
 
-/**
- * Formata o tamanho do arquivo para exibição legível
- */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -136,9 +132,10 @@ export async function uploadOccurrenceImage(file: File): Promise<string> {
 // --- FUNÇÕES DE CRIAÇÃO (OCORRÊNCIAS) ---
 
 /**
- * Cria a ocorrência com os campos necessários para o App e Moderação
+ * Cria a ocorrência e retorna o ID do documento
+ * ALTERADO: Agora retorna Promise<string> em vez de void
  */
-export async function createPendingOccurrence(formData: OccurrenceFormData): Promise<void> {
+export async function createPendingOccurrence(formData: OccurrenceFormData): Promise<string> {
   try {
     const secureData = {
       // Dados do Relator
@@ -153,21 +150,24 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
       latitude: formData.latitude ?? null,
       longitude: formData.longitude ?? null,
       
-      // Controle de Moderação e Status
-      status: 'pending',     // Status para o fluxo do App
-      status_web: 'pending', // Tag específica para moderação web
-      isValidated: false,    // Controle de segurança
+      // Segurança e Rastreio
+      accessCode: formData.accessCode, // Salvando o PIN gerado no front
       
-      // Metadados e Timestamps
+      // Controle de Moderação e Status
+      status: 'pending',     
+      status_web: 'pending', 
+      isValidated: false,    
+      
+      // Metadados
       createdAt: serverTimestamp(),
       submittedAt: new Date().toISOString(),
       userAgent: navigator.userAgent,
       source: 'web'
     };
 
-    // Salvando na coleção 'occurrences' para visibilidade imediata (ou conforme sua lógica de moderação)
-    await addDoc(collection(db, OCCURRENCES_COLLECTION), secureData);
-    console.log('[Firebase] Ocorrência registrada com sucesso!');
+    const docRef = await addDoc(collection(db, OCCURRENCES_COLLECTION), secureData);
+    console.log('[Firebase] Ocorrência registrada com ID:', docRef.id);
+    return docRef.id; // Retorna o ID para ser usado como protocolo
   } catch (error) {
     console.error('[Firebase] Erro ao criar ocorrência:', error);
     throw error;
@@ -175,10 +175,10 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
 }
 
 /**
- * Mantida para compatibilidade com implementações antigas
+ * Mantida para compatibilidade
  */
 export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Promise<void> {
-  return createPendingOccurrence({
+  await createPendingOccurrence({
     reporterName: "Usuário Web",
     reporterPhone: occurrence.reporterPhone || '',
     type: occurrence.type,
@@ -186,7 +186,8 @@ export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Prom
     description: occurrence.description,
     imageUrl: '',
     latitude: occurrence.latitude,
-    longitude: occurrence.longitude
+    longitude: occurrence.longitude,
+    accessCode: '000000' // Valor padrão para chamadas legadas
   });
 }
 
