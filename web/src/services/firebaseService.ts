@@ -30,7 +30,8 @@ export interface OccurrenceFormData {
   imageUrl: string;
   latitude?: number;
   longitude?: number;
-  accessCode: string; // <-- Campo obrigatório para o rastreio
+  accessCode: string; 
+  status: string;
 }
 
 // --- FUNÇÕES DE BUSCA (ANIMAIS) ---
@@ -187,7 +188,8 @@ export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Prom
     imageUrl: '',
     latitude: occurrence.latitude,
     longitude: occurrence.longitude,
-    accessCode: '000000' // Valor padrão para chamadas legadas
+    accessCode: '000000', 
+    status: 'pending'
   });
 }
 
