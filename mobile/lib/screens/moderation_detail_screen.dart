@@ -90,12 +90,12 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
             'location': _locController.text,
             'type': widget.occurrence.type,
             'protocol': widget.occurrence.id,
-            // Novos campos integrados para persistência:
             'source': widget.occurrence.source,
-            'status_web': 'approved', // Atualiza o status web para aprovado
-            'isValidated': true,      // Marca como validado após moderação
+            'status_web': 'approved',
+            'isValidated': true,
             'submittedAt': widget.occurrence.submittedAt,
             'userAgent': widget.occurrence.userAgent,
+            'accessCode': widget.occurrence.accessCode, // ADICIONADO: Salvando o código de acesso
           },
           widget.occurrence 
         );
