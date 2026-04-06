@@ -83,23 +83,28 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
     setState(() => _isLoading = true);
     try {
       if (isApprove) {
-        // AJUSTE: Passando os dados conforme o ModerationService espera para manter o ID
         await _service.approveOccurrence(
-          widget.occurrence.id, // O ID que agora é o protocolo
+          widget.occurrence.id, 
           {
             'description': _descController.text,
             'location': _locController.text,
             'type': widget.occurrence.type,
-            'protocol': widget.occurrence.id, // Garante que o protocolo seja salvo no novo doc
+            'protocol': widget.occurrence.id,
+            // Novos campos integrados para persistência:
+            'source': widget.occurrence.source,
+            'status_web': 'approved', // Atualiza o status web para aprovado
+            'isValidated': true,      // Marca como validado após moderação
+            'submittedAt': widget.occurrence.submittedAt,
+            'userAgent': widget.occurrence.userAgent,
           },
-          widget.occurrence
+          widget.occurrence 
         );
       } else {
         await _service.rejectOccurrence(widget.occurrence.id);
       }
 
       if (mounted) {
-        Navigator.pop(context); // Volta para a lista de moderação
+        Navigator.pop(context); 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(isApprove ? "Aprovada e publicada com sucesso!" : "Ocorrência recusada."),
@@ -135,7 +140,6 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Preview da Imagem
                   Stack(
                     children: [
                       ClipRRect(
@@ -159,14 +163,16 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)),
-                          child: const Text("WEB / PENDENTE", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            "${widget.occurrence.source.toUpperCase()} / ${widget.occurrence.statusWeb.toUpperCase()}", 
+                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)
+                          ),
                         ),
                       )
                     ],
                   ),
                   const SizedBox(height: 20),
 
-                  // Card de Informações do Relator
                   Card(
                     elevation: 0,
                     color: Colors.orange[50],
@@ -194,13 +200,16 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
                           Text("Reportado por: ${widget.occurrence.reporterName}", style: const TextStyle(fontWeight: FontWeight.w500)),
                           const SizedBox(height: 4),
                           Text("Telefone: ${widget.occurrence.reporterPhone}"),
+                          if (widget.occurrence.submittedAt.isNotEmpty) ...[
+                             const SizedBox(height: 4),
+                             Text("Data Web: ${widget.occurrence.submittedAt}", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          ]
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  // Título da Edição
                   const Text("REVISÃO DE DADOS", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                   const SizedBox(height: 12),
 
@@ -209,7 +218,6 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
                     maxLines: 4,
                     decoration: const InputDecoration(
                       labelText: "Descrição (Ajuste se necessário)",
-                      hintText: "O voluntário lerá este texto...",
                       border: OutlineInputBorder(),
                       alignLabelWithHint: true,
                     ),
@@ -220,13 +228,11 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
                     controller: _locController, 
                     decoration: const InputDecoration(
                       labelText: "Referência de Localização",
-                      hintText: "Ex: Próximo ao mercado...",
                       border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Botão de Mapa
                   ElevatedButton.icon(
                     onPressed: _openMap,
                     icon: const Icon(Icons.map_outlined),
@@ -240,7 +246,6 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
                   ),
                   const SizedBox(height: 40),
 
-                  // Botões de Ação Final
                   Row(
                     children: [
                       Expanded(
