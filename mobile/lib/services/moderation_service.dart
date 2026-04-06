@@ -21,15 +21,14 @@ class ModerationService {
   /// APROVAR: Migra os dados para a coleção 'occurrences' e remove de 'pending_occurrences'
   Future<void> approveOccurrence(String docId, Map<String, dynamic> updatedData, PendingOccurrence originalData) async {
     try {
-      // Usamos um Batch para garantir que ou as duas ações acontecem, ou nenhuma.
+      // Usamos um Batch para garantir atomicidade
       WriteBatch batch = _db.batch();
 
       // 1. Referência para o novo documento na coleção final
-      // Dica: Você pode usar .doc() para gerar um ID novo ou .doc(docId) para manter o mesmo ID
       DocumentReference finalDocRef = _db.collection(_finalCollection).doc();
 
       // 2. Preparar os dados para a coleção principal
-      // Mesclamos os dados originais com as edições feitas na moderação
+      // Agora incluímos os campos novos vindos do originalData e do updatedData
       Map<String, dynamic> dataToMigrate = {
         'reporterName': originalData.reporterName,
         'reporterPhone': originalData.reporterPhone,
@@ -39,8 +38,16 @@ class ModerationService {
         'description': updatedData['description'] ?? originalData.description,
         'latitude': originalData.latitude,
         'longitude': originalData.longitude,
-        // Campos de controle
-        'status': 'pending', // No app, ela entra como pendente de RESOLUÇÃO, mas visível
+        
+        // --- NOVOS CAMPOS ADICIONADOS AQUI ---
+        'source': originalData.source,
+        'userAgent': originalData.userAgent,
+        'submittedAt': originalData.submittedAt,
+        'protocol': updatedData['protocol'] ?? originalData.id,
+        // -------------------------------------
+
+        // Campos de controle de fluxo
+        'status': 'pending', // No app mobile, significa aguardando resolução técnica
         'status_web': 'approved',
         'isValidated': true,
         'createdAt': originalData.createdAt,
@@ -66,6 +73,7 @@ class ModerationService {
     try {
       await _db.collection(_pendingCollection).doc(docId).update({
         'status': 'rejected',
+        'status_web': 'rejected',
         'isValidated': false,
         'rejectedAt': FieldValue.serverTimestamp(),
       });
