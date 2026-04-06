@@ -28,7 +28,6 @@ class ModerationService {
       DocumentReference finalDocRef = _db.collection(_finalCollection).doc();
 
       // 2. Preparar os dados para a coleção principal
-      // Agora incluímos os campos novos vindos do originalData e do updatedData
       Map<String, dynamic> dataToMigrate = {
         'reporterName': originalData.reporterName,
         'reporterPhone': originalData.reporterPhone,
@@ -39,15 +38,16 @@ class ModerationService {
         'latitude': originalData.latitude,
         'longitude': originalData.longitude,
         
-        // --- NOVOS CAMPOS ADICIONADOS AQUI ---
+        // --- CAMPOS WEB INTEGRADOS ---
         'source': originalData.source,
         'userAgent': originalData.userAgent,
         'submittedAt': originalData.submittedAt,
+        'accessCode': originalData.accessCode, // ADICIONADO AQUI
         'protocol': updatedData['protocol'] ?? originalData.id,
-        // -------------------------------------
+        // -----------------------------
 
         // Campos de controle de fluxo
-        'status': 'pending', // No app mobile, significa aguardando resolução técnica
+        'status': 'pending', 
         'status_web': 'approved',
         'isValidated': true,
         'createdAt': originalData.createdAt,
