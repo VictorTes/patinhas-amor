@@ -19,7 +19,6 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
  * Interface para os dados vindos dos formulários Web
- * ATUALIZADA: Incluído accessCode
  */
 export interface OccurrenceFormData {
   reporterName: string;
@@ -134,27 +133,26 @@ export async function uploadOccurrenceImage(file: File): Promise<string> {
 
 /**
  * Cria a ocorrência e retorna o ID do documento
- * ALTERADO: Agora retorna Promise<string> em vez de void
  */
 export async function createPendingOccurrence(formData: OccurrenceFormData): Promise<string> {
   try {
     const secureData = {
       // Dados do Relator
-      reporterName: formData.reporterName.trim(),
-      reporterPhone: formData.reporterPhone.trim(),
+      reporterName: formData.reporterName.trim() || 'Anônimo',
+      reporterPhone: unmaskPhone(formData.reporterPhone), // Salva apenas números
       
       // Dados da Ocorrência
       type: formData.type || 'Não especificado',
       location: formData.location.trim() || 'Não informada',
       description: formData.description.trim() || '',
       imageUrl: formData.imageUrl || '',
-      latitude: formData.latitude ?? null,
-      longitude: formData.longitude ?? null,
+      latitude: formData.latitude ?? 0, // Fallback para 0 para não quebrar mapas
+      longitude: formData.longitude ?? 0, 
       
       // Segurança e Rastreio
-      accessCode: formData.accessCode, // Salvando o PIN gerado no front
+      accessCode: String(formData.accessCode), // Garante que seja String
       
-      // Controle de Moderação e Status
+      // Controle de Moderação e Status (Sincronizado com o App Flutter)
       status: 'pending',     
       status_web: 'pending', 
       isValidated: false,    
@@ -167,8 +165,7 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
     };
 
     const docRef = await addDoc(collection(db, OCCURRENCES_COLLECTION), secureData);
-    console.log('[Firebase] Ocorrência registrada com ID:', docRef.id);
-    return docRef.id; // Retorna o ID para ser usado como protocolo
+    return docRef.id; 
   } catch (error) {
     console.error('[Firebase] Erro ao criar ocorrência:', error);
     throw error;
@@ -176,7 +173,7 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
 }
 
 /**
- * Mantida para compatibilidade
+ * Função de compatibilidade atualizada
  */
 export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Promise<void> {
   await createPendingOccurrence({
@@ -188,7 +185,7 @@ export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Prom
     imageUrl: '',
     latitude: occurrence.latitude,
     longitude: occurrence.longitude,
-    accessCode: '000000', 
+    accessCode: Math.floor(100000 + Math.random() * 900000).toString(), // Gera um PIN aleatório em vez de 000000
     status: 'pending'
   });
 }
