@@ -14,6 +14,7 @@ interface OcorrenciaData {
   accessCode: string;
   imageUrl?: string;
   adminFeedback?: string;
+  resolutionDescription?: string; // <-- 1. ADICIONADO NA INTERFACE
   isWaitingApproval?: boolean;
   protocol: string;
   submittedAt?: string;
@@ -51,11 +52,6 @@ const Acompanhamento = () => {
     setOcorrencia(null);
 
     try {
-      /**
-       * ALTERAÇÃO DE SEGURANÇA:
-       * Incluímos o 'accessCode' no 'where'. 
-       * O Firestore só retornará o documento se AMBOS os campos baterem.
-       */
       const findInCollection = async (colName: string) => {
         const q = query(
           collection(db, colName),
@@ -71,21 +67,17 @@ const Acompanhamento = () => {
         return null;
       };
 
-      // 1. Busca na oficial
       let data = await findInCollection("occurrences");
       let pending = false;
 
-      // 2. Busca na triagem se não achou na oficial
       if (!data) {
         data = await findInCollection("pending_occurrences");
         pending = true;
       }
 
       if (data) {
-        // Se o banco retornou, o PIN já é válido por causa da Query
         setOcorrencia({ ...data, isWaitingApproval: pending });
       } else {
-        // Se não retornou nada, ou o protocolo não existe ou o PIN está errado
         setErro('Protocolo ou PIN incorretos. Verifique os dados.');
       }
     } catch (err) {
@@ -96,7 +88,6 @@ const Acompanhamento = () => {
     }
   };
 
-  // --- Renderização permanece igual ---
   if (!ocorrencia) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
@@ -207,6 +198,19 @@ const Acompanhamento = () => {
               </div>
 
               <div className="mt-8 space-y-4">
+                {/* 2. EXIBIÇÃO DA RESOLUÇÃO (APARECE APENAS SE ESTIVER RESOLVIDO) */}
+                {ocorrencia.status === 'resolved' && ocorrencia.resolutionDescription && (
+                  <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 shadow-sm ring-1 ring-emerald-200/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xl">✨</span>
+                      <h4 className="text-emerald-900 font-bold text-sm uppercase tracking-wide">Conclusão do Atendimento</h4>
+                    </div>
+                    <p className="text-emerald-800 text-md leading-relaxed font-medium">
+                      {ocorrencia.resolutionDescription}
+                    </p>
+                  </div>
+                )}
+
                 {ocorrencia.imageUrl && (
                     <img 
                         src={ocorrencia.imageUrl} 
@@ -216,13 +220,13 @@ const Acompanhamento = () => {
                 )}
 
                 <div className="bg-slate-50 p-4 rounded-xl">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Descrição do Relato:</h4>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Descrição do Relato Original:</h4>
                   <p className="text-slate-700 text-sm italic">"{ocorrencia.description}"</p>
                 </div>
 
                 {ocorrencia.adminFeedback && (
                   <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
-                    <h4 className="text-orange-800 font-bold text-sm mb-1">Retorno da Administração:</h4>
+                    <h4 className="text-orange-800 font-bold text-sm mb-1">Nota da Triagem:</h4>
                     <p className="text-orange-900 text-sm">{ocorrencia.adminFeedback}</p>
                   </div>
                 )}
