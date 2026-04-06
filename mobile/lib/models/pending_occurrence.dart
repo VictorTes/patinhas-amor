@@ -12,6 +12,7 @@ class PendingOccurrence {
   final double longitude;
   final DateTime createdAt;
   final String status;
+  final String protocol; 
 
   PendingOccurrence({
     required this.id,
@@ -25,6 +26,7 @@ class PendingOccurrence {
     required this.longitude,
     required this.createdAt,
     required this.status,
+    required this.protocol,
   });
 
   factory PendingOccurrence.fromFirestore(DocumentSnapshot doc) {
@@ -51,6 +53,8 @@ class PendingOccurrence {
               : DateTime.now()),
           
       status: data['status']?.toString() ?? 'pending',
+
+      protocol: doc.id,
     );
   }
 }
