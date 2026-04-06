@@ -119,7 +119,7 @@ class OccurrenceService {
       final Map<String, dynamic> updateData = {
         // 'situation' ou 'status' (do enum do Flutter) 
         // para controlar se o animal foi resgatado ou não.
-        'situation': status.value, 
+        'status': status.value, 
         'updatedAt': FieldValue.serverTimestamp(),
         'resolutionDescription': resolutionDescription,
       };
