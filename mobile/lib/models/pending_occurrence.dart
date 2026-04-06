@@ -12,7 +12,14 @@ class PendingOccurrence {
   final double longitude;
   final DateTime createdAt;
   final String status;
-  final String protocol; 
+  final String protocol;
+  
+  // Novos campos adicionados:
+  final bool isValidated;
+  final String source;
+  final String statusWeb;
+  final String submittedAt;
+  final String userAgent;
 
   PendingOccurrence({
     required this.id,
@@ -27,6 +34,11 @@ class PendingOccurrence {
     required this.createdAt,
     required this.status,
     required this.protocol,
+    required this.isValidated,
+    required this.source,
+    required this.statusWeb,
+    required this.submittedAt,
+    required this.userAgent,
   });
 
   factory PendingOccurrence.fromFirestore(DocumentSnapshot doc) {
@@ -53,8 +65,14 @@ class PendingOccurrence {
               : DateTime.now()),
           
       status: data['status']?.toString() ?? 'pending',
-
       protocol: doc.id,
+
+      // Mapeamento dos novos campos vindo do JSON/Firestore
+      isValidated: data['isValidated'] ?? false,
+      source: data['source']?.toString() ?? 'unknown',
+      statusWeb: data['status_web']?.toString() ?? 'pending',
+      submittedAt: data['submittedAt']?.toString() ?? '',
+      userAgent: data['userAgent']?.toString() ?? '',
     );
   }
 }
