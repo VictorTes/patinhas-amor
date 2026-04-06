@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -49,32 +49,43 @@ const Acompanhamento = () => {
     setOcorrencia(null);
 
     try {
+      // Função auxiliar para buscar por campo 'protocol' em uma coleção específica
+      const findInCollection = async (colName: string) => {
+        const q = query(
+          collection(db, colName),
+          where("protocol", "==", protocol.trim()),
+          limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          return querySnapshot.docs[0].data() as OcorrenciaData;
+        }
+        return null;
+      };
+
       // 1. Tenta buscar na coleção oficial (aprovadas/em curso)
-      let docRef = doc(db, "occurrences", protocol);
-      let docSnap = await getDoc(docRef);
+      let data = await findInCollection("occurrences");
       let pending = false;
 
       // 2. Se não existir na oficial, busca na triagem (pendentes)
-      if (!docSnap.exists()) {
-        docRef = doc(db, "pending_occurrences", protocol);
-        docSnap = await getDoc(docRef);
+      if (!data) {
+        data = await findInCollection("pending_occurrences");
         pending = true;
       }
 
-      if (docSnap.exists()) {
-        const data = docSnap.data() as OcorrenciaData;
-        
-        // Validação de Segurança via Código PIN (String)
-        if (data.accessCode.toString() === accessCode.trim()) {
+      if (data) {
+        // Validação de Segurança via Código PIN (Garante comparação como string)
+        if (String(data.accessCode).trim() === accessCode.trim()) {
           setOcorrencia({ ...data, isWaitingApproval: pending });
         } else {
           setErro('Código PIN incorreto.');
         }
       } else {
-        setErro('Protocolo não encontrado.');
+        setErro('Protocolo não encontrado. Verifique se digitou corretamente.');
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao buscar status:", err);
       setErro('Erro ao conectar com o servidor.');
     } finally {
       setLoading(false);
@@ -132,7 +143,6 @@ const Acompanhamento = () => {
     );
   }
 
-  // Configuração visual baseada no status
   const statusConfig = {
     pending: { color: 'bg-amber-100 text-amber-700', label: 'Pendente', icon: '⏳' },
     in_progress: { color: 'bg-blue-100 text-blue-700', label: 'Em Atendimento', icon: '🐕' },
@@ -148,7 +158,6 @@ const Acompanhamento = () => {
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-6 md:p-8">
               
-              {/* Alerta se ainda estiver na coleção de triagem */}
               {ocorrencia.isWaitingApproval && (
                 <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-800 text-sm flex items-start gap-3">
                   <span className="text-lg">📩</span>
@@ -166,7 +175,6 @@ const Acompanhamento = () => {
                 </div>
               </div>
 
-              {/* Timeline de progresso */}
               <div className="py-8 border-y border-slate-50">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Evolução do Caso</h3>
                 <div className="relative pl-8 space-y-10">
@@ -193,7 +201,6 @@ const Acompanhamento = () => {
                 </div>
               </div>
 
-              {/* Informações detalhadas */}
               <div className="mt-8 space-y-4">
                 {ocorrencia.imageUrl && (
                     <img 
