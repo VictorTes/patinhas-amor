@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async'; // Recomendado usar react-helmet-async
+import { Helmet } from 'react-helmet-async';
 import { FadeIn } from '../components/FadeIn';
 
-// Tipagem aprimorada
+// Tipagem atualizada conforme os novos campos do banco
 interface OcorrenciaData {
   type: string;
   location: string;
   description: string;
   status: 'pending' | 'in_progress' | 'resolved';
+  status_web?: 'pending' | 'approved' | 'rejected';
   accessCode: string;
   imageUrl?: string;
   adminFeedback?: string;
-  isWaitingApproval?: boolean; // Flag para controle interno da UI
+  isWaitingApproval?: boolean;
+  protocol: string;
+  submittedAt?: string;
 }
 
 const Acompanhamento = () => {
@@ -25,7 +28,6 @@ const Acompanhamento = () => {
   const [ocorrencia, setOcorrencia] = useState<OcorrenciaData | null>(null);
   const [erro, setErro] = useState('');
 
-  // 1. Captura automática via URL (Link do WhatsApp)
   useEffect(() => {
     const p = searchParams.get('p');
     const c = searchParams.get('c');
@@ -36,8 +38,8 @@ const Acompanhamento = () => {
     }
   }, [searchParams]);
 
-  const buscarStatus = async (idProtocolo: string, pinCode: string) => {
-    if (!idProtocolo || !pinCode) {
+  const buscarStatus = async (protocol: string, accessCode: string) => {
+    if (!protocol || !accessCode) {
       setErro('Preencha o protocolo e o PIN.');
       return;
     }
@@ -47,15 +49,14 @@ const Acompanhamento = () => {
     setOcorrencia(null);
 
     try {
-      // Lógica de busca em duas etapas:
-      // 1. Tenta buscar na coleção oficial (onde estão as aprovadas)
-      let docRef = doc(db, "occurrences", idProtocolo);
+      // 1. Tenta buscar na coleção oficial (aprovadas/em curso)
+      let docRef = doc(db, "occurrences", protocol);
       let docSnap = await getDoc(docRef);
       let pending = false;
 
-      // 2. Se não existir na oficial, busca na pendente
+      // 2. Se não existir na oficial, busca na triagem (pendentes)
       if (!docSnap.exists()) {
-        docRef = doc(db, "pending_occurrences", idProtocolo);
+        docRef = doc(db, "pending_occurrences", protocol);
         docSnap = await getDoc(docRef);
         pending = true;
       }
@@ -63,8 +64,8 @@ const Acompanhamento = () => {
       if (docSnap.exists()) {
         const data = docSnap.data() as OcorrenciaData;
         
-        // Validação de Segurança via Código PIN
-        if (data.accessCode === pinCode) {
+        // Validação de Segurança via Código PIN (String)
+        if (data.accessCode.toString() === accessCode.trim()) {
           setOcorrencia({ ...data, isWaitingApproval: pending });
         } else {
           setErro('Código PIN incorreto.');
@@ -74,13 +75,12 @@ const Acompanhamento = () => {
       }
     } catch (err) {
       console.error(err);
-      setErro('Erro de permissão ou conexão.');
+      setErro('Erro ao conectar com o servidor.');
     } finally {
       setLoading(false);
     }
   };
 
-  // --- VIEW: BUSCA ---
   if (!ocorrencia) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
@@ -124,7 +124,7 @@ const Acompanhamento = () => {
               {erro && <p className="text-red-500 text-center text-sm font-medium">{erro}</p>}
             </div>
             <div className="mt-8 text-center text-sm text-slate-400">
-               <Link to="/registrar-ocorrencia" className="hover:underline">Fazer uma nova denúncia</Link>
+                <Link to="/registrar-ocorrencia" className="hover:underline">Fazer uma nova denúncia</Link>
             </div>
           </div>
         </FadeIn>
@@ -132,11 +132,11 @@ const Acompanhamento = () => {
     );
   }
 
-  // --- VIEW: RESULTADO ---
+  // Configuração visual baseada no status
   const statusConfig = {
     pending: { color: 'bg-amber-100 text-amber-700', label: 'Pendente', icon: '⏳' },
-    in_progress: { color: 'bg-blue-100 text-blue-700', label: 'Em Curso', icon: '🐕' },
-    resolved: { color: 'bg-emerald-100 text-emerald-700', label: 'Concluído', icon: '✅' }
+    in_progress: { color: 'bg-blue-100 text-blue-700', label: 'Em Atendimento', icon: '🐕' },
+    resolved: { color: 'bg-emerald-100 text-emerald-700', label: 'Resolvido', icon: '✅' }
   };
 
   return (
@@ -148,11 +148,11 @@ const Acompanhamento = () => {
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-6 md:p-8">
               
-              {/* Alerta de Aguardando Aprovação */}
+              {/* Alerta se ainda estiver na coleção de triagem */}
               {ocorrencia.isWaitingApproval && (
                 <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-800 text-sm flex items-start gap-3">
                   <span className="text-lg">📩</span>
-                  <p>Sua denúncia foi enviada com sucesso e está <strong>aguardando visualização</strong> da nossa equipe técnica para entrar no sistema oficial.</p>
+                  <p>Sua denúncia foi recebida e está <strong>aguardando moderação</strong> para ser publicada no mapa oficial.</p>
                 </div>
               )}
 
@@ -166,43 +166,51 @@ const Acompanhamento = () => {
                 </div>
               </div>
 
-              {/* Timeline */}
+              {/* Timeline de progresso */}
               <div className="py-8 border-y border-slate-50">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Status do Atendimento</h3>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Evolução do Caso</h3>
                 <div className="relative pl-8 space-y-10">
                   <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-100"></div>
 
                   <TimelineItem 
-                    label="Denúncia Recebida" 
-                    desc="O protocolo foi gerado e está em nossa fila." 
+                    label="Relato Recebido" 
+                    desc="A denúncia entrou em nosso banco de dados." 
                     active={true} 
                     completed={!ocorrencia.isWaitingApproval} 
                   />
                   <TimelineItem 
-                    label="Em Análise / Atendimento" 
-                    desc="Estamos verificando as informações ou já estamos no local." 
-                    active={!ocorrencia.isWaitingApproval && (ocorrencia.status === 'in_progress' || ocorrencia.status === 'resolved')} 
-                    completed={ocorrencia.status === 'resolved'} 
+                    label="Publicado / Em Análise" 
+                    desc="A denúncia foi validada e está visível para a equipe." 
+                    active={!ocorrencia.isWaitingApproval} 
+                    completed={ocorrencia.status === 'in_progress' || ocorrencia.status === 'resolved'} 
                   />
                   <TimelineItem 
-                    label="Finalizado" 
-                    desc="O caso foi encerrado e a solução foi aplicada." 
+                    label="Concluído" 
+                    desc="O atendimento foi finalizado pela ONG/Prefeitura." 
                     active={ocorrencia.status === 'resolved'} 
                     completed={ocorrencia.status === 'resolved'} 
                   />
                 </div>
               </div>
 
-              {/* Detalhes Adicionais */}
+              {/* Informações detalhadas */}
               <div className="mt-8 space-y-4">
+                {ocorrencia.imageUrl && (
+                    <img 
+                        src={ocorrencia.imageUrl} 
+                        alt="Evidência" 
+                        className="w-full h-48 object-cover rounded-2xl mb-4 border border-slate-100"
+                    />
+                )}
+
                 <div className="bg-slate-50 p-4 rounded-xl">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Descrição enviada:</h4>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Descrição do Relato:</h4>
                   <p className="text-slate-700 text-sm italic">"{ocorrencia.description}"</p>
                 </div>
 
                 {ocorrencia.adminFeedback && (
                   <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
-                    <h4 className="text-orange-800 font-bold text-sm mb-1">Resposta da ONG:</h4>
+                    <h4 className="text-orange-800 font-bold text-sm mb-1">Retorno da Administração:</h4>
                     <p className="text-orange-900 text-sm">{ocorrencia.adminFeedback}</p>
                   </div>
                 )}
@@ -211,9 +219,14 @@ const Acompanhamento = () => {
 
             <div className="bg-slate-50 px-8 py-4 flex justify-between items-center border-t">
               <button onClick={() => setOcorrencia(null)} className="text-slate-400 text-xs font-bold hover:text-orange-500 uppercase">
-                ← Nova Consulta
+                ← Voltar
               </button>
-              <p className="text-[10px] text-slate-300 font-mono">PROTOCOLO: {protocolo}</p>
+              <div className="text-right">
+                <p className="text-[10px] text-slate-300 font-mono uppercase tracking-tighter">Protocolo: {protocolo}</p>
+                {ocorrencia.submittedAt && (
+                    <p className="text-[9px] text-slate-300 font-mono">Enviado em: {new Date(ocorrencia.submittedAt).toLocaleDateString('pt-BR')}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
