@@ -83,15 +83,16 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
     setState(() => _isLoading = true);
     try {
       if (isApprove) {
-        // Enviamos o ID, os dados editados e o objeto ORIGINAL COMPLETO para a migração
+        // AJUSTE: Passando os dados conforme o ModerationService espera para manter o ID
         await _service.approveOccurrence(
-          widget.occurrence.id, 
+          widget.occurrence.id, // O ID que agora é o protocolo
           {
             'description': _descController.text,
             'location': _locController.text,
-            'type': widget.occurrence.type, // Caso queira permitir editar o tipo no futuro
+            'type': widget.occurrence.type,
+            'protocol': widget.occurrence.id, // Garante que o protocolo seja salvo no novo doc
           },
-          widget.occurrence // Objeto original para o Batch copiar imagem, coordenadas, etc.
+          widget.occurrence
         );
       } else {
         await _service.rejectOccurrence(widget.occurrence.id);
@@ -188,6 +189,8 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
                           ),
                           const Divider(),
                           const SizedBox(height: 8),
+                          Text("Protocolo: ${widget.occurrence.id}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                          const SizedBox(height: 4),
                           Text("Reportado por: ${widget.occurrence.reporterName}", style: const TextStyle(fontWeight: FontWeight.w500)),
                           const SizedBox(height: 4),
                           Text("Telefone: ${widget.occurrence.reporterPhone}"),
