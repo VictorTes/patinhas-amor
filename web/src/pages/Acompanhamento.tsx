@@ -5,7 +5,6 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { FadeIn } from '../components/FadeIn';
 
-// Tipagem atualizada conforme os novos campos do banco
 interface OcorrenciaData {
   type: string;
   location: string;
@@ -39,7 +38,10 @@ const Acompanhamento = () => {
   }, [searchParams]);
 
   const buscarStatus = async (protocol: string, accessCode: string) => {
-    if (!protocol || !accessCode) {
+    const cleanProtocol = protocol.trim();
+    const cleanCode = accessCode.trim();
+
+    if (!cleanProtocol || !cleanCode) {
       setErro('Preencha o protocolo e o PIN.');
       return;
     }
@@ -49,11 +51,16 @@ const Acompanhamento = () => {
     setOcorrencia(null);
 
     try {
-      // Função auxiliar para buscar por campo 'protocol' em uma coleção específica
+      /**
+       * ALTERAÇÃO DE SEGURANÇA:
+       * Incluímos o 'accessCode' no 'where'. 
+       * O Firestore só retornará o documento se AMBOS os campos baterem.
+       */
       const findInCollection = async (colName: string) => {
         const q = query(
           collection(db, colName),
-          where("protocol", "==", protocol.trim()),
+          where("protocol", "==", cleanProtocol),
+          where("accessCode", "==", cleanCode), 
           limit(1)
         );
         const querySnapshot = await getDocs(q);
@@ -64,25 +71,22 @@ const Acompanhamento = () => {
         return null;
       };
 
-      // 1. Tenta buscar na coleção oficial (aprovadas/em curso)
+      // 1. Busca na oficial
       let data = await findInCollection("occurrences");
       let pending = false;
 
-      // 2. Se não existir na oficial, busca na triagem (pendentes)
+      // 2. Busca na triagem se não achou na oficial
       if (!data) {
         data = await findInCollection("pending_occurrences");
         pending = true;
       }
 
       if (data) {
-        // Validação de Segurança via Código PIN (Garante comparação como string)
-        if (String(data.accessCode).trim() === accessCode.trim()) {
-          setOcorrencia({ ...data, isWaitingApproval: pending });
-        } else {
-          setErro('Código PIN incorreto.');
-        }
+        // Se o banco retornou, o PIN já é válido por causa da Query
+        setOcorrencia({ ...data, isWaitingApproval: pending });
       } else {
-        setErro('Protocolo não encontrado. Verifique se digitou corretamente.');
+        // Se não retornou nada, ou o protocolo não existe ou o PIN está errado
+        setErro('Protocolo ou PIN incorretos. Verifique os dados.');
       }
     } catch (err) {
       console.error("Erro ao buscar status:", err);
@@ -92,6 +96,7 @@ const Acompanhamento = () => {
     }
   };
 
+  // --- Renderização permanece igual ---
   if (!ocorrencia) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
