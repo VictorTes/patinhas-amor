@@ -4,7 +4,8 @@ import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/volunteer_register_screen.dart';
 import 'package:patinhas_amor/screens/user_management_screen.dart';
-import 'package:patinhas_amor/screens/moderation_list_screen.dart'; // Import da nova tela
+import 'package:patinhas_amor/screens/moderation_list_screen.dart';
+import 'package:patinhas_amor/screens/campaing_list_screen.dart'; // Import da nova tela
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -78,6 +79,20 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
+          // NOVA OPÇÃO: CAMPANHAS E RIFAS
+          ListTile(
+            leading: const Icon(Icons.confirmation_number_outlined, color: Colors.deepOrange),
+            title: const Text('Campanhas e Rifas'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const CampanhasView()),
+              );
+            },
+          ),
+
           // ÁREA EXCLUSIVA PARA ADMIN
           FutureBuilder<Map<String, dynamic>?>(
             future: authService.getUserData(),
@@ -110,7 +125,7 @@ class AppDrawer extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) =>  ModerationListScreen()),
+                              builder: (context) => ModerationListScreen()),
                         );
                       },
                     ),
