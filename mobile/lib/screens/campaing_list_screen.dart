@@ -6,7 +6,7 @@ class CampanhasView extends StatefulWidget {
   const CampanhasView({super.key}); // Adicionado const no construtor da classe
 
   @override
-  _CampanhasViewState createState() => _CampanhasViewState();
+  State<CampanhasView> createState() => _CampanhasViewState();
 }
 
 class _CampanhasViewState extends State<CampanhasView> {
@@ -24,7 +24,8 @@ class _CampanhasViewState extends State<CampanhasView> {
           title: const Text('Campanhas e Rifas'), // Adicionado const
           backgroundColor: Colors.orange.shade800,
           foregroundColor: Colors.white,
-          bottom: const TabBar( // Adicionado const
+          bottom: const TabBar(
+            // Adicionado const
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
@@ -54,16 +55,18 @@ class _CampanhasViewState extends State<CampanhasView> {
 
   Widget _buildList(String? statusFilter) {
     Query query = _firestore.collection('campaigns');
-    
+
     if (statusFilter != null) {
-      query = query.where('status', isEqualTo: statusFilter); 
+      query = query.where('status', isEqualTo: statusFilter);
     }
 
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return const Center(child: Text('Erro ao carregar dados.'));
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.hasError)
+          return const Center(child: Text('Erro ao carregar dados.'));
+        if (snapshot.connectionState == ConnectionState.waiting)
+          return const Center(child: CircularProgressIndicator());
 
         final docs = snapshot.data?.docs ?? [];
 
@@ -88,11 +91,11 @@ class _CampanhasViewState extends State<CampanhasView> {
     String status = data['status'] ?? 'desconhecida';
     String title = data['title'] ?? 'Sem Título';
     String imageUrl = data['imageUrl'] ?? 'https://via.placeholder.com/400x200';
-    
+
     double goalValue = (data['goalValue'] ?? 0).toDouble();
     double currentValue = (data['currentValue'] ?? 0).toDouble();
     double price = (data['pricePerNumber'] ?? 0).toDouble();
-    
+
     double progress = 0;
     if (isRifa && goalValue > 0) {
       progress = currentValue / goalValue;
@@ -104,7 +107,8 @@ class _CampanhasViewState extends State<CampanhasView> {
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16), // Adicionado const
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/detalhe-campanha', arguments: id),
+        onTap: () =>
+            Navigator.pushNamed(context, '/detalhe-campanha', arguments: id),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,27 +122,31 @@ class _CampanhasViewState extends State<CampanhasView> {
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 160,
                     color: Colors.grey[300],
-                    child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                    child: const Icon(Icons.image_not_supported,
+                        size: 50, color: Colors.grey),
                   ),
                 ),
                 Positioned(
                   top: 10,
                   right: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Adicionado const
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 4), // Adicionado const
                     decoration: BoxDecoration(
                       color: _getStatusColor(status),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       status.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
               ],
             ),
-            
             Padding(
               padding: const EdgeInsets.all(15), // Adicionado const
               child: Column(
@@ -149,16 +157,23 @@ class _CampanhasViewState extends State<CampanhasView> {
                     children: [
                       Text(
                         isRifa ? '🎟️ RIFA' : '🛍️ BAZAR',
-                        style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.orange.shade900,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
                       ),
-                      if (isRifa) 
-                        Text('${currencyFormat.format(price)}/nº', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (isRifa)
+                        Text('${currencyFormat.format(price)}/nº',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 5), // Adicionado const
-                  Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8), // Adicionado const
-                  
+
                   if (isRifa) ...[
                     LinearProgressIndicator(
                       value: progress > 1 ? 1 : progress,
@@ -170,21 +185,22 @@ class _CampanhasViewState extends State<CampanhasView> {
                     const SizedBox(height: 5), // Adicionado const
                     Text(
                       'Arrecadado: ${currencyFormat.format(currentValue)} / ${currencyFormat.format(goalValue)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
                   ],
 
                   if (!isRifa) ...[
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 14, color: Colors.grey), // Adicionado const
+                        const Icon(Icons.location_on,
+                            size: 14, color: Colors.grey), // Adicionado const
                         const SizedBox(width: 4), // Adicionado const
                         Expanded(
-                          child: Text(
-                            data['address'] ?? 'Endereço não informado', 
-                            style: const TextStyle(fontSize: 12, color: Colors.grey)
-                          )
-                        ),
+                            child: Text(
+                                data['address'] ?? 'Endereço não informado',
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey))),
                       ],
                     ),
                   ],
@@ -199,10 +215,14 @@ class _CampanhasViewState extends State<CampanhasView> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'ativa': return Colors.green;
-      case 'concluida': return Colors.blue;
-      case 'cancelada': return Colors.red;
-      default: return Colors.grey;
+      case 'ativa':
+        return Colors.green;
+      case 'concluida':
+        return Colors.blue;
+      case 'cancelada':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 }
