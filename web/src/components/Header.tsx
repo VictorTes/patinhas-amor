@@ -5,35 +5,31 @@ import logoOng from '../assets/logo.png';
 export function Header() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false); // Estado para o Pop-up
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false); // Estado para animação de cópia
   const [, setIsMobile] = useState(false);
 
-  // Detectar se é mobile
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+  const pixKey = "suachavepix@aqui.com"; // Substitua pela sua chave real
 
+  // Função para copiar e animar
+  const handleCopy = () => {
+    navigator.clipboard.writeText(pixKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000); // Reseta após 2 segundos
+  };
+
+  useEffect(() => {
+    const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Fechar menu ao mudar de rota
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location]);
+  useEffect(() => setIsMenuOpen(false), [location]);
 
-  // Bloquear scroll quando menu estiver aberto
   useEffect(() => {
-    if (isMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
   }, [isMenuOpen]);
 
   const navLinks = [
@@ -71,18 +67,12 @@ export function Header() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`
-                      relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                      ${isActive
-                        ? 'text-orange-600 bg-orange-50'
-                        : 'text-slate-600 hover:text-orange-500 hover:bg-slate-50'
-                      }
-                    `}
+                    className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      isActive ? 'text-orange-600 bg-orange-50' : 'text-slate-600 hover:text-orange-500 hover:bg-slate-50'
+                    }`}
                   >
                     {link.label}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full" />
-                    )}
+                    {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full" />}
                   </Link>
                 );
               })}
@@ -90,7 +80,6 @@ export function Header() {
 
             {/* Ações (Desktop) */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Botão Doar - Abre Pop-up */}
               <button
                 onClick={() => setIsDonationModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-orange-600 border-2 border-orange-500 rounded-full hover:bg-orange-50 transition-all duration-200"
@@ -113,7 +102,6 @@ export function Header() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-100 transition-colors"
-              aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
             >
               <div className="relative w-6 h-5">
                 <span className={`absolute left-0 w-6 h-0.5 bg-slate-700 transition-all duration-300 ${isMenuOpen ? 'top-2.5 rotate-45' : 'top-0'}`} />
@@ -125,10 +113,9 @@ export function Header() {
         </div>
       </header>
 
-      {/* Overlay Mobile Menu */}
+      {/* Mobile Menu */}
       <div className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-
         <div className={`absolute right-0 top-0 h-full w-80 max-w-full bg-white shadow-2xl transform transition-transform duration-300 ease-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-slate-100">
@@ -139,64 +126,69 @@ export function Header() {
                 </svg>
               </button>
             </div>
-
-            <nav className="flex-1 overflow-y-auto py-4">
-              <div className="px-4 space-y-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center gap-4 px-4 py-4 rounded-xl text-lg font-medium ${(location.pathname === link.path) ? 'bg-orange-50 text-orange-600 border-2 border-orange-200' : 'text-slate-700 hover:bg-slate-50 border-2 border-transparent'}`}
-                  >
-                    <span className="text-2xl">{link.icon}</span>
-                    <span>{link.label}</span>
-                  </Link>
-                ))}
-                {/* Opção Doar dentro da lista Mobile */}
-                <button
-                  onClick={() => { setIsMenuOpen(false); setIsDonationModalOpen(true); }}
-                  className="flex items-center gap-4 px-4 py-4 rounded-xl text-lg font-medium text-slate-700 hover:bg-slate-50 w-full text-left"
+            <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-4 px-4 py-4 rounded-xl text-lg font-medium ${location.pathname === link.path ? 'bg-orange-50 text-orange-600 border-2 border-orange-200' : 'text-slate-700 hover:bg-slate-50 border-2 border-transparent'}`}
                 >
-                  <span className="text-2xl">❤️</span>
-                  <span>Fazer Doação</span>
-                </button>
-              </div>
-            </nav>
-
-            <div className="p-4 border-t border-slate-100 space-y-3">
-              <Link
-                to="/adocao"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg"
+                  <span className="text-2xl">{link.icon}</span>
+                  <span>{link.label}</span>
+                </Link>
+              ))}
+              <button
+                onClick={() => { setIsMenuOpen(false); setIsDonationModalOpen(true); }}
+                className="flex items-center gap-4 px-4 py-4 rounded-xl text-lg font-medium text-slate-700 hover:bg-slate-50 w-full text-left"
               >
+                <span className="text-2xl">❤️</span>
+                <span>Fazer Doação</span>
+              </button>
+            </nav>
+            <div className="p-4 border-t border-slate-100 space-y-3">
+              <Link to="/adocao" className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg">
                 <span>🐾 Quero Adotar</span>
               </Link>
-              <p className="text-center text-slate-500 text-sm">ONG Patinhas e Amor © 2026</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Exemplo Simples de Modal de Doação (Pop-up) */}
+      {/* Modal de Doação com Botão Animado */}
       {isDonationModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsDonationModalOpen(false)} />
-          <div className="relative bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+          <div className="relative bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center scale-up-animation">
             <button onClick={() => setIsDonationModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
-               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <div className="text-4xl mb-4">❤️</div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Ajude nossa causa</h2>
-            <p className="text-slate-600 mb-6">Escaneie o QR Code abaixo para realizar uma doação via Pix e ajudar nossos resgatados.</p>
+            <p className="text-slate-600 mb-6 text-sm">Escaneie o QR Code ou copie a chave Pix abaixo.</p>
             
-            {/* Espaço para o QR Code */}
             <div className="bg-slate-100 aspect-square rounded-2xl flex items-center justify-center mb-6 border-2 border-dashed border-slate-300">
-               <span className="text-slate-400 font-medium">[QR CODE PIX AQUI]</span>
+               <span className="text-slate-400 font-medium text-xs">[QR CODE]</span>
             </div>
 
-            <button className="w-full bg-slate-100 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-200 transition-colors">
-              Copiar Chave Pix
+            <button
+              onClick={handleCopy}
+              className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                copied 
+                ? 'bg-green-500 text-white scale-105' 
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              {copied ? (
+                <>
+                  <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Copiado!</span>
+                </>
+              ) : (
+                <span>Copiar Chave Pix</span>
+              )}
             </button>
           </div>
         </div>
