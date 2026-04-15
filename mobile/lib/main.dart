@@ -54,6 +54,7 @@ class PatinhasAmorApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(), // O nome deve bater com o pushReplacementNamed
         '/forgot-password': (context) => const ForgotPasswordScreen(), // Opcional, mas organizado
+        
       },
     );
   }

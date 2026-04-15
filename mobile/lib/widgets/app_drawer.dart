@@ -5,7 +5,7 @@ import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/volunteer_register_screen.dart';
 import 'package:patinhas_amor/screens/user_management_screen.dart';
 import 'package:patinhas_amor/screens/moderation_list_screen.dart';
-import 'package:patinhas_amor/screens/campaing_list_screen.dart'; // Import da nova tela
+import 'package:patinhas_amor/screens/campaing_list_screen.dart'; 
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
