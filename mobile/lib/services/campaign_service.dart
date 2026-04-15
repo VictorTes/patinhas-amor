@@ -3,23 +3,27 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import '../models/campaign.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
+
 
 class CampaignService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'campaigns';
 
   // Configurações do Cloudinary (Substitua pelos seus dados)
-  final String cloudName = "seu_cloud_name";
-  final String uploadPreset = "seu_preset";
+  final String _cloudName = dotenv.get('CLOUDINARY_CLOUD_NAME', fallback: '');
+  final String _uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
 
   // Função interna para upload no Cloudinary via API REST
   Future<String?> _uploadToCloudinary(File file) async {
     try {
-      final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/upload');
+      final url = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/upload');
       
       final request = http.MultipartRequest('POST', url)
-        ..fields['upload_preset'] = uploadPreset
+        ..fields['upload_preset'] = _uploadPreset
+        ..fields['folder'] = 'ocorrencias'
         ..files.add(await http.MultipartFile.fromPath('file', file.path));
+        
 
       final response = await request.send();
       if (response.statusCode == 200) {
