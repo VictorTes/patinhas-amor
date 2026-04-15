@@ -5,6 +5,7 @@ import 'package:patinhas_amor/widgets/auth_wrapper.dart';
 import 'package:patinhas_amor/screens/home_screen.dart'; 
 import 'package:patinhas_amor/screens/login_screen.dart'; 
 import 'package:patinhas_amor/screens/forgot_password_screen.dart'; 
+import 'package:patinhas_amor/screens/campaign_form_screen.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
@@ -54,7 +55,8 @@ class PatinhasAmorApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(), // O nome deve bater com o pushReplacementNamed
         '/forgot-password': (context) => const ForgotPasswordScreen(), // Opcional, mas organizado
-        
+        '/criar-campanha': (context) => const CampaignFormScreen(),
+        // '/detalhe-campanha': (context) => const CampaignDetailScreen(),
       },
     );
   }
