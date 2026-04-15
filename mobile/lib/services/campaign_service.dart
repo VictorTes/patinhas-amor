@@ -21,7 +21,7 @@ class CampaignService {
       
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = _uploadPreset
-        ..fields['folder'] = 'ocorrencias'
+        ..fields['folder'] = 'campanhas'
         ..files.add(await http.MultipartFile.fromPath('file', file.path));
         
 
