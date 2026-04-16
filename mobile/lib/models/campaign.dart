@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum CampaignType { rifa, bazar, outro }
+
 enum CampaignStatus { ativa, concluida, cancelada }
 
 class ExpenseItem {
@@ -10,9 +11,9 @@ class ExpenseItem {
   ExpenseItem({required this.description, required this.value});
 
   Map<String, dynamic> toMap() => {
-    'description': description,
-    'value': value,
-  };
+        'description': description,
+        'value': value,
+      };
 
   factory ExpenseItem.fromMap(Map<String, dynamic> map) {
     return ExpenseItem(
@@ -30,13 +31,13 @@ class CampaignModel {
   final CampaignStatus status;
   final String? imageUrl;
   final DateTime? createdAt;
-  
+
   // Campos específicos de Rifa
   final double? goalValue;
   final double? currentValue;
   final double? ticketValue;
   final String? prize;
-  
+
   // Campos específicos de Bazar
   final String? address;
   final String? itemsForSale;
@@ -67,6 +68,26 @@ class CampaignModel {
     this.receiptUrls,
   });
   
+  CampaignModel copyWith({double? currentValue}) {
+    return CampaignModel(
+      id: id,
+      title: title,
+      description: description,
+      type: type,
+      status: status,
+      goalValue: goalValue,
+      ticketValue: ticketValue,
+      prize: prize,
+      address: address,
+      itemsForSale: itemsForSale,
+      hasAccountability: hasAccountability,
+      totalCollected: totalCollected,
+      expenses: expenses,
+      currentValue: currentValue ?? this.currentValue, // Valor atualizado aqui
+      imageUrl: imageUrl,
+      receiptUrls: receiptUrls,
+    );
+  }
 
   // Converte objeto para Map (Salvar no Firestore)
   Map<String, dynamic> toMap() {
