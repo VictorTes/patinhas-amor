@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:patinhas_amor/widgets/auth_wrapper.dart';
-import 'package:patinhas_amor/screens/home_screen.dart'; 
-import 'package:patinhas_amor/screens/login_screen.dart'; 
-import 'package:patinhas_amor/screens/forgot_password_screen.dart'; 
+import 'package:patinhas_amor/screens/home_screen.dart';
+import 'package:patinhas_amor/screens/login_screen.dart';
+import 'package:patinhas_amor/screens/forgot_password_screen.dart';
 import 'package:patinhas_amor/screens/campaign_form_screen.dart';
+import 'package:patinhas_amor/screens/campaign_detail_screen.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
@@ -44,7 +45,7 @@ class PatinhasAmorApp extends StatelessWidget {
           ),
         ),
       ),
-      
+
       // Define a tela inicial através do Wrapper
       home: const ConnectivityWrapper(
         child: AuthWrapper(),
@@ -53,10 +54,17 @@ class PatinhasAmorApp extends StatelessWidget {
       // --- ADICIONE AS ROTAS AQUI ---
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(), // O nome deve bater com o pushReplacementNamed
-        '/forgot-password': (context) => const ForgotPasswordScreen(), // Opcional, mas organizado
+        '/home': (context) =>
+            const HomeScreen(), // O nome deve bater com o pushReplacementNamed
+        '/forgot-password': (context) =>
+            const ForgotPasswordScreen(), // Opcional, mas organizado
         '/criar-campanha': (context) => const CampaignFormScreen(),
-        // '/detalhe-campanha': (context) => const CampaignDetailScreen(),
+        '/detalhe-campanha': (context) {
+          // Extrai o ID enviado pelo Navigator
+          final String id =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return CampaignDetailScreen(campaignId: id);
+        },
       },
     );
   }
@@ -93,7 +101,7 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( 
+    return Scaffold(
       body: Column(
         children: [
           if (_isOffline)
@@ -113,10 +121,9 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
                       Text(
                         "Sem conexão com a internet",
                         style: TextStyle(
-                          color: Colors.white, 
-                          fontSize: 12, 
-                          fontWeight: FontWeight.bold
-                        ),
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
