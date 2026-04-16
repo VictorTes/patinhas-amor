@@ -25,6 +25,7 @@ class CampaignDetailScreen extends StatelessWidget {
         }
 
         final campaigns = snapshot.data!;
+        // Busca a campanha pelo ID garantindo que estamos editando a mesma
         final campaign = campaigns
             .cast<CampaignModel?>()
             .firstWhere((c) => c?.id == campaignId, orElse: () => null);
@@ -49,8 +50,10 @@ class CampaignDetailScreen extends StatelessWidget {
                   ),
                 ),
                 actions: [
+                  // BOTÃO DE EDIÇÃO COMPLETA: Abre o formulário com os dados atuais
                   IconButton(
-                    icon: const Icon(Icons.edit),
+                    icon: const Icon(Icons.edit_note_rounded, size: 28),
+                    tooltip: 'Editar informações completas',
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -75,10 +78,12 @@ class CampaignDetailScreen extends StatelessWidget {
                         Text(campaign.description,
                             style: const TextStyle(fontSize: 16, color: Colors.grey)),
                         const Divider(height: 40),
+                        
                         if (campaign.type == CampaignType.rifa)
                           _buildRifaProgress(campaign, currencyFormat),
                         if (campaign.type == CampaignType.bazar)
                           _buildBazarInfo(campaign),
+                          
                         const SizedBox(height: 30),
                         if (campaign.hasAccountability)
                           _buildAccountability(campaign, currencyFormat),
@@ -90,10 +95,11 @@ class CampaignDetailScreen extends StatelessWidget {
               ),
             ],
           ),
+          // BOTÃO DE ATUALIZAÇÃO RÁPIDA - Corrigido o ícone
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showManageProgressSheet(context, campaign, service),
-            label: Text(campaign.type == CampaignType.rifa ? 'GERENCIAR NÚMEROS' : 'ATUALIZAR VENDAS'),
-            icon: const Icon(Icons.edit_notifications),
+            label: Text(campaign.type == CampaignType.rifa ? 'ATUALIZAR ARRECADAÇÃO' : 'ATUALIZAR VENDAS'),
+            icon: const Icon(Icons.price_check), // Corrigido de PriceCheck para price_check
             backgroundColor: Colors.orange.shade800,
           ),
         );
@@ -101,7 +107,6 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
-  // Painel Inferior para edição rápida de valores
   void _showManageProgressSheet(BuildContext context, CampaignModel campaign, CampaignService service) {
     final controller = TextEditingController(text: campaign.currentValue?.toString() ?? '0');
 
@@ -118,18 +123,20 @@ class CampaignDetailScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Atualizar Progresso', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('Atualizar Valor Arrecadado', 
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            Text('Campanha: ${campaign.title}', style: const TextStyle(color: Colors.grey)),
+            Text('Editando: ${campaign.title}', style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 20),
             TextFormField(
               controller: controller,
               keyboardType: TextInputType.number,
               autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Total Arrecadado (R\$)',
+                labelText: 'Valor Total Atual (R\$)',
                 prefixText: 'R\$ ',
                 border: OutlineInputBorder(),
+                helperText: 'Isso atualizará a barra de progresso instantaneamente.',
               ),
             ),
             const SizedBox(height: 20),
@@ -137,18 +144,22 @@ class CampaignDetailScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700, 
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                ),
                 onPressed: () async {
                   final newValue = double.tryParse(controller.text) ?? 0;
                   
-                  // Atualiza apenas o campo currentValue preservando o restante
+                  // Mantemos o ID original para o service entender que é uma EDIÇÃO
                   final updated = campaign.copyWith(currentValue: newValue);
                   
                   await service.saveCampaign(updated, null, []);
                   
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: const Text('SALVAR ALTERAÇÕES'),
+                child: const Text('SALVAR VALOR'),
               ),
             ),
           ],
@@ -177,6 +188,7 @@ class CampaignDetailScreen extends StatelessWidget {
   Widget _buildRifaProgress(CampaignModel c, NumberFormat fmt) {
     double progress = (c.currentValue ?? 0) / (c.goalValue ?? 1);
     if (progress > 1.0) progress = 1.0;
+    bool isGoalReached = (c.currentValue ?? 0) >= (c.goalValue ?? 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +198,10 @@ class CampaignDetailScreen extends StatelessWidget {
           children: [
             const Text('Progresso da Arrecadação', style: TextStyle(fontWeight: FontWeight.bold)),
             Text('${(progress * 100).toStringAsFixed(1)}%',
-                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                  color: isGoalReached ? Colors.blue : Colors.green, 
+                  fontWeight: FontWeight.bold
+                )),
           ],
         ),
         const SizedBox(height: 10),
@@ -196,10 +211,12 @@ class CampaignDetailScreen extends StatelessWidget {
             value: progress,
             minHeight: 15,
             backgroundColor: Colors.grey[200],
-            color: Colors.green,
+            color: isGoalReached ? Colors.blue : Colors.green,
           ),
         ),
         const SizedBox(height: 10),
+        if (isGoalReached)
+          const Text('🎉 Meta atingida!', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
         Text('Arrecadado: ${fmt.format(c.currentValue ?? 0)} / Meta: ${fmt.format(c.goalValue ?? 0)}',
             style: const TextStyle(color: Colors.grey, fontSize: 13)),
         if (c.prize != null) ...[
