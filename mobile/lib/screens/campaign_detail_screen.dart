@@ -11,17 +11,33 @@ class CampaignDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final currencyFormat =
+        NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     final CampaignService service = CampaignService();
 
     return StreamBuilder<List<CampaignModel>>(
-      // Filtramos a stream para pegar apenas esta campanha específica
-      stream: service.getCampaignsStream(null), 
+      stream: service.getCampaignsStream(null),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        
-        // Localiza a campanha pelo ID dentro da lista da stream
-        final campaign = snapshot.data!.firstWhere((c) => c.id == campaignId);
+        if (snapshot.hasError)
+          return const Scaffold(body: Center(child: Text('Erro ao carregar')));
+        if (!snapshot.hasData)
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
+
+        // Busca segura: tenta encontrar o elemento
+        final campaigns = snapshot.data!;
+        final campaign = campaigns
+            .cast<CampaignModel?>()
+            .firstWhere((c) => c?.id == campaignId, orElse: () => null);
+
+        // Se não encontrar (ID inexistente ou deletado), mostra aviso em vez de travar
+        if (campaign == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const Center(
+                child: Text('Campanha não encontrada ou removida.')),
+          );
+        }
 
         return Scaffold(
           body: CustomScrollView(
@@ -41,7 +57,9 @@ class CampaignDetailScreen extends StatelessWidget {
                     icon: const Icon(Icons.edit),
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => CampaignFormScreen(campaign: campaign)),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              CampaignFormScreen(campaign: campaign)),
                     ),
                   ),
                 ],
@@ -55,18 +73,26 @@ class CampaignDetailScreen extends StatelessWidget {
                       children: [
                         _buildBadge(campaign),
                         const SizedBox(height: 10),
-                        Text(campaign.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                        Text(campaign.title,
+                            style: const TextStyle(
+                                fontSize: 26, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
-                        Text(campaign.description, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                        Text(campaign.description,
+                            style: const TextStyle(
+                                fontSize: 16, color: Colors.grey)),
                         const Divider(height: 40),
-                        
-                        if (campaign.type == CampaignType.rifa) _buildRifaProgress(campaign, currencyFormat),
-                        if (campaign.type == CampaignType.bazar) _buildBazarInfo(campaign),
-                        
+
+                        if (campaign.type == CampaignType.rifa)
+                          _buildRifaProgress(campaign, currencyFormat),
+                        if (campaign.type == CampaignType.bazar)
+                          _buildBazarInfo(campaign),
+
                         const SizedBox(height: 30),
-                        if (campaign.hasAccountability) _buildAccountability(campaign, currencyFormat),
-                        
-                        const SizedBox(height: 100), // Espaço para não bater no fundo
+                        if (campaign.hasAccountability)
+                          _buildAccountability(campaign, currencyFormat),
+
+                        const SizedBox(
+                            height: 100), // Espaço para não bater no fundo
                       ],
                     ),
                   ),
@@ -74,9 +100,9 @@ class CampaignDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          floatingActionButton: campaign.type == CampaignType.rifa 
+          floatingActionButton: campaign.type == CampaignType.rifa
               ? FloatingActionButton.extended(
-                  onPressed: () { /* Lógica para marcar números vendidos */ },
+                  onPressed: () {/* Lógica para marcar números vendidos */},
                   label: const Text('GERENCIAR NÚMEROS'),
                   icon: const Icon(Icons.list_alt),
                   backgroundColor: Colors.orange.shade800,
@@ -91,13 +117,17 @@ class CampaignDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: c.type == CampaignType.rifa ? Colors.purple.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+        color: c.type == CampaignType.rifa
+            ? Colors.purple.withOpacity(0.1)
+            : Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         c.type == CampaignType.rifa ? '🎟️ RIFA' : '🛍️ BAZAR',
         style: TextStyle(
-          color: c.type == CampaignType.rifa ? Colors.purple : Colors.orange.shade900,
+          color: c.type == CampaignType.rifa
+              ? Colors.purple
+              : Colors.orange.shade900,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -112,8 +142,11 @@ class CampaignDetailScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Progresso da Arrecadação', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text('${(progress * 100).toStringAsFixed(1)}%', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            const Text('Progresso da Arrecadação',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('${(progress * 100).toStringAsFixed(1)}%',
+                style: const TextStyle(
+                    color: Colors.green, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 10),
@@ -127,14 +160,18 @@ class CampaignDetailScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Text('Meta: ${fmt.format(c.goalValue)}', style: const TextStyle(color: Colors.grey)),
+        Text('Meta: ${fmt.format(c.goalValue)}',
+            style: const TextStyle(color: Colors.grey)),
         if (c.prize != null) ...[
           const SizedBox(height: 20),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.emoji_events, color: Colors.amber, size: 40),
+            leading:
+                const Icon(Icons.emoji_events, color: Colors.amber, size: 40),
             title: const Text('Prêmio'),
-            subtitle: Text(c.prize!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            subtitle: Text(c.prize!,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ]
       ],
@@ -162,7 +199,8 @@ class CampaignDetailScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('📊 Prestação de Contas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const Text('📊 Prestação de Contas',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 15),
         Card(
           color: Colors.grey[50],
@@ -174,26 +212,30 @@ class CampaignDetailScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Total Arrecadado:'),
-                    Text(fmt.format(c.totalCollected ?? 0), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                    Text(fmt.format(c.totalCollected ?? 0),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.green)),
                   ],
                 ),
                 const Divider(),
                 ...?c.expenses?.map((e) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(e.description),
-                      Text('- ${fmt.format(e.value)}', style: const TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                )),
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(e.description),
+                          Text('- ${fmt.format(e.value)}',
+                              style: const TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    )),
               ],
             ),
           ),
         ),
         const SizedBox(height: 15),
-        const Text('Comprovantes:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Comprovantes:',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         SizedBox(
           height: 100,
@@ -204,7 +246,8 @@ class CampaignDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.only(right: 10),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(c.receiptUrls![index], width: 100, height: 100, fit: BoxFit.cover),
+                child: Image.network(c.receiptUrls![index],
+                    width: 100, height: 100, fit: BoxFit.cover),
               ),
             ),
           ),
