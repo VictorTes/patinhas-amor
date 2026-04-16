@@ -25,7 +25,6 @@ class CampaignDetailScreen extends StatelessWidget {
         }
 
         final campaigns = snapshot.data!;
-        // Busca a campanha pelo ID garantindo que estamos editando a mesma
         final campaign = campaigns
             .cast<CampaignModel?>()
             .firstWhere((c) => c?.id == campaignId, orElse: () => null);
@@ -49,19 +48,6 @@ class CampaignDetailScreen extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 ),
-                actions: [
-                  // BOTÃO DE EDIÇÃO COMPLETA: Abre o formulário com os dados atuais
-                  IconButton(
-                    icon: const Icon(Icons.edit_note_rounded, size: 28),
-                    tooltip: 'Editar informações completas',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CampaignFormScreen(campaign: campaign),
-                      ),
-                    ),
-                  ),
-                ],
               ),
               SliverList(
                 delegate: SliverChildListDelegate([
@@ -70,7 +56,22 @@ class CampaignDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildBadge(campaign),
+                        // LINHA COM BADGE E BOTÃO DE EDIÇÃO NA EXTREMIDADE
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildBadge(campaign),
+                            IconButton(
+                              icon: const Icon(Icons.edit, size: 24, color: Colors.grey),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CampaignFormScreen(campaign: campaign),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 10),
                         Text(campaign.title,
                             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
@@ -95,11 +96,10 @@ class CampaignDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          // BOTÃO DE ATUALIZAÇÃO RÁPIDA - Corrigido o ícone
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showManageProgressSheet(context, campaign, service),
             label: Text(campaign.type == CampaignType.rifa ? 'ATUALIZAR ARRECADAÇÃO' : 'ATUALIZAR VENDAS'),
-            icon: const Icon(Icons.price_check), // Corrigido de PriceCheck para price_check
+            icon: const Icon(Icons.price_check),
             backgroundColor: Colors.orange.shade800,
           ),
         );
@@ -151,12 +151,8 @@ class CampaignDetailScreen extends StatelessWidget {
                 ),
                 onPressed: () async {
                   final newValue = double.tryParse(controller.text) ?? 0;
-                  
-                  // Mantemos o ID original para o service entender que é uma EDIÇÃO
                   final updated = campaign.copyWith(currentValue: newValue);
-                  
                   await service.saveCampaign(updated, null, []);
-                  
                   if (context.mounted) Navigator.pop(context);
                 },
                 child: const Text('SALVAR VALOR'),
