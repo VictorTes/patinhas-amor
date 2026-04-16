@@ -66,6 +66,7 @@ class CampaignModel {
     this.expenses,
     this.receiptUrls,
   });
+  
 
   // Converte objeto para Map (Salvar no Firestore)
   Map<String, dynamic> toMap() {
