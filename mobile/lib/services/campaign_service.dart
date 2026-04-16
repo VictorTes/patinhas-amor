@@ -5,16 +5,13 @@ import 'package:http/http.dart' as http;
 import '../models/campaign.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 
-
 class CampaignService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'campaigns';
 
-  // Configurações do Cloudinary (Substitua pelos seus dados)
   final String _cloudName = dotenv.get('CLOUDINARY_CLOUD_NAME', fallback: '');
   final String _uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
 
-  // Função interna para upload no Cloudinary via API REST
   Future<String?> _uploadToCloudinary(File file) async {
     try {
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/upload');
@@ -23,12 +20,11 @@ class CampaignService {
         ..fields['upload_preset'] = _uploadPreset
         ..fields['folder'] = 'campanhas'
         ..files.add(await http.MultipartFile.fromPath('file', file.path));
-        
 
       final response = await request.send();
       if (response.statusCode == 200) {
         final responseData = await response.stream.toBytes();
-        final responseString = String.fromCharCodes(responseData);
+        final responseString = utf8.decode(responseData);
         final jsonMap = jsonDecode(responseString);
         return jsonMap['secure_url'];
       }
@@ -39,18 +35,20 @@ class CampaignService {
     }
   }
 
-  // Salvar nova campanha
+  /// Salva ou Atualiza uma campanha (Lógica Corrigida)
   Future<void> saveCampaign(CampaignModel campaign, File? mainImage, List<File>? receipts) async {
     try {
-      String? mainImageUrl;
-      List<String> receiptUrls = [];
+      // Se a campanha já tem ID, buscamos as URLs atuais para não perdê-las caso não envie arquivos novos
+      String? mainImageUrl = campaign.imageUrl;
+      List<String> receiptUrls = List.from(campaign.receiptUrls ?? []);
 
-      // 1. Upload da imagem principal
+      // 1. Upload da imagem principal (só faz se houver arquivo novo)
       if (mainImage != null) {
-        mainImageUrl = await _uploadToCloudinary(mainImage);
+        String? uploadedUrl = await _uploadToCloudinary(mainImage);
+        if (uploadedUrl != null) mainImageUrl = uploadedUrl;
       }
 
-      // 2. Upload múltiplo dos comprovantes
+      // 2. Upload múltiplo dos comprovantes (só faz se houver arquivos novos)
       if (receipts != null && receipts.isNotEmpty) {
         for (var file in receipts) {
           String? url = await _uploadToCloudinary(file);
@@ -60,29 +58,38 @@ class CampaignService {
         }
       }
 
-      // 3. Montar dados finais
+      // 3. Montar dados para o Firestore
       final data = campaign.toMap();
       data['imageUrl'] = mainImageUrl;
       data['receiptUrls'] = receiptUrls;
-      data['createdAt'] = FieldValue.serverTimestamp();
 
-      await _firestore.collection(_collection).add(data);
+      // 4. Lógica de Decisão: Editar ou Criar
+      if (campaign.id != null && campaign.id!.isNotEmpty) {
+        // ATUALIZAR: Usa o ID existente
+        await _firestore.collection(_collection).doc(campaign.id).update(data);
+      } else {
+        // CRIAR NOVO: Adiciona timestamp de criação
+        data['createdAt'] = FieldValue.serverTimestamp();
+        await _firestore.collection(_collection).add(data);
+      }
     } catch (e) {
-      throw Exception('Erro ao salvar campanha: $e');
+      throw Exception('Erro ao processar campanha: $e');
     }
   }
 
-  // Atualizar campanha
+  // Atualização parcial de campos específicos
   Future<void> updateCampaign(String id, Map<String, dynamic> data) async {
-    await _firestore.collection(_collection).doc(id).update(data);
+    try {
+      await _firestore.collection(_collection).doc(id).update(data);
+    } catch (e) {
+      throw Exception('Erro ao atualizar campos: $e');
+    }
   }
 
-  // Excluir campanha
   Future<void> deleteCampaign(String id) async {
     await _firestore.collection(_collection).doc(id).delete();
   }
 
-  // Stream para listagem (com o filtro de status)
   Stream<List<CampaignModel>> getCampaignsStream(String? statusFilter) {
     Query query = _firestore.collection(_collection).orderBy('createdAt', descending: true);
 
