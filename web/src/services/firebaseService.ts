@@ -15,8 +15,7 @@ import type {
   Animal, 
   AnimalStatus, 
   Occurrence, 
-  CampaignModel, 
-  CampaignStatus 
+  CampaignModel
 } from '../types';
 
 // Coleções

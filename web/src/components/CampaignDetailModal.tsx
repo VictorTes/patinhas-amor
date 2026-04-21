@@ -12,7 +12,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   const isFinalized = campaign.status === CampaignStatus.finalizada;
 
   const handleWhatsApp = () => {
-    const phone = "5547999999999"; // TODO: Colocar o número da ONG aqui
+    const phone = "5547999999999"; 
     const message = campaign.type === CampaignType.rifa
       ? `Olá! Gostaria de comprar ${ticketQuantity} número(s) para a rifa: ${campaign.title}`
       : `Olá! Tenho interesse na campanha: ${campaign.title}`;
@@ -25,15 +25,12 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
     <div style={styles.overlay}>
       <div style={styles.modal}>
         <button onClick={onClose} style={styles.closeBtn}>&times;</button>
-        
         <div style={styles.content}>
           <img src={campaign.imageUrl} alt={campaign.title} style={styles.image} />
-          
           <div style={styles.infoSection}>
             <h2 style={styles.title}>{campaign.title}</h2>
             <p style={styles.description}>{campaign.description}</p>
 
-            {/* Seção de Compra (Só aparece se for Rifa e estiver ativa) */}
             {campaign.type === CampaignType.rifa && !isFinalized && (
               <div style={styles.actionBox}>
                 <p><strong>Valor do número:</strong> R$ {campaign.ticketValue}</p>
@@ -53,7 +50,6 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
               </div>
             )}
 
-            {/* Prestação de Contas */}
             <div style={styles.accountability}>
               <h3>📊 Prestação de Contas</h3>
               {campaign.hasAccountability ? (
@@ -83,7 +79,7 @@ const styles: Record<string, React.CSSProperties> = {
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' },
   modal: { backgroundColor: '#fff', width: '100%', maxWidth: '900px', maxHeight: '90vh', borderRadius: '16px', position: 'relative', overflowY: 'auto' },
   closeBtn: { position: 'absolute', top: '15px', right: '20px', fontSize: '30px', border: 'none', background: 'none', cursor: 'pointer', zIndex: 10 },
-  content: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap' as any },
+  content: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap' },
   image: { width: '100%', maxWidth: '400px', height: 'auto', objectFit: 'cover' },
   infoSection: { flex: 1, padding: '30px', minWidth: '300px' },
   title: { margin: '0 0 10px 0', fontSize: '24px', color: '#333' },

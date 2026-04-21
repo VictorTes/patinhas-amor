@@ -1,27 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { getCampaignsStream } from '../services/firebaseService';
 import { CampaignStatus } from '../types';
-// Note o "type" adicionado abaixo:
 import type { CampaignModel } from '../types'; 
+
+// Importações corrigidas (sem o .tsx no final e apontando para os nomes certos)
 import { CampaignCard } from '../components/CampaignCard';
+import { CampaignDetailModal } from '../components/CampaignDetailModal';
 
 const CampaignsWebPage: React.FC = () => {
   const [campaigns, setCampaigns] = useState<CampaignModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<CampaignStatus | 'todas'>('ativa');
+  const [selectedCampaign, setSelectedCampaign] = useState<CampaignModel | null>(null);
 
   useEffect(() => {
-    // Iniciamos o Stream em tempo real
     const unsubscribe = getCampaignsStream((data) => {
       setCampaigns(data);
       setLoading(false);
     });
-
-    // Cleanup ao desmontar o componente
     return () => unsubscribe();
   }, []);
 
-  // Lógica de filtragem
+  useEffect(() => {
+    document.body.style.overflow = selectedCampaign ? 'hidden' : 'unset';
+  }, [selectedCampaign]);
+
   const filteredCampaigns = campaigns.filter((c) => {
     if (filter === 'todas') return true;
     return c.status === filter;
@@ -29,35 +32,33 @@ const CampaignsWebPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
         <p>Carregando campanhas...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-      <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
+      <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ margin: 0, color: '#333' }}>Campanhas Solidárias</h1>
-          <p style={{ color: '#666' }}>Ajude as causas da nossa ONG</p>
+          <p style={{ color: '#e67e22' }}>Ajude os animais da nossa ONG</p>
         </div>
 
-        {/* Filtros Visuais */}
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
           {(['todas', 'ativa', 'finalizada'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               style={{
-                padding: '8px 16px',
-                borderRadius: '20px',
+                padding: '10px 20px',
+                borderRadius: '25px',
                 border: '1px solid #e67e22',
                 backgroundColor: filter === f ? '#e67e22' : 'transparent',
                 color: filter === f ? '#fff' : '#e67e22',
                 cursor: 'pointer',
-                fontWeight: 'bold',
-                textTransform: 'capitalize'
+                fontWeight: 'bold'
               }}
             >
               {f === 'todas' ? 'Todas' : f === 'ativa' ? 'Ativas' : 'Concluídas'}
@@ -66,24 +67,25 @@ const CampaignsWebPage: React.FC = () => {
         </div>
       </header>
 
-      {filteredCampaigns.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-          Nenhuma campanha encontrada neste status.
-        </div>
-      ) : (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-          gap: '24px' 
-        }}>
-          {filteredCampaigns.map((campaign) => (
-            <CampaignCard 
-              key={campaign.id} 
-              campaign={campaign} 
-              onClick={(c) => console.log('Abrir modal da campanha:', c.id)} 
-            />
-          ))}
-        </div>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+        gap: '24px' 
+      }}>
+        {filteredCampaigns.map((campaign) => (
+          <CampaignCard 
+            key={campaign.id} 
+            campaign={campaign} 
+            onClick={(c) => setSelectedCampaign(c)} 
+          />
+        ))}
+      </div>
+
+      {selectedCampaign && (
+        <CampaignDetailModal 
+          campaign={selectedCampaign} 
+          onClose={() => setSelectedCampaign(null)} 
+        />
       )}
     </div>
   );
