@@ -6,16 +6,15 @@ export function Header() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  const [copied, setCopied] = useState(false); // Estado para animação de cópia
+  const [copied, setCopied] = useState(false);
   const [, setIsMobile] = useState(false);
 
-  const pixKey = "suachavepix@aqui.com"; // Substitua pela sua chave real
+  const pixKey = "suachavepix@aqui.com";
 
-  // Função para copiar e animar
   const handleCopy = () => {
     navigator.clipboard.writeText(pixKey);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Reseta após 2 segundos
+    setTimeout(() => setCopied(false), 2000);
   };
 
   useEffect(() => {
@@ -32,9 +31,11 @@ export function Header() {
     return () => { document.body.style.overflow = ''; };
   }, [isMenuOpen]);
 
+  // LINK DE CAMPANHAS ADICIONADO AQUI
   const navLinks = [
     { path: '/', label: 'Home', icon: '🏠' },
     { path: '/adocao', label: 'Adoção', icon: '🐾' },
+    { path: '/campanhas', label: 'Campanhas', icon: '🎁' }, // Nova Rota
     { path: '/desaparecidos', label: 'Desaparecidos', icon: '🔍' },
     { path: '/registrar-ocorrencia', label: 'Registrar Ocorrência', icon: '🚨' },
     { path: '/sobre', label: 'Sobre', icon: 'ℹ️' },
@@ -155,7 +156,7 @@ export function Header() {
         </div>
       </div>
 
-      {/* Modal de Doação com Botão Animado */}
+      {/* Modal de Doação */}
       {isDonationModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsDonationModalOpen(false)} />
@@ -168,7 +169,7 @@ export function Header() {
             <p className="text-slate-600 mb-6 text-sm">Escaneie o QR Code ou copie a chave Pix abaixo.</p>
             
             <div className="bg-slate-100 aspect-square rounded-2xl flex items-center justify-center mb-6 border-2 border-dashed border-slate-300">
-               <span className="text-slate-400 font-medium text-xs">[QR CODE]</span>
+                <span className="text-slate-400 font-medium text-xs">[QR CODE]</span>
             </div>
 
             <button

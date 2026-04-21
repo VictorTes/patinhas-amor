@@ -1,13 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async'; // Importe o Provider
+import { HelmetProvider } from 'react-helmet-async';
 import { Header } from './components/Header';
 import { Home } from './pages/Home';
 import { Adocao } from './pages/Adocao';
 import { Desaparecidos } from './pages/Desaparecidos';
 import { RegistrarOcorrencia } from './pages/RegistrarOcorrencia';
 import { Sobre } from './pages/Sobre';
-import Acompanhamento from './pages/Acompanhamento'; // Importe a nova página
+import Acompanhamento from './pages/Acompanhamento';
 import { ScrollToTop } from './components/ScrollToTop';
+import CampaignsWebPage from "./pages/CampaignsWebPage";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/adocao" element={<Adocao />} />
+            <Route path="/campanhas" element={<CampaignsWebPage />} />
             <Route path="/desaparecidos" element={<Desaparecidos />} />
             <Route path="/registrar-ocorrencia" element={<RegistrarOcorrencia />} />
             <Route path="/acompanhar" element={<Acompanhamento />} />
