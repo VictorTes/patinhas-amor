@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CampaignModel } from '../types';
 import { CampaignType, CampaignStatus } from '../types';
 
@@ -9,7 +9,15 @@ interface Props {
 
 export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   const [ticketQuantity, setTicketQuantity] = useState(1);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const isFinalized = campaign.status === CampaignStatus.finalizada;
+
+  // Listener para ajustar o layout se a tela redimensionar
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const progress = Math.min(
     Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100),
@@ -28,8 +36,13 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        {/* Botão de Fechar com Fundo - Essencial para imagens escuras */}
-        <button onClick={onClose} style={styles.closeBtn}>&times;</button>
+        {/* Botão de Fechar com SVG para alinhamento perfeito */}
+        <button onClick={onClose} style={styles.closeBtn}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
 
         <div style={styles.content}>
           <div style={styles.imageContainer}>
@@ -66,12 +79,24 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                   <p style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a1a1a' }}>R$ {campaign.ticketValue}</p>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <input
-                    type="number" min="1" value={ticketQuantity}
-                    onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
-                    style={styles.input}
-                  />
+                {/* Layout Responsivo para Compra */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '12px', 
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: 'stretch' 
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {isMobile && <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>Quantidade:</label>}
+                    <input
+                      type="number" min="1" value={ticketQuantity}
+                      onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
+                      style={{
+                        ...styles.input,
+                        width: isMobile ? '100%' : '80px'
+                      }}
+                    />
+                  </div>
                   <button onClick={handleWhatsApp} style={styles.buyBtn}>
                     AJUDAR VIA WHATSAPP
                   </button>
@@ -122,17 +147,12 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     cursor: 'pointer',
     zIndex: 100,
-    fontSize: '24px',
-    fontWeight: 'bold',
-    // Flexbox para centralizar
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    // Ajuste óptico: o 'X' as vezes precisa ser "empurrado" 1px para cima
-    paddingBottom: '4px',
-    lineHeight: 0,
     boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-    transition: 'all 0.2s ease'
+    transition: 'all 0.2s ease',
+    padding: 0
   },
   content: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap' },
   imageContainer: { flex: '1 1 400px', backgroundColor: '#f8f8f8' },
@@ -145,7 +165,7 @@ const styles: Record<string, React.CSSProperties> = {
   progressBarBg: { height: '12px', backgroundColor: '#eee', borderRadius: '6px', overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: '#e67e22', borderRadius: '6px', transition: 'width 1.5s ease-out' },
   actionBox: { backgroundColor: '#fff', padding: '25px', borderRadius: '20px', border: '2px solid #ffe0b2', marginBottom: '30px' },
-  input: { width: '80px', padding: '14px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '16px', fontWeight: 'bold', textAlign: 'center' },
+  input: { padding: '14px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '16px', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#f9f9f9' },
   buyBtn: { flex: 1, padding: '16px', backgroundColor: '#25D366', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)' },
   accountability: { borderTop: '1px solid #eee', paddingTop: '25px' },
   expenseBox: { backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '12px' },
