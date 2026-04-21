@@ -7,14 +7,22 @@ import {
   orderBy,
   Timestamp,
   serverTimestamp,
+  onSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { Animal, AnimalStatus, Occurrence } from '../types';
+import type { 
+  Animal, 
+  AnimalStatus, 
+  Occurrence, 
+  CampaignModel, 
+  CampaignStatus 
+} from '../types';
 
 // Coleções
 const ANIMALS_COLLECTION = 'animals';
-const OCCURRENCES_COLLECTION = 'pending_occurrences'; 
+const OCCURRENCES_COLLECTION = 'pending_occurrences';
+const CAMPAIGNS_COLLECTION = 'campaigns'; // Coleção sincronizada com App Flutter
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
@@ -31,6 +39,33 @@ export interface OccurrenceFormData {
   longitude?: number;
   accessCode: string; 
   status: string;
+}
+
+// --- FUNÇÕES DE BUSCA (CAMPANHAS) ---
+
+/**
+ * Escuta as campanhas em tempo real (Stream)
+ * Essencial para refletir mudanças de status feitas no App imediatamente na Web
+ */
+export function getCampaignsStream(callback: (campaigns: CampaignModel[]) => void) {
+  try {
+    const q = query(
+      collection(db, CAMPAIGNS_COLLECTION),
+      orderBy('status', 'asc'), // Ativas costumam vir antes de Finalizadas no enum/string
+      orderBy('title', 'asc')
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const campaigns = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as CampaignModel[];
+      callback(campaigns);
+    });
+  } catch (error) {
+    console.error('[Firebase] Erro ao abrir stream de campanhas:', error);
+    throw error;
+  }
 }
 
 // --- FUNÇÕES DE BUSCA (ANIMAIS) ---
@@ -131,33 +166,21 @@ export async function uploadOccurrenceImage(file: File): Promise<string> {
 
 // --- FUNÇÕES DE CRIAÇÃO (OCORRÊNCIAS) ---
 
-/**
- * Cria a ocorrência e retorna o ID do documento
- */
 export async function createPendingOccurrence(formData: OccurrenceFormData): Promise<string> {
   try {
     const secureData = {
-      // Dados do Relator
       reporterName: formData.reporterName.trim() || 'Anônimo',
-      reporterPhone: unmaskPhone(formData.reporterPhone), // Salva apenas números
-      
-      // Dados da Ocorrência
+      reporterPhone: unmaskPhone(formData.reporterPhone),
       type: formData.type || 'Não especificado',
       location: formData.location.trim() || 'Não informada',
       description: formData.description.trim() || '',
       imageUrl: formData.imageUrl || '',
-      latitude: formData.latitude ?? 0, // Fallback para 0 para não quebrar mapas
-      longitude: formData.longitude ?? 0, 
-      
-      // Segurança e Rastreio
-      accessCode: String(formData.accessCode), // Garante que seja String
-      
-      // Controle de Moderação e Status (Sincronizado com o App Flutter)
+      latitude: formData.latitude ?? 0,
+      longitude: formData.longitude ?? 0,
+      accessCode: String(formData.accessCode),
       status: 'pending',     
       status_web: 'pending', 
       isValidated: false,    
-      
-      // Metadados
       createdAt: serverTimestamp(),
       submittedAt: new Date().toISOString(),
       userAgent: navigator.userAgent,
@@ -172,9 +195,6 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
   }
 }
 
-/**
- * Função de compatibilidade atualizada
- */
 export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Promise<void> {
   await createPendingOccurrence({
     reporterName: "Usuário Web",
@@ -185,7 +205,7 @@ export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Prom
     imageUrl: '',
     latitude: occurrence.latitude,
     longitude: occurrence.longitude,
-    accessCode: Math.floor(100000 + Math.random() * 900000).toString(), // Gera um PIN aleatório em vez de 000000
+    accessCode: Math.floor(100000 + Math.random() * 900000).toString(),
     status: 'pending'
   });
 }
