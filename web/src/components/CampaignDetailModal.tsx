@@ -10,18 +10,18 @@ interface Props {
 export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const isFinalized = campaign.status === CampaignStatus.finalizada;
-  
+
   const progress = Math.min(
     Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100),
     100
   );
 
   const handleWhatsApp = () => {
-    const phone = "5547999999999"; 
+    const phone = "5547999999999";
     const message = campaign.type === CampaignType.rifa
       ? `Olá! Gostaria de participar da campanha: ${campaign.title}. Quero comprar ${ticketQuantity} cota(s).`
       : `Olá! Tenho interesse em ajudar na campanha: ${campaign.title}`;
-    
+
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -30,7 +30,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
       <div style={styles.modal}>
         {/* Botão de Fechar com Fundo - Essencial para imagens escuras */}
         <button onClick={onClose} style={styles.closeBtn}>&times;</button>
-        
+
         <div style={styles.content}>
           <div style={styles.imageContainer}>
             <img src={campaign.imageUrl} alt={campaign.title} style={styles.image} />
@@ -65,9 +65,9 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                   <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Valor por número/cota</p>
                   <p style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a1a1a' }}>R$ {campaign.ticketValue}</p>
                 </div>
-                
+
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <input 
+                  <input
                     type="number" min="1" value={ticketQuantity}
                     onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
                     style={styles.input}
@@ -110,11 +110,29 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
 const styles: Record<string, React.CSSProperties> = {
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '15px' },
   modal: { backgroundColor: '#fff', width: '100%', maxWidth: '1000px', maxHeight: '95vh', borderRadius: '24px', position: 'relative', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' },
-  closeBtn: { 
-    position: 'absolute', top: '15px', right: '15px', width: '40px', height: '40px', borderRadius: '50%', 
-    backgroundColor: 'white', color: '#000', border: 'none', cursor: 'pointer', zIndex: 100,
-    fontSize: '24px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.2)', transition: 'transform 0.2s'
+  closeBtn: {
+    position: 'absolute',
+    top: '15px',
+    right: '15px',
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    backgroundColor: 'white',
+    color: '#000',
+    border: 'none',
+    cursor: 'pointer',
+    zIndex: 100,
+    fontSize: '24px',
+    fontWeight: 'bold',
+    // Flexbox para centralizar
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Ajuste óptico: o 'X' as vezes precisa ser "empurrado" 1px para cima
+    paddingBottom: '4px',
+    lineHeight: 0,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    transition: 'all 0.2s ease'
   },
   content: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap' },
   imageContainer: { flex: '1 1 400px', backgroundColor: '#f8f8f8' },
