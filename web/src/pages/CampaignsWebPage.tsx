@@ -1,103 +1,92 @@
-import 'package:flutter/material.dart';
-import '../models/campaign.dart';
-import '../services/campaign_service.dart';
-import 'widgets/campaign_card_web.dart';
-import 'widgets/campaign_detail_modal.dart';
+import React, { useEffect, useState } from 'react';
+import { getCampaignsStream } from '../services/firebaseService';
+import { CampaignStatus } from '../types';
+// Note o "type" adicionado abaixo:
+import type { CampaignModel } from '../types'; 
+import { CampaignCard } from '../components/CampaignCard';
 
-class CampaignsWebPage extends StatefulWidget {
-  const CampaignsWebPage({super.key});
+const CampaignsWebPage: React.FC = () => {
+  const [campaigns, setCampaigns] = useState<CampaignModel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<CampaignStatus | 'todas'>('ativa');
 
-  @override
-  State<CampaignsWebPage> createState() => _CampaignsWebPageState();
-}
+  useEffect(() => {
+    // Iniciamos o Stream em tempo real
+    const unsubscribe = getCampaignsStream((data) => {
+      setCampaigns(data);
+      setLoading(false);
+    });
 
-class _CampaignsWebPageState extends State<CampaignsWebPage> {
-  final CampaignService _service = CampaignService();
-  CampaignStatus? _filterStatus = CampaignStatus.ativa; // Filtro inicial
+    // Cleanup ao desmontar o componente
+    return () => unsubscribe();
+  }, []);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('Campanhas Solidárias', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: false,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-        actions: [
-          _buildFilterChips(),
-          const SizedBox(width: 20),
-        ],
-      ),
-      body: StreamBuilder<List<CampaignModel>>(
-        stream: _service.getCampaignsStream(null),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) return const Center(child: Text('Erro ao carregar dados.'));
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+  // Lógica de filtragem
+  const filteredCampaigns = campaigns.filter((c) => {
+    if (filter === 'todas') return true;
+    return c.status === filter;
+  });
 
-          // Aplica o filtro de status localmente
-          final campaigns = snapshot.data!.where((c) {
-            if (_filterStatus == null) return true;
-            return c.status == _filterStatus;
-          }).toList();
-
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(24),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 400, // Largura máxima de cada card
-                    mainAxisSpacing: 24,
-                    crossAxisSpacing: 24,
-                    mainAxisExtent: 450, // Altura fixa para manter o alinhamento
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final item = campaigns[index];
-                      return CampaignCardWeb(
-                        campaign: item,
-                        onTap: () => _openDetail(item),
-                      );
-                    },
-                    childCount: campaigns.length,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
+        <p>Carregando campanhas...</p>
+      </div>
     );
   }
 
-  Widget _buildFilterChips() {
-    return Row(
-      children: [
-        FilterChip(
-          label: const Text('Ativas'),
-          selected: _filterStatus == CampaignStatus.ativa,
-          onSelected: (val) => setState(() => _filterStatus = val ? CampaignStatus.ativa : null),
-          selectedColor: Colors.orange.shade100,
-          checkmarkColor: Colors.orange.shade900,
-        ),
-        const SizedBox(width: 8),
-        FilterChip(
-          label: const Text('Concluídas'),
-          selected: _filterStatus == CampaignStatus.finalizada,
-          onSelected: (val) => setState(() => _filterStatus = val ? CampaignStatus.finalizada : null),
-          selectedColor: Colors.grey.shade300,
-        ),
-      ],
-    );
-  }
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+      <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ margin: 0, color: '#333' }}>Campanhas Solidárias</h1>
+          <p style={{ color: '#666' }}>Ajude as causas da nossa ONG</p>
+        </div>
 
-  void _openDetail(CampaignModel campaign) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (context) => CampaignDetailModal(campaign: campaign),
-    );
-  }
-}
+        {/* Filtros Visuais */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {(['todas', 'ativa', 'finalizada'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: '1px solid #e67e22',
+                backgroundColor: filter === f ? '#e67e22' : 'transparent',
+                color: filter === f ? '#fff' : '#e67e22',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                textTransform: 'capitalize'
+              }}
+            >
+              {f === 'todas' ? 'Todas' : f === 'ativa' ? 'Ativas' : 'Concluídas'}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {filteredCampaigns.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+          Nenhuma campanha encontrada neste status.
+        </div>
+      ) : (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+          gap: '24px' 
+        }}>
+          {filteredCampaigns.map((campaign) => (
+            <CampaignCard 
+              key={campaign.id} 
+              campaign={campaign} 
+              onClick={(c) => console.log('Abrir modal da campanha:', c.id)} 
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CampaignsWebPage;
