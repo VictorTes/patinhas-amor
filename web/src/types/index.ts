@@ -48,3 +48,46 @@ export interface Occurrence {
   longitude?: number;
   imageUrl?: string;    // Adicionado para suportar fotos nas ocorrências
 }
+
+// src/types/index.ts
+
+// Usamos objetos constantes em vez de enums para compatibilidade
+export const CampaignType = {
+  rifa: 'rifa',
+  bazar: 'bazar',
+  outro: 'outro'
+} as const;
+
+export type CampaignType = typeof CampaignType[keyof typeof CampaignType];
+
+export const CampaignStatus = {
+  ativa: 'ativa',
+  pausada: 'pausada',
+  finalizada: 'finalizada'
+} as const;
+
+export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus];
+
+export interface ExpenseItem {
+  description: string;
+  value: number;
+}
+
+export interface CampaignModel {
+  id?: string;
+  title: string;
+  description: string;
+  type: CampaignType;
+  status: CampaignStatus;
+  imageUrl?: string;
+  currentValue?: number;
+  goalValue?: number;
+  ticketValue?: number;
+  prize?: string;
+  address?: string;
+  itemsForSale?: string;
+  hasAccountability: boolean;
+  totalCollected?: number;
+  expenses?: ExpenseItem[];
+  receiptUrls?: string[];
+}
