@@ -56,7 +56,6 @@ class CampaignDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // LINHA COM BADGE E BOTÃO DE EDIÇÃO NA EXTREMIDADE
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -182,8 +181,8 @@ class CampaignDetailScreen extends StatelessWidget {
   }
 
   Widget _buildRifaProgress(CampaignModel c, NumberFormat fmt) {
-    double progress = (c.currentValue ?? 0) / (c.goalValue ?? 1);
-    if (progress > 1.0) progress = 1.0;
+    double rawProgress = (c.currentValue ?? 0) / (c.goalValue ?? 1);
+    double visualProgress = rawProgress > 1.0 ? 1.0 : rawProgress;
     bool isGoalReached = (c.currentValue ?? 0) >= (c.goalValue ?? 0);
 
     return Column(
@@ -193,9 +192,9 @@ class CampaignDetailScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Progresso da Arrecadação', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text('${(progress * 100).toStringAsFixed(1)}%',
-                style: TextStyle(
-                  color: isGoalReached ? Colors.blue : Colors.green, 
+            Text('${(rawProgress * 100).toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  color: Colors.orange, 
                   fontWeight: FontWeight.bold
                 )),
           ],
@@ -204,15 +203,15 @@ class CampaignDetailScreen extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: LinearProgressIndicator(
-            value: progress,
+            value: visualProgress,
             minHeight: 15,
             backgroundColor: Colors.grey[200],
-            color: isGoalReached ? Colors.blue : Colors.green,
+            color: Colors.orange,
           ),
         ),
         const SizedBox(height: 10),
         if (isGoalReached)
-          const Text('🎉 Meta atingida!', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+          const Text('🎉 Meta atingida!', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
         Text('Arrecadado: ${fmt.format(c.currentValue ?? 0)} / Meta: ${fmt.format(c.goalValue ?? 0)}',
             style: const TextStyle(color: Colors.grey, fontSize: 13)),
         if (c.prize != null) ...[
@@ -248,44 +247,68 @@ class CampaignDetailScreen extends StatelessWidget {
   }
 
   Widget _buildAccountability(CampaignModel c, NumberFormat fmt) {
+    // Cálculo do Saldo Final: Total Arrecadado - Soma das Despesas
+    final double totalExpenses = c.expenses?.fold(0, (sum, item) => sum! + item.value) ?? 0;
+    final double netValue = (c.totalCollected ?? 0) - totalExpenses;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('📊 Prestação de Contas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Row(
+          children: [
+            Icon(Icons.bar_chart, color: Colors.grey.shade700),
+            const SizedBox(width: 8),
+            const Text('Prestação de Contas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          ],
+        ),
         const SizedBox(height: 15),
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
-          color: Colors.grey[50],
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(15),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
+                // Lista de Despesas
+                if (c.expenses != null && c.expenses!.isNotEmpty) ...[
+                  ...c.expenses!.map((e) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(e.description, style: TextStyle(color: Colors.grey.shade700, fontSize: 16)),
+                        Text('- ${fmt.format(e.value)}', style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  )),
+                  const Divider(height: 24),
+                ],
+                
+                // Total Arrecadado
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total Final Arrecadado:'),
-                    Text(fmt.format(c.totalCollected ?? 0), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                    const Text('Total Arrecadado', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(fmt.format(c.totalCollected ?? 0), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green.shade700)),
                   ],
                 ),
-                const Divider(),
-                if (c.expenses == null || c.expenses!.isEmpty)
-                  const Text('Nenhuma despesa registrada.', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                ...?c.expenses?.map((e) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(e.description),
-                          Text('- ${fmt.format(e.value)}', style: const TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    )),
+                const SizedBox(height: 20),
+                
+                // Saldo Final
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Saldo Final', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(fmt.format(netValue), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green.shade600)),
+                  ],
+                ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 20),
         const Text('Comprovantes:', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         if (c.receiptUrls != null && c.receiptUrls!.isNotEmpty)

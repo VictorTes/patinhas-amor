@@ -35,8 +35,8 @@ export function Header() {
   const navLinks = [
     { path: '/', label: 'Home', icon: '🏠' },
     { path: '/adocao', label: 'Adoção', icon: '🐾' },
-    { path: '/campanhas', label: 'Campanhas', icon: '🎁' }, // Nova Rota
     { path: '/desaparecidos', label: 'Desaparecidos', icon: '🔍' },
+    { path: '/campanhas', label: 'Campanhas', icon: '🎁' },
     { path: '/registrar-ocorrencia', label: 'Registrar Ocorrência', icon: '🚨' },
     { path: '/sobre', label: 'Sobre', icon: 'ℹ️' },
   ];
@@ -68,9 +68,8 @@ export function Header() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      isActive ? 'text-orange-600 bg-orange-50' : 'text-slate-600 hover:text-orange-500 hover:bg-slate-50'
-                    }`}
+                    className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${isActive ? 'text-orange-600 bg-orange-50' : 'text-slate-600 hover:text-orange-500 hover:bg-slate-50'
+                      }`}
                   >
                     {link.label}
                     {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full" />}
@@ -167,18 +166,17 @@ export function Header() {
             <div className="text-4xl mb-4">❤️</div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Ajude nossa causa</h2>
             <p className="text-slate-600 mb-6 text-sm">Escaneie o QR Code ou copie a chave Pix abaixo.</p>
-            
+
             <div className="bg-slate-100 aspect-square rounded-2xl flex items-center justify-center mb-6 border-2 border-dashed border-slate-300">
-                <span className="text-slate-400 font-medium text-xs">[QR CODE]</span>
+              <span className="text-slate-400 font-medium text-xs">[QR CODE]</span>
             </div>
 
             <button
               onClick={handleCopy}
-              className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
-                copied 
-                ? 'bg-green-500 text-white scale-105' 
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+              className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${copied
+                  ? 'bg-green-500 text-white scale-105'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
             >
               {copied ? (
                 <>
