@@ -21,7 +21,7 @@ export interface Animal {
   imageUrl: string;
   rescueDate: Timestamp;
   currentLocation: string;
-  age: String;
+  age: string;
   sex: AnimalSex;
   size: AnimalSize;
   adopterName?: string;
@@ -40,21 +40,20 @@ export interface Occurrence {
   location: string;
   description: string;
   status: OccurrenceStatus;
-  createdAt: Timestamp | any; // 'any' ajuda com serverTimestamp() do Firebase
+  createdAt: Timestamp | any; 
   reporterPhone: string;
-  reporterName?: string; // Adicionado para o novo formulário
-  // NOVOS CAMPOS PARA O MAPA:
+  reporterName?: string;
   latitude?: number;
   longitude?: number;
-  imageUrl?: string;    // Adicionado para suportar fotos nas ocorrências
+  imageUrl?: string;
 }
 
-// src/types/index.ts
+// --- TIPOS DE CAMPANHAS ---
 
-// Usamos objetos constantes em vez de enums para compatibilidade
 export const CampaignType = {
   rifa: 'rifa',
   bazar: 'bazar',
+  ajuda: 'ajuda', // Adicionado para cobrir casos gerais de doação
   outro: 'outro'
 } as const;
 
@@ -89,5 +88,8 @@ export interface CampaignModel {
   hasAccountability: boolean;
   totalCollected?: number;
   expenses?: ExpenseItem[];
-  receiptUrls?: string[];
+  // Campos de recibos sincronizados:
+  receiptUrls?: string[]; // Nome exato como está no Firestore
+  receipts?: string[];    // Nome usado no front-end/mapeamento
+  createdAt?: Timestamp | any;
 }
