@@ -242,4 +242,32 @@ export function unmaskPhone(value: string): string {
   return value.replace(/\D/g, '');
 }
 
+export async function getCampaignsOnce(): Promise<CampaignModel[]> {
+  try {
+    const q = query(
+      collection(db, CAMPAIGNS_COLLECTION),
+      orderBy('status', 'asc'),
+      orderBy('title', 'asc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        receipts: data.receiptUrls || [],
+        prizeImageUrl: data.prizeImageUrl || null,
+        expenses: data.expenses || [],
+        hasAccountability: data.hasAccountability || false,
+        totalCollected: data.totalCollected || 0,
+      } as CampaignModel;
+    });
+  } catch (error) {
+    console.error('[Firebase] Erro ao buscar campanhas:', error);
+    return [];
+  }
+}
+
 export const ANIMAL_PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&h=300&fit=crop';
