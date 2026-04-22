@@ -20,27 +20,26 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   bool _isLoading = false;
 
-  // Controllers Gerais
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   CampaignType _selectedType = CampaignType.rifa;
-  CampaignStatus _selectedStatus = CampaignStatus.ativa; // Novo: Status
+  CampaignStatus _selectedStatus = CampaignStatus.ativa;
   
-  // Imagens
   File? _mainImage;
-  File? _prizeImage; // Novo: Arquivo da imagem do prêmio
+  File? _prizeImage;
   List<File> _receiptFiles = [];
+  
+  // Controle de URLs existentes para permitir exclusão
+  String? _prizeImageUrl;
+  List<String> _existingReceiptUrls = [];
 
-  // Controllers Rifa
   final _goalController = TextEditingController();
   final _ticketValueController = TextEditingController();
   final _prizeController = TextEditingController();
 
-  // Controllers Bazar
   final _addressController = TextEditingController();
   final _itemsController = TextEditingController();
 
-  // Prestação de Contas
   bool _hasAccountability = false;
   final _totalCollectedController = TextEditingController();
   List<ExpenseItem> _expenses = [];
@@ -58,7 +57,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _titleController.text = c.title;
     _descController.text = c.description;
     _selectedType = c.type;
-    _selectedStatus = c.status; // Carrega status atual
+    _selectedStatus = c.status;
     _goalController.text = c.goalValue?.toString() ?? '';
     _ticketValueController.text = c.ticketValue?.toString() ?? '';
     _prizeController.text = c.prize ?? '';
@@ -67,6 +66,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _hasAccountability = c.hasAccountability;
     _totalCollectedController.text = c.totalCollected?.toString() ?? '';
     _expenses = List.from(c.expenses ?? []);
+    _prizeImageUrl = c.prizeImageUrl;
+    _existingReceiptUrls = List.from(c.receiptUrls ?? []);
   }
 
   Future<void> _pickMainImage() async {
@@ -74,10 +75,12 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     if (picked != null) setState(() => _mainImage = File(picked.path));
   }
 
-  // Novo: Método para escolher imagem do prêmio
   Future<void> _pickPrizeImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) setState(() => _prizeImage = File(picked.path));
+    if (picked != null) setState(() {
+      _prizeImage = File(picked.path);
+      _prizeImageUrl = null; // Se escolheu nova, anula a antiga
+    });
   }
 
   Future<void> _pickReceipts() async {
@@ -102,7 +105,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         title: _titleController.text,
         description: _descController.text,
         type: _selectedType,
-        status: _selectedStatus, // Envia o status selecionado
+        status: _selectedStatus,
         goalValue: double.tryParse(_goalController.text),
         ticketValue: double.tryParse(_ticketValueController.text),
         prize: _prizeController.text,
@@ -113,11 +116,10 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         expenses: _expenses,
         currentValue: widget.campaign?.currentValue ?? 0,
         imageUrl: widget.campaign?.imageUrl, 
-        prizeImageUrl: widget.campaign?.prizeImageUrl, // Preserva URL antiga se não mudar
-        receiptUrls: widget.campaign?.receiptUrls,
+        prizeImageUrl: _prizeImageUrl, // Usa a URL controlada pelo estado local
+        receiptUrls: _existingReceiptUrls, // Usa a lista controlada pelo estado local
       );
 
-      // Chama o serviço passando a nova prizeImage se existir
       await _service.saveCampaign(
         updatedCampaign, 
         _mainImage, 
@@ -161,7 +163,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
                 const SizedBox(height: 10),
                 _buildTypeSelector(),
                 const SizedBox(height: 10),
-                _buildStatusSelector(), // Novo: Seletor de Status
+                _buildStatusSelector(),
                 const SizedBox(height: 20),
                 _buildImagePicker(),
                 const SizedBox(height: 20),
@@ -176,14 +178,11 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
                   decoration: const InputDecoration(labelText: 'Descrição', border: OutlineInputBorder()), 
                   maxLines: 3,
                 ),
-                
                 const SizedBox(height: 20),
                 if (_selectedType == CampaignType.rifa) _buildRifaFields(),
                 if (_selectedType == CampaignType.bazar) _buildBazarFields(),
-                
                 const SizedBox(height: 20),
                 _buildAccountabilitySection(),
-                
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: _submit,
@@ -213,7 +212,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
-  // Novo: Seletor de Status da Campanha
   Widget _buildStatusSelector() {
     return SegmentedButton<CampaignStatus>(
       segments: const [
@@ -252,23 +250,36 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       TextFormField(controller: _prizeController, decoration: const InputDecoration(labelText: 'Nome do Prêmio', border: OutlineInputBorder())),
       const SizedBox(height: 10),
       
-      // Novo: Picker para foto do prêmio
-      GestureDetector(
-        onTap: _pickPrizeImage,
-        child: Container(
-          height: 120,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.orange.shade200)
+      Stack(
+        children: [
+          GestureDetector(
+            onTap: _pickPrizeImage,
+            child: Container(
+              height: 120, width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.orange.shade200)
+              ),
+              child: _prizeImage != null 
+                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(_prizeImage!, fit: BoxFit.cover))
+                : _prizeImageUrl != null
+                  ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(_prizeImageUrl!, fit: BoxFit.cover))
+                  : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.card_giftcard, color: Colors.orange), SizedBox(width: 10), Text('Adicionar Foto do Prêmio')]),
+            ),
           ),
-          child: _prizeImage != null 
-            ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(_prizeImage!, fit: BoxFit.cover))
-            : widget.campaign?.prizeImageUrl != null
-              ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(widget.campaign!.prizeImageUrl!, fit: BoxFit.cover))
-              : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.card_giftcard, color: Colors.orange), SizedBox(width: 10), Text('Adicionar Foto do Prêmio')]),
-        ),
+          if (_prizeImage != null || _prizeImageUrl != null)
+            Positioned(
+              top: 5, right: 5,
+              child: CircleAvatar(
+                radius: 15, backgroundColor: Colors.red,
+                child: IconButton(
+                  icon: const Icon(Icons.close, size: 15, color: Colors.white),
+                  onPressed: () => setState(() { _prizeImage = null; _prizeImageUrl = null; }),
+                ),
+              ),
+            )
+        ],
       ),
       
       const SizedBox(height: 10),
@@ -331,16 +342,52 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
           ElevatedButton.icon(
             onPressed: _pickReceipts, 
             icon: const Icon(Icons.receipt_long), 
-            label: Text(_receiptFiles.isNotEmpty ? '${_receiptFiles.length} Novos Comprovantes' : 'Anexar Notas Fiscais'),
+            label: const Text('Anexar Novas Notas'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[300], foregroundColor: Colors.black87),
           ),
-          if (isEditing && (widget.campaign?.receiptUrls?.isNotEmpty ?? false))
-             Padding(
-               padding: const EdgeInsets.only(top: 8),
-               child: Text('${widget.campaign!.receiptUrls!.length} notas já salvas no sistema', style: const TextStyle(fontSize: 12, color: Colors.blue)),
-             )
+          
+          // Miniaturas de novos arquivos e URLs existentes
+          if (_receiptFiles.isNotEmpty || _existingReceiptUrls.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: SizedBox(
+                height: 70,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    // Fotos locais
+                    ..._receiptFiles.asMap().entries.map((e) => _buildThumb(File(e.value.path), () => setState(() => _receiptFiles.removeAt(e.key)))),
+                    // Fotos remotas
+                    ..._existingReceiptUrls.asMap().entries.map((e) => _buildThumb(e.value, () => setState(() => _existingReceiptUrls.removeAt(e.key)))),
+                  ],
+                ),
+              ),
+            ),
         ]
       ]),
+    );
+  }
+
+  Widget _buildThumb(dynamic source, VoidCallback onRemove) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: source is File 
+              ? Image.file(source, width: 70, height: 70, fit: BoxFit.cover)
+              : Image.network(source, width: 70, height: 70, fit: BoxFit.cover),
+          ),
+          Positioned(
+            top: 0, right: 0,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(color: Colors.red, child: const Icon(Icons.close, size: 15, color: Colors.white)),
+            ),
+          )
+        ],
+      ),
     );
   }
 

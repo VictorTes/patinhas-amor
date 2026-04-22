@@ -9,6 +9,45 @@ class CampaignDetailScreen extends StatelessWidget {
 
   const CampaignDetailScreen({super.key, required this.campaignId});
 
+  // Método para exibir imagem em tela cheia com botão fechar
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator(color: Colors.white));
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
@@ -80,13 +119,13 @@ class CampaignDetailScreen extends StatelessWidget {
                         const Divider(height: 40),
                         
                         if (campaign.type == CampaignType.rifa)
-                          _buildRifaProgress(campaign, currencyFormat),
+                          _buildRifaProgress(context, campaign, currencyFormat),
                         if (campaign.type == CampaignType.bazar)
                           _buildBazarInfo(campaign),
                           
                         const SizedBox(height: 30),
                         if (campaign.hasAccountability)
-                          _buildAccountability(campaign, currencyFormat),
+                          _buildAccountability(context, campaign, currencyFormat),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -180,7 +219,7 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRifaProgress(CampaignModel c, NumberFormat fmt) {
+  Widget _buildRifaProgress(BuildContext context, CampaignModel c, NumberFormat fmt) {
     double rawProgress = (c.currentValue ?? 0) / (c.goalValue ?? 1);
     double visualProgress = rawProgress > 1.0 ? 1.0 : rawProgress;
     bool isGoalReached = (c.currentValue ?? 0) >= (c.goalValue ?? 0);
@@ -214,13 +253,34 @@ class CampaignDetailScreen extends StatelessWidget {
           const Text('🎉 Meta atingida!', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
         Text('Arrecadado: ${fmt.format(c.currentValue ?? 0)} / Meta: ${fmt.format(c.goalValue ?? 0)}',
             style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        
         if (c.prize != null) ...[
           const SizedBox(height: 20),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.emoji_events, color: Colors.amber, size: 40),
-            title: const Text('Prêmio'),
-            subtitle: Text(c.prize!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.emoji_events, color: Colors.amber, size: 40),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Prêmio'),
+                    Text(c.prize!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    if (c.prizeImageUrl != null) ...[
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () => _showFullScreenImage(context, c.prizeImageUrl!),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(c.prizeImageUrl!, height: 120, width: 120, fit: BoxFit.cover),
+                        ),
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+            ],
           ),
         ]
       ],
@@ -246,8 +306,7 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountability(CampaignModel c, NumberFormat fmt) {
-    // Cálculo do Saldo Final: Total Arrecadado - Soma das Despesas
+  Widget _buildAccountability(BuildContext context, CampaignModel c, NumberFormat fmt) {
     final double totalExpenses = c.expenses?.fold(0, (sum, item) => sum! + item.value) ?? 0;
     final double netValue = (c.totalCollected ?? 0) - totalExpenses;
 
@@ -271,7 +330,6 @@ class CampaignDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // Lista de Despesas
                 if (c.expenses != null && c.expenses!.isNotEmpty) ...[
                   ...c.expenses!.map((e) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -286,7 +344,6 @@ class CampaignDetailScreen extends StatelessWidget {
                   const Divider(height: 24),
                 ],
                 
-                // Total Arrecadado
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -296,7 +353,6 @@ class CampaignDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 
-                // Saldo Final
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -319,9 +375,12 @@ class CampaignDetailScreen extends StatelessWidget {
               itemCount: c.receiptUrls!.length,
               itemBuilder: (context, index) => Padding(
                 padding: const EdgeInsets.only(right: 10),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(c.receiptUrls![index], width: 100, height: 100, fit: BoxFit.cover),
+                child: GestureDetector(
+                  onTap: () => _showFullScreenImage(context, c.receiptUrls![index]),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(c.receiptUrls![index], width: 100, height: 100, fit: BoxFit.cover),
+                  ),
                 ),
               ),
             ),
