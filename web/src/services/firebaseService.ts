@@ -21,7 +21,7 @@ import type {
 // Coleções
 const ANIMALS_COLLECTION = 'animals';
 const OCCURRENCES_COLLECTION = 'pending_occurrences';
-const CAMPAIGNS_COLLECTION = 'campaigns'; // Coleção sincronizada com App Flutter
+const CAMPAIGNS_COLLECTION = 'campaigns'; 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 /**
@@ -44,21 +44,39 @@ export interface OccurrenceFormData {
 
 /**
  * Escuta as campanhas em tempo real (Stream)
- * Essencial para refletir mudanças de status feitas no App imediatamente na Web
+ * Adaptado para suportar receiptUrls e expenses vindos do Firestore
  */
 export function getCampaignsStream(callback: (campaigns: CampaignModel[]) => void) {
   try {
     const q = query(
       collection(db, CAMPAIGNS_COLLECTION),
-      orderBy('status', 'asc'), // Ativas costumam vir antes de Finalizadas no enum/string
+      orderBy('status', 'asc'),
       orderBy('title', 'asc')
     );
 
     return onSnapshot(q, (snapshot) => {
-      const campaigns = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as CampaignModel[];
+      const campaigns = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        
+        return {
+          id: doc.id,
+          title: data.title || '',
+          description: data.description || '',
+          imageUrl: data.imageUrl || '',
+          type: data.type || 'ajuda',
+          status: data.status || 'ativa',
+          goalValue: data.goalValue || 0,
+          currentValue: data.currentValue || 0,
+          ticketValue: data.ticketValue || 0,
+          prize: data.prize || '',
+          hasAccountability: data.hasAccountability || false,
+          totalCollected: data.totalCollected || 0,
+          // Mapeamento dos novos campos do seu DB:
+          expenses: data.expenses || [],
+          receipts: data.receiptUrls || [], // Mapeia receiptUrls do DB para receipts do Model
+          createdAt: data.createdAt,
+        } as CampaignModel;
+      });
       callback(campaigns);
     });
   } catch (error) {
@@ -194,22 +212,17 @@ export async function createPendingOccurrence(formData: OccurrenceFormData): Pro
   }
 }
 
-export async function createOccurrence(occurrence: Omit<Occurrence, 'id'>): Promise<void> {
-  await createPendingOccurrence({
-    reporterName: "Usuário Web",
-    reporterPhone: occurrence.reporterPhone || '',
-    type: occurrence.type,
-    location: occurrence.location,
-    description: occurrence.description,
-    imageUrl: '',
-    latitude: occurrence.latitude,
-    longitude: occurrence.longitude,
-    accessCode: Math.floor(100000 + Math.random() * 900000).toString(),
-    status: 'pending'
-  });
-}
-
 // --- HELPERS DE FORMATAÇÃO ---
+
+/**
+ * Formata valores para moeda brasileira (R$ 1.000,00)
+ */
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+}
 
 export function formatRescueDate(timestamp: Timestamp | Date | null | undefined): string {
   if (!timestamp) return 'Data não informada';
