@@ -10,7 +10,10 @@ interface Props {
 export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [selectedReceiptIndex, setSelectedReceiptIndex] = useState<number | null>(null);
+
   const isFinalized = campaign.status === CampaignStatus.finalizada;
+  const receipts = campaign.receipts || [];
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -18,7 +21,21 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Formatador de Moeda Brasileiro
+  // Navegação do Lightbox
+  const nextReceipt = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedReceiptIndex !== null) {
+      setSelectedReceiptIndex((selectedReceiptIndex + 1) % receipts.length);
+    }
+  };
+
+  const prevReceipt = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedReceiptIndex !== null) {
+      setSelectedReceiptIndex((selectedReceiptIndex - 1 + receipts.length) % receipts.length);
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -64,7 +81,6 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
 
             <p style={styles.description}>{campaign.description}</p>
 
-            {/* Premiação */}
             {campaign.prize && (
               <div style={styles.prizeBox}>
                 <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#e67e22', textTransform: 'uppercase' }}>🎁 Premiação</h4>
@@ -72,7 +88,6 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
               </div>
             )}
 
-            {/* Progress Bar */}
             <div style={styles.progressContainer}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'flex-end' }}>
                 <div>
@@ -136,15 +151,14 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                     </div>
                   </div>
 
-                  {/* Galeria de Comprovantes */}
-                  {campaign.receipts && campaign.receipts.length > 0 && (
+                  {receipts.length > 0 && (
                     <div style={{ marginTop: '20px' }}>
                       <p style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginBottom: '10px' }}>Comprovantes Anexados:</p>
                       <div style={styles.receiptGrid}>
-                        {campaign.receipts.map((url, i) => (
-                          <a key={i} href={url} target="_blank" rel="noreferrer" style={styles.receiptThumb}>
+                        {receipts.map((url, i) => (
+                          <div key={i} onClick={() => setSelectedReceiptIndex(i)} style={styles.receiptThumb}>
                             <img src={url} alt="Comprovante" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </a>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -157,6 +171,31 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* LIGHTBOX / TELA CHEIA */}
+      {selectedReceiptIndex !== null && (
+        <div style={styles.lightboxOverlay} onClick={() => setSelectedReceiptIndex(null)}>
+          <button style={styles.lightboxClose} onClick={() => setSelectedReceiptIndex(null)}>✕</button>
+          
+          {receipts.length > 1 && (
+            <>
+              <button style={styles.navBtnLeft} onClick={prevReceipt}>‹</button>
+              <button style={styles.navBtnRight} onClick={nextReceipt}>›</button>
+            </>
+          )}
+
+          <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={receipts[selectedReceiptIndex]} 
+              alt="Comprovante em tela cheia" 
+              style={styles.lightboxImage} 
+            />
+            <div style={styles.lightboxCounter}>
+              {selectedReceiptIndex + 1} / {receipts.length}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -184,5 +223,14 @@ const styles: Record<string, React.CSSProperties> = {
   expenseItem: { display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: '14px' },
   receiptGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' },
   receiptThumb: { height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd', cursor: 'pointer', transition: 'transform 0.2s' },
-  emptyState: { color: '#999', fontStyle: 'italic', fontSize: '14px', textAlign: 'center', padding: '20px' }
+  emptyState: { color: '#999', fontStyle: 'italic', fontSize: '14px', textAlign: 'center', padding: '20px' },
+  
+  // Lightbox Styles
+  lightboxOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' },
+  lightboxContent: { position: 'relative', maxWidth: '90%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  lightboxImage: { maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 0 30px rgba(0,0,0,0.5)' },
+  lightboxClose: { position: 'absolute', top: '20px', right: '20px', backgroundColor: 'transparent', color: 'white', border: 'none', fontSize: '30px', cursor: 'pointer', zIndex: 2100 },
+  navBtnLeft: { position: 'absolute', left: '20px', backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', fontSize: '50px', width: '60px', height: '60px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.3s' },
+  navBtnRight: { position: 'absolute', right: '20px', backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', fontSize: '50px', width: '60px', height: '60px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.3s' },
+  lightboxCounter: { color: 'white', marginTop: '15px', fontSize: '14px', fontWeight: 'bold', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px 15px', borderRadius: '20px' }
 };
