@@ -35,20 +35,31 @@ class CampaignService {
     }
   }
 
-  /// Salva ou Atualiza uma campanha (Lógica Corrigida)
-  Future<void> saveCampaign(CampaignModel campaign, File? mainImage, List<File>? receipts) async {
+  /// Salva ou Atualiza uma campanha (Com suporte a PrizeImage)
+  Future<void> saveCampaign(
+    CampaignModel campaign, 
+    File? mainImage, 
+    List<File>? receipts, 
+    {File? prizeImage} // Adicionado parâmetro opcional para imagem do prêmio
+  ) async {
     try {
-      // Se a campanha já tem ID, buscamos as URLs atuais para não perdê-las caso não envie arquivos novos
       String? mainImageUrl = campaign.imageUrl;
+      String? prizeImageUrl = campaign.prizeImageUrl;
       List<String> receiptUrls = List.from(campaign.receiptUrls ?? []);
 
-      // 1. Upload da imagem principal (só faz se houver arquivo novo)
+      // 1. Upload da imagem principal
       if (mainImage != null) {
         String? uploadedUrl = await _uploadToCloudinary(mainImage);
         if (uploadedUrl != null) mainImageUrl = uploadedUrl;
       }
 
-      // 2. Upload múltiplo dos comprovantes (só faz se houver arquivos novos)
+      // 2. Upload da imagem do prêmio (Novo)
+      if (prizeImage != null) {
+        String? uploadedPrizeUrl = await _uploadToCloudinary(prizeImage);
+        if (uploadedPrizeUrl != null) prizeImageUrl = uploadedPrizeUrl;
+      }
+
+      // 3. Upload múltiplo dos comprovantes
       if (receipts != null && receipts.isNotEmpty) {
         for (var file in receipts) {
           String? url = await _uploadToCloudinary(file);
@@ -58,17 +69,15 @@ class CampaignService {
         }
       }
 
-      // 3. Montar dados para o Firestore
+      // 4. Montar dados para o Firestore
       final data = campaign.toMap();
       data['imageUrl'] = mainImageUrl;
+      data['prizeImageUrl'] = prizeImageUrl; // Garante a persistência da URL da premiação
       data['receiptUrls'] = receiptUrls;
 
-      // 4. Lógica de Decisão: Editar ou Criar
       if (campaign.id != null && campaign.id!.isNotEmpty) {
-        // ATUALIZAR: Usa o ID existente
         await _firestore.collection(_collection).doc(campaign.id).update(data);
       } else {
-        // CRIAR NOVO: Adiciona timestamp de criação
         data['createdAt'] = FieldValue.serverTimestamp();
         await _firestore.collection(_collection).add(data);
       }
@@ -77,7 +86,7 @@ class CampaignService {
     }
   }
 
-  // Atualização parcial de campos específicos
+  // Permite alterar status ou qualquer campo isoladamente
   Future<void> updateCampaign(String id, Map<String, dynamic> data) async {
     try {
       await _firestore.collection(_collection).doc(id).update(data);
