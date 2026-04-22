@@ -53,7 +53,7 @@ export interface Occurrence {
 export const CampaignType = {
   rifa: 'rifa',
   bazar: 'bazar',
-  ajuda: 'ajuda', // Adicionado para cobrir casos gerais de doação
+  ajuda: 'ajuda', 
   outro: 'outro'
 } as const;
 
@@ -82,12 +82,19 @@ export interface CampaignModel {
   currentValue?: number;
   goalValue?: number;
   ticketValue?: number;
+  
+  // Premiação
   prize?: string;
+  prizeImageUrl?: string; // <--- ADICIONADO: Para a lógica da foto da cesta/kit/etc
+  
   address?: string;
   itemsForSale?: string;
+  
+  // Prestação de Contas
   hasAccountability: boolean;
   totalCollected?: number;
   expenses?: ExpenseItem[];
+  
   // Campos de recibos sincronizados:
   receiptUrls?: string[]; // Nome exato como está no Firestore
   receipts?: string[];    // Nome usado no front-end/mapeamento

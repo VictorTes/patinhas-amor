@@ -33,10 +33,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
     }).format(value);
   };
 
-  const progress = Math.min(
-    Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100),
-    100
-  );
+  const progress = Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100);
 
   const handleWhatsApp = () => {
     const phone = "5547999999999";

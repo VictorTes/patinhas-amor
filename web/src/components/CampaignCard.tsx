@@ -7,10 +7,18 @@ interface Props {
 }
 
 export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
-  const progress = Math.min(
-    Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100),
-    100
-  );
+  // Cálculo do progresso
+  const progress = Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100);
+
+  /**
+   * Helper para formatação de moeda no padrão R$ 0.000,00
+   */
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   return (
     <div 
@@ -24,8 +32,8 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%', // Ocupa a altura total do grid
-        minHeight: '550px', // Garante que o card seja naturalmente mais comprido
+        height: '100%', 
+        minHeight: '550px', 
         border: '1px solid #f0f0f0'
       }}
       onMouseEnter={(e) => {
@@ -45,7 +53,7 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
           style={{ 
             width: '100%', 
             height: '100%', 
-            objectFit: 'cover' // Mantém o preenchimento sem distorcer
+            objectFit: 'cover' 
           }} 
         />
         <span style={{ 
@@ -104,12 +112,16 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
           }}>
             <div>
               <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Arrecadado</p>
-              <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>R$ {campaign.currentValue || 0}</p>
+              <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>
+                {formatCurrency(campaign.currentValue || 0)}
+              </p>
             </div>
             {campaign.ticketValue && (
               <div style={{ textAlign: 'right' }}>
                 <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Cota</p>
-                <p style={{ margin: 0, fontWeight: 700, color: '#e67e22', fontSize: '15px' }}>R$ {campaign.ticketValue}</p>
+                <p style={{ margin: 0, fontWeight: 700, color: '#e67e22', fontSize: '15px' }}>
+                  {formatCurrency(campaign.ticketValue)}
+                </p>
               </div>
             )}
           </div>
