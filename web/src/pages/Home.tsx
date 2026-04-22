@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AnimalGrid } from '../components/AnimalGrid';
 import { FadeIn } from '../components/FadeIn';
-import { CampaignCard } from '../components/CampaignCard'; // Certifique-se de que o import está correto
+import { CampaignCard } from '../components/CampaignCard';
 import { getAnimalsByStatus, getCampaignsOnce } from '../services/firebaseService';
 import type { Animal, CampaignModel } from '../types';
 
@@ -19,6 +19,7 @@ function ScrollToTop() {
 }
 
 export function Home() {
+  const navigate = useNavigate();
   const [availableAnimals, setAvailableAnimals] = useState<Animal[]>([]);
   const [missingAnimals, setMissingAnimals] = useState<Animal[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignModel[]>([]);
@@ -29,7 +30,6 @@ export function Home() {
 
   useEffect(() => {
     async function fetchHomeData() {
-      // Buscas em paralelo para melhor performance
       try {
         const [available, missing, activeCampaigns] = await Promise.all([
           getAnimalsByStatus('available_for_adoption'),
@@ -165,6 +165,7 @@ export function Home() {
               <FadeIn delay={0.4}>
                 <AnimalGrid
                   animals={availableAnimals}
+                  onAnimalClick={() => navigate('/adocao')}
                   emptyMessage="Nenhum animal disponível para adoção no momento."
                   columns={4}
                 />
@@ -221,6 +222,7 @@ export function Home() {
                 <FadeIn delay={0.3}>
                   <AnimalGrid
                     animals={missingAnimals}
+                    onAnimalClick={() => navigate('/desaparecidos')}
                     variant="urgent"
                     emptyMessage="Nenhum animal desaparecido no momento."
                     columns={4}
@@ -264,7 +266,7 @@ export function Home() {
                 to="/campanhas"
                 className="hidden sm:inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700 group"
               >
-                Ver todas as campanhas
+                Ver todos as campanhas
                 <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
@@ -281,7 +283,11 @@ export function Home() {
               {campaigns.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {campaigns.map((campaign) => (
-                    <CampaignCard key={campaign.id} campaign={campaign} onClick={() => { }} />
+                    <CampaignCard 
+                      key={campaign.id} 
+                      campaign={campaign} 
+                      onClick={() => navigate('/campanhas')} 
+                    />
                   ))}
                 </div>
               ) : (
