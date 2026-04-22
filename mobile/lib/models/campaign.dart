@@ -37,6 +37,7 @@ class CampaignModel {
   final double? currentValue;
   final double? ticketValue;
   final String? prize;
+  final String? prizeImageUrl; // Nova imagem da premiação
 
   // Campos específicos de Bazar
   final String? address;
@@ -60,6 +61,7 @@ class CampaignModel {
     this.currentValue,
     this.ticketValue,
     this.prize,
+    this.prizeImageUrl,
     this.address,
     this.itemsForSale,
     this.hasAccountability = false,
@@ -67,29 +69,43 @@ class CampaignModel {
     this.expenses,
     this.receiptUrls,
   });
-  
-  CampaignModel copyWith({double? currentValue}) {
+
+  // copyWith atualizado para suportar todos os novos campos
+  CampaignModel copyWith({
+    String? title,
+    String? description,
+    CampaignStatus? status,
+    double? currentValue,
+    double? goalValue,
+    String? imageUrl,
+    String? prize,
+    String? prizeImageUrl,
+    List<String>? receiptUrls,
+    List<ExpenseItem>? expenses,
+    double? totalCollected,
+  }) {
     return CampaignModel(
       id: id,
-      title: title,
-      description: description,
+      title: title ?? this.title,
+      description: description ?? this.description,
       type: type,
-      status: status,
-      goalValue: goalValue,
+      status: status ?? this.status,
+      imageUrl: imageUrl ?? this.imageUrl,
+      createdAt: createdAt,
+      goalValue: goalValue ?? this.goalValue,
+      currentValue: currentValue ?? this.currentValue,
       ticketValue: ticketValue,
-      prize: prize,
+      prize: prize ?? this.prize,
+      prizeImageUrl: prizeImageUrl ?? this.prizeImageUrl,
       address: address,
       itemsForSale: itemsForSale,
       hasAccountability: hasAccountability,
-      totalCollected: totalCollected,
-      expenses: expenses,
-      currentValue: currentValue ?? this.currentValue, // Valor atualizado aqui
-      imageUrl: imageUrl,
-      receiptUrls: receiptUrls,
+      totalCollected: totalCollected ?? this.totalCollected,
+      expenses: expenses ?? this.expenses,
+      receiptUrls: receiptUrls ?? this.receiptUrls,
     );
   }
 
-  // Converte objeto para Map (Salvar no Firestore)
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -102,6 +118,7 @@ class CampaignModel {
       'currentValue': currentValue,
       'ticketValue': ticketValue,
       'prize': prize,
+      'prizeImageUrl': prizeImageUrl,
       'address': address,
       'itemsForSale': itemsForSale,
       'hasAccountability': hasAccountability,
@@ -111,7 +128,6 @@ class CampaignModel {
     };
   }
 
-  // Converte Firestore para Objeto (Ler do Banco)
   factory CampaignModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return CampaignModel(
@@ -119,13 +135,17 @@ class CampaignModel {
       title: data['title'] ?? '',
       description: data['description'] ?? '',
       type: CampaignType.values.firstWhere((e) => e.name == data['type']),
-      status: CampaignStatus.values.firstWhere((e) => e.name == data['status']),
+      status: CampaignStatus.values.firstWhere(
+        (e) => e.name == (data['status'] ?? 'ativa'),
+        orElse: () => CampaignStatus.ativa,
+      ),
       imageUrl: data['imageUrl'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       goalValue: (data['goalValue'] as num?)?.toDouble(),
       currentValue: (data['currentValue'] as num?)?.toDouble(),
       ticketValue: (data['ticketValue'] as num?)?.toDouble(),
       prize: data['prize'],
+      prizeImageUrl: data['prizeImageUrl'],
       address: data['address'],
       itemsForSale: data['itemsForSale'],
       hasAccountability: data['hasAccountability'] ?? false,
