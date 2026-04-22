@@ -12,12 +12,19 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const isFinalized = campaign.status === CampaignStatus.finalizada;
 
-  // Listener para ajustar o layout se a tela redimensionar
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Formatador de Moeda Brasileiro
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   const progress = Math.min(
     Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100),
@@ -36,7 +43,6 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        {/* Botão de Fechar com SVG para alinhamento perfeito */}
         <button onClick={onClose} style={styles.closeBtn}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -58,16 +64,27 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
 
             <p style={styles.description}>{campaign.description}</p>
 
-            {/* Progress Bar Detail */}
+            {/* Premiação */}
+            {campaign.prize && (
+              <div style={styles.prizeBox}>
+                <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#e67e22', textTransform: 'uppercase' }}>🎁 Premiação</h4>
+                <p style={{ margin: 0, fontWeight: 700, color: '#333' }}>{campaign.prize}</p>
+              </div>
+            )}
+
+            {/* Progress Bar */}
             <div style={styles.progressContainer}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <span style={{ fontWeight: 700, fontSize: '18px', color: '#333' }}>R$ {campaign.currentValue || 0}</span>
-                <span style={{ color: '#888' }}>meta de R$ {campaign.goalValue}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'flex-end' }}>
+                <div>
+                  <span style={{ fontSize: '12px', color: '#888', display: 'block' }}>Arrecadado</span>
+                  <span style={{ fontWeight: 700, fontSize: '20px', color: '#333' }}>{formatCurrency(campaign.currentValue || 0)}</span>
+                </div>
+                <span style={{ color: '#888', fontSize: '13px' }}>meta: {formatCurrency(campaign.goalValue || 0)}</span>
               </div>
               <div style={styles.progressBarBg}>
                 <div style={{ ...styles.progressBarFill, width: `${progress}%` }} />
               </div>
-              <p style={{ textAlign: 'right', fontSize: '13px', color: '#e67e22', fontWeight: 600, marginTop: '5px' }}>
+              <p style={{ textAlign: 'right', fontSize: '13px', color: '#2ecc71', fontWeight: 600, marginTop: '5px' }}>
                 {progress}% concluído
               </p>
             </div>
@@ -75,11 +92,10 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
             {!isFinalized && (
               <div style={styles.actionBox}>
                 <div style={{ marginBottom: '15px' }}>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Valor por número/cota</p>
-                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a1a1a' }}>R$ {campaign.ticketValue}</p>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Valor por cota</p>
+                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a1a1a' }}>{formatCurrency(campaign.ticketValue || 0)}</p>
                 </div>
 
-                {/* Layout Responsivo para Compra */}
                 <div style={{ 
                   display: 'flex', 
                   gap: '12px', 
@@ -87,14 +103,11 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                   alignItems: 'stretch' 
                 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {isMobile && <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>Quantidade:</label>}
+                    {isMobile && <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#999' }}>QTD:</label>}
                     <input
                       type="number" min="1" value={ticketQuantity}
                       onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
-                      style={{
-                        ...styles.input,
-                        width: isMobile ? '100%' : '80px'
-                      }}
+                      style={{ ...styles.input, width: isMobile ? '100%' : '80px' }}
                     />
                   </div>
                   <button onClick={handleWhatsApp} style={styles.buyBtn}>
@@ -109,18 +122,34 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                 <span>📊</span> Prestação de Contas
               </h3>
               {campaign.hasAccountability ? (
-                <div style={styles.expenseBox}>
-                  {campaign.expenses?.map((exp, idx) => (
-                    <div key={idx} style={styles.expenseItem}>
-                      <span style={{ color: '#555' }}>{exp.description}</span>
-                      <span style={{ fontWeight: 600, color: '#d32f2f' }}>- R$ {exp.value}</span>
+                <>
+                  <div style={styles.expenseBox}>
+                    {campaign.expenses?.map((exp, idx) => (
+                      <div key={idx} style={styles.expenseItem}>
+                        <span style={{ color: '#555' }}>{exp.description}</span>
+                        <span style={{ fontWeight: 600, color: '#d32f2f' }}>- {formatCurrency(exp.value)}</span>
+                      </div>
+                    ))}
+                    <div style={{ ...styles.expenseItem, borderTop: '1px solid #ddd', marginTop: '10px', paddingTop: '10px' }}>
+                      <strong style={{ color: '#333' }}>Total Liquidado</strong>
+                      <strong style={{ color: '#2e7d32', fontSize: '16px' }}>{formatCurrency(campaign.totalCollected || 0)}</strong>
                     </div>
-                  ))}
-                  <div style={{ ...styles.expenseItem, borderTop: '1px solid #ddd', marginTop: '10px', paddingTop: '10px' }}>
-                    <strong style={{ color: '#333' }}>Total Arrecadado</strong>
-                    <strong style={{ color: '#2e7d32', fontSize: '16px' }}>R$ {campaign.totalCollected || 0}</strong>
                   </div>
-                </div>
+
+                  {/* Galeria de Comprovantes */}
+                  {campaign.receipts && campaign.receipts.length > 0 && (
+                    <div style={{ marginTop: '20px' }}>
+                      <p style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginBottom: '10px' }}>Comprovantes Anexados:</p>
+                      <div style={styles.receiptGrid}>
+                        {campaign.receipts.map((url, i) => (
+                          <a key={i} href={url} target="_blank" rel="noreferrer" style={styles.receiptThumb}>
+                            <img src={url} alt="Comprovante" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div style={styles.emptyState}>Prestação de contas será publicada em breve.</div>
               )}
@@ -135,40 +164,25 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
 const styles: Record<string, React.CSSProperties> = {
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '15px' },
   modal: { backgroundColor: '#fff', width: '100%', maxWidth: '1000px', maxHeight: '95vh', borderRadius: '24px', position: 'relative', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' },
-  closeBtn: {
-    position: 'absolute',
-    top: '15px',
-    right: '15px',
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    backgroundColor: 'white',
-    color: '#000',
-    border: 'none',
-    cursor: 'pointer',
-    zIndex: 100,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-    transition: 'all 0.2s ease',
-    padding: 0
-  },
+  closeBtn: { position: 'absolute', top: '15px', right: '15px', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'white', color: '#000', border: 'none', cursor: 'pointer', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', transition: 'all 0.2s ease' },
   content: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap' },
   imageContainer: { flex: '1 1 400px', backgroundColor: '#f8f8f8' },
   image: { width: '100%', height: '100%', minHeight: '300px', objectFit: 'cover' },
   infoSection: { flex: '1 1 500px', padding: '40px', minWidth: '300px' },
   badge: { fontSize: '10px', fontWeight: 800, color: '#e67e22', letterSpacing: '1px', marginBottom: '8px', display: 'block' },
   title: { margin: '0 0 12px 0', fontSize: '28px', color: '#1a1a1a', fontWeight: 800 },
-  description: { color: '#555', lineHeight: '1.7', marginBottom: '30px', fontSize: '15px' },
+  description: { color: '#555', lineHeight: '1.7', marginBottom: '20px', fontSize: '15px' },
+  prizeBox: { backgroundColor: '#fffbe6', padding: '15px', borderRadius: '12px', border: '1px solid #ffe58f', marginBottom: '25px' },
   progressContainer: { marginBottom: '30px', backgroundColor: '#fcfcfc', padding: '20px', borderRadius: '16px', border: '1px solid #f0f0f0' },
   progressBarBg: { height: '12px', backgroundColor: '#eee', borderRadius: '6px', overflow: 'hidden' },
-  progressBarFill: { height: '100%', backgroundColor: '#e67e22', borderRadius: '6px', transition: 'width 1.5s ease-out' },
+  progressBarFill: { height: '100%', backgroundColor: '#2ecc71', borderRadius: '6px', transition: 'width 1.5s ease-out' },
   actionBox: { backgroundColor: '#fff', padding: '25px', borderRadius: '20px', border: '2px solid #ffe0b2', marginBottom: '30px' },
   input: { padding: '14px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '16px', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#f9f9f9' },
   buyBtn: { flex: 1, padding: '16px', backgroundColor: '#25D366', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)' },
   accountability: { borderTop: '1px solid #eee', paddingTop: '25px' },
   expenseBox: { backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '12px' },
   expenseItem: { display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: '14px' },
+  receiptGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' },
+  receiptThumb: { height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd', cursor: 'pointer', transition: 'transform 0.2s' },
   emptyState: { color: '#999', fontStyle: 'italic', fontSize: '14px', textAlign: 'center', padding: '20px' }
 };
