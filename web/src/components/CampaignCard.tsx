@@ -3,7 +3,7 @@ import type { CampaignModel } from '../types';
 
 interface Props {
   campaign: CampaignModel;
-  onClick: (campaign: CampaignModel) => void;
+  onClick: (campaign: CampaignModel) => void; 
 }
 
 export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
