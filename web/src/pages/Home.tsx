@@ -188,28 +188,23 @@ export function Home() {
         <section className="py-16 lg:py-24 bg-gradient-to-b from-red-50 to-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn direction="up">
-              <div className="bg-red-700 text-white rounded-2xl p-6 md:p-8 mb-10 shadow-lg shadow-red-200">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex items-start md:items-center gap-4">
-                    <motion.div
-                      animate={{ rotate: [0, -10, 10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"
-                    >
-                      <span className="text-3xl">⚠️</span>
-                    </motion.div>
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-bold mb-1">Nos ajude a encontrá-los</h2>
-                      <p className="text-red-100">Esses animais estão desaparecidos e precisam voltar para casa</p>
-                    </div>
+              <div className="bg-[#b91c1c] text-red-50 rounded-2xl p-6 md:p-8 mb-10 shadow-xl shadow-red-900/10 border border-red-800/20">                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-start md:items-center gap-4">
+                  
+                    <span className="text-3xl">⚠️</span>
+                  
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-bold mb-1">Nos ajude a encontrá-los</h2>
+                    <p className="text-red-100">Esses animais estão desaparecidos e precisam voltar para casa</p>
                   </div>
-                  <Link
-                    to="/desaparecidos"
-                    className="hidden md:inline-flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors"
-                  >
-                    Ver todos
-                  </Link>
                 </div>
+                <Link
+                  to="/desaparecidos"
+                  className="hidden md:inline-flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+                >
+                  Ver todos
+                </Link>
+              </div>
               </div>
             </FadeIn>
 
@@ -283,10 +278,10 @@ export function Home() {
               {campaigns.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {campaigns.map((campaign) => (
-                    <CampaignCard 
-                      key={campaign.id} 
-                      campaign={campaign} 
-                      onClick={() => navigate('/campanhas')} 
+                    <CampaignCard
+                      key={campaign.id}
+                      campaign={campaign}
+                      onClick={() => navigate('/campanhas')}
                     />
                   ))}
                 </div>
