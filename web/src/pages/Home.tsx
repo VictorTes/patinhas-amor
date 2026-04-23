@@ -189,10 +189,8 @@ export function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn direction="up">
               <div className="bg-[#b91c1c] text-red-50 rounded-2xl p-6 md:p-8 mb-10 shadow-xl shadow-red-900/10 border border-red-800/20">                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-start md:items-center gap-4">
-                  
-                    <span className="text-3xl">⚠️</span>
-                  
+                <div className="flex items-start md:items-center gap-4">                  
+                    <span className="text-3xl">⚠️</span>      
                   <div>
                     <h2 className="text-2xl md:text-3xl font-bold mb-1">Nos ajude a encontrá-los</h2>
                     <p className="text-red-100">Esses animais estão desaparecidos e precisam voltar para casa</p>
