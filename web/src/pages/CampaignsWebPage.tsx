@@ -41,8 +41,11 @@ const CampaignsWebPage: React.FC = () => {
   }
 
   return (
-    <div style={{ backgroundColor: '#fafafa', minHeight: '100vh' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px' }}>
+    // Alteração: Adicionado flex e flex-direction para controlar o layout vertical
+    <div style={{ backgroundColor: '#fafafa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* Alteração: Adicionado flex: 1 para este container crescer e empurrar o footer */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px', width: '100%', flex: 1 }}>
         <FadeIn direction="down">
           <header style={{
             marginBottom: '50px',
@@ -129,6 +132,7 @@ const CampaignsWebPage: React.FC = () => {
           />
         )}
       </div>
+
       <footer className="bg-slate-900 text-slate-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn direction="up">
