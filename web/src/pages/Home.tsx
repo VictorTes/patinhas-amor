@@ -188,7 +188,7 @@ export function Home() {
         <section className="py-16 lg:py-24 bg-gradient-to-b from-red-50 to-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn direction="up">
-              <div className="bg-red-500 text-white rounded-2xl p-6 md:p-8 mb-10 shadow-lg shadow-red-200">
+              <div className="bg-red-700 text-white rounded-2xl p-6 md:p-8 mb-10 shadow-lg shadow-red-200">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-start md:items-center gap-4">
                     <motion.div

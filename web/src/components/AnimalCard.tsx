@@ -37,12 +37,11 @@ export function AnimalCard({
   return (
     <div
       onClick={() => onClick?.(animal)}
-      /* Adicionado h-full para o card ocupar toda a altura da grid */
       className={`
         group bg-white rounded-2xl overflow-hidden cursor-pointer
         transition-all duration-300 ease-out flex flex-col h-full
         hover:shadow-xl hover:-translate-y-1
-        ${isUrgent ? 'ring-2 ring-red-400 shadow-red-100' : 'shadow-sm border border-slate-100'}
+        ${isUrgent ? 'ring-2 ring-red-300 shadow-sm shadow-red-100' : 'shadow-sm border border-slate-100'}
       `}
     >
       {/* Imagem */}
@@ -57,7 +56,8 @@ export function AnimalCard({
         />
 
         {isUrgent && (
-          <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-lg animate-pulse">
+          /* Removido animate-pulse e ajustado para um vermelho presente mas equilibrado */
+          <div className="absolute top-3 right-3 bg-red-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm">
             ⚠️ Desaparecido
           </div>
         )}
@@ -67,7 +67,7 @@ export function AnimalCard({
         </div>
       </div>
 
-      {/* Conteúdo - flex-grow garante que esta área empurre o que vem depois para baixo */}
+      {/* Conteúdo */}
       <div className="p-5 flex flex-col flex-grow">
         {/* Nome e sexo */}
         <div className="flex items-center justify-between mb-3">
@@ -92,7 +92,7 @@ export function AnimalCard({
           </span>
         </div>
 
-        {/* Descrição - flex-grow aqui faz o texto "esticar" o espaço vazio, empurrando o rodapé */}
+        {/* Descrição */}
         <div className="flex-grow">
           {animal.description && (
             <p className="text-slate-600 text-sm line-clamp-3 mb-4 italic">
@@ -109,7 +109,7 @@ export function AnimalCard({
           )}
         </div>
 
-        {/* Rodapé do Card (Botão ou Telefone) - Fica sempre no final por causa do flex-grow acima */}
+        {/* Rodapé do Card (Botão ou Telefone) */}
         <div className="mt-auto">
           {!isUrgent && (
             <div className="pt-4 border-t border-slate-50">
@@ -136,7 +136,7 @@ export function AnimalCard({
           {isUrgent && animal.adopterPhone && (
             <div className="pt-4 border-t border-slate-50">
               <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-                <p className="text-red-700 text-sm font-bold flex items-center gap-2">
+                <p className="text-red-600 text-sm font-bold flex items-center gap-2">
                   📞 Contato: {formatPhoneNumber(animal.adopterPhone)}
                 </p>
               </div>
