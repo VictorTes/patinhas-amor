@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FA),
       drawer: const AppDrawer(),
       body: SafeArea(
         child: FadeTransition(
@@ -50,11 +50,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 const SizedBox(height: 20),
                 _buildHeader(context),
-                const SizedBox(height: 30), // Aumentado para dar mais ar
+                const SizedBox(height: 24),
+                _buildQuickActions(context),
+                const SizedBox(height: 24),
                 _buildLiveSummarySection(),
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
+                _buildActiveCampaignsCard(), // Substituído: Agora focado em Rifas/Campanhas
+                const SizedBox(height: 24),
                 _buildMapPreview(context),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 _buildGridNavigation(context),
                 const SizedBox(height: 32),
               ],
@@ -74,10 +78,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Stack(
               alignment: Alignment.bottomRight,
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.orange[100],
-                  backgroundImage: const AssetImage('assets/images/logo.png'),
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.orange.withOpacity(0.2), width: 2),
+                  ),
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    backgroundImage: const AssetImage('assets/images/logo.png'),
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.all(4),
@@ -85,71 +96,183 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     color: Colors.orange,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.menu, color: Colors.white, size: 12),
+                  child: const Icon(Icons.menu, color: Colors.white, size: 10),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Patinhas e Amor',
               style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.orange),
+                  color: Color(0xFF2D3436)),
             ),
             Text(
               'Painel Administrativo',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500),
             ),
           ],
         ),
         const Spacer(),
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.grey),
-          onPressed: () => _showComingSoon(context),
-        )
+        _buildNotificationIcon(),
       ],
     );
   }
 
-  // --- SEÇÃO DE ESTATÍSTICAS AMPLIADA ---
-  Widget _buildLiveSummarySection() {
-    return SizedBox(
-      height: 130, // Altura aumentada para os cards ficarem maiores
-      child: Row(
+  Widget _buildNotificationIcon() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
+      ),
+      child: IconButton(
+        icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF2D3436)),
+        onPressed: () => _showComingSoon(context),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildActionCircle(
+          Icons.pets_rounded, 
+          'Novo Pet', 
+          Colors.green,
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen())),
+        ),
+        _buildActionCircle(
+          Icons.report_problem_outlined, 
+          'Nova Ocorr.', 
+          Colors.orange,
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen())),
+        ),
+        _buildActionCircle(
+          Icons.analytics_outlined, 
+          'Relatórios', 
+          Colors.blue,
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportsScreen())),
+        ),
+        _buildActionCircle(
+          Icons.more_horiz, 
+          'Mais', 
+          Colors.grey,
+          () => Scaffold.of(context).openDrawer(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCircle(IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
         children: [
-          _buildCounterStream(
-            collection: 'occurrences',
-            field: 'status',
-            value: 'pending',
-            label: 'Pendentes',
-            color: Colors.redAccent,
-            description: 'Novas denúncias',
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 24),
           ),
-          const SizedBox(width: 12),
-          _buildCounterStream(
-            collection: 'occurrences',
-            field: 'status',
-            value: 'in_progress',
-            label: 'Em Curso',
-            color: Colors.blue,
-            description: 'Sendo atendidas',
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.black54)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveCampaignsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.confirmation_number_outlined, size: 20, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Rifa Ativa: Cesta de Páscoa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8)),
+                child: Text('75%', style: TextStyle(color: Colors.green[700], fontSize: 10, fontWeight: FontWeight.bold)),
+              )
+            ],
           ),
-          const SizedBox(width: 12),
-          _buildCounterStream(
-            collection: 'animals',
-            label: 'Acolhidos',
-            color: Colors.green,
-            isTotalCount: true,
-            description: 'Total na ONG',
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: 0.75,
+              backgroundColor: Colors.grey[100],
+              color: Colors.orange,
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('300 de 400 números vendidos', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w500)),
+              Text('R\$ 1.500,00', style: TextStyle(color: Color(0xFF2D3436), fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLiveSummarySection() {
+    return Row(
+      children: [
+        _buildCounterStream(
+          collection: 'occurrences',
+          field: 'status',
+          value: 'pending',
+          label: 'Pendentes',
+          color: const Color(0xFFE74C3C),
+          description: 'Denúncias',
+        ),
+        const SizedBox(width: 12),
+        _buildCounterStream(
+          collection: 'occurrences',
+          field: 'status',
+          value: 'in_progress',
+          label: 'Em Curso',
+          color: const Color(0xFF3498DB),
+          description: 'Atendimentos',
+        ),
+        const SizedBox(width: 12),
+        _buildCounterStream(
+          collection: 'animals',
+          label: 'Acolhidos',
+          color: const Color(0xFF27AE60),
+          isTotalCount: true,
+          description: 'Na ONG',
+        ),
+      ],
     );
   }
 
@@ -171,69 +294,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: StreamBuilder<QuerySnapshot>(
         stream: query.snapshots(),
         builder: (context, snapshot) {
-          String count = '00';
-          if (snapshot.hasData) {
-            count = snapshot.data!.docs.length.toString().padLeft(2, '0');
-          }
+          String count = snapshot.hasData ? snapshot.data!.docs.length.toString().padLeft(2, '0') : '--';
 
           return Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                )
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animação focada apenas no número que muda
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 600),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return ScaleTransition(
-                      scale: animation,
-                      child: FadeTransition(opacity: animation, child: child),
-                    );
-                  },
-                  child: Text(
-                    count,
-                    key: ValueKey<String>(count),
-                    style: TextStyle(
-                      fontSize: 32, // Número bem maior e destacado
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                      height: 1.1,
-                    ),
-                  ),
+                Text(
+                  count,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  label.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  description,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    color: Colors.grey[500],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
+                Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2D3436))),
+                Text(description, style: TextStyle(fontSize: 8, color: Colors.grey[400])),
               ],
             ),
           );
@@ -243,56 +321,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildMapPreview(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Ocorrências em Tempo Real',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const OccurrencesMapScreen())),
+      child: Container(
+        height: 110,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)]),
+          boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))],
         ),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const OccurrencesMapScreen()),
-            );
-          },
-          child: Container(
-            height: 160,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                colors: [Colors.blue[400]!, Colors.blue[700]!],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.2),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                )
-              ],
-            ),
-            child: const Center(
+        child: const Stack(
+          children: [
+            Positioned(right: -10, top: -10, child: Icon(Icons.map_rounded, size: 80, color: Colors.white10)),
+            Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.map_outlined, size: 32, color: Colors.white),
-                  SizedBox(height: 12),
-                  Text(
-                    "EXPLORAR MAPA",
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white),
-                  ),
+                  Icon(Icons.explore_outlined, size: 26, color: Colors.white),
+                  SizedBox(height: 6),
+                  Text("EXPLORAR MAPA", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.2)),
                 ],
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -303,36 +357,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: 1.3,
+      childAspectRatio: 1.4,
       children: [
-        _buildMenuItem(
-          context,
-          'Ocorrências',
-          Icons.notification_important_outlined,
-          Colors.orange,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen())),
-        ),
-        _buildMenuItem(
-          context,
-          'Animais',
-          Icons.pets_outlined,
-          Colors.green,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen())),
-        ),
-        _buildMenuItem(
-          context,
-          'Relatórios',
-          Icons.analytics_outlined,
-          Colors.blueAccent,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportsScreen())),
-        ),
-        _buildMenuItem(
-          context,
-          'Ajustes',
-          Icons.settings_outlined,
-          Colors.blueGrey,
-          () => _showComingSoon(context),
-        ),
+        _buildMenuItem(context, 'Ocorrências', Icons.warning_amber_rounded, Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen()))),
+        _buildMenuItem(context, 'Animais', Icons.pets_rounded, Colors.green, () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen()))),
+        _buildMenuItem(context, 'Relatórios', Icons.bar_chart_rounded, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportsScreen()))),
+        _buildMenuItem(context, 'Campanhas', Icons.confirmation_number_outlined, Colors.redAccent, () => _showComingSoon(context)),
       ],
     );
   }
@@ -344,25 +374,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ],
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 24),
             ),
+            const SizedBox(height: 8),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2D3436))),
           ],
         ),
       ),
