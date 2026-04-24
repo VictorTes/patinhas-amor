@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen())),
         ),
         _buildActionCircle(
-          Icons.report_problem_outlined, 
+          Icons.notification_important_outlined, 
           'Nova Ocorr.', 
           Colors.orange,
           () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen())),
@@ -359,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       mainAxisSpacing: 16,
       childAspectRatio: 1.4,
       children: [
-        _buildMenuItem(context, 'Ocorrências', Icons.warning_amber_rounded, Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen()))),
+        _buildMenuItem(context, 'Ocorrências', Icons.notification_important_outlined, Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen()))),
         _buildMenuItem(context, 'Animais', Icons.pets_rounded, Colors.green, () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen()))),
         _buildMenuItem(context, 'Relatórios', Icons.bar_chart_rounded, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportsScreen()))),
         _buildMenuItem(context, 'Campanhas', Icons.confirmation_number_outlined, Colors.redAccent, () => _showComingSoon(context)),
