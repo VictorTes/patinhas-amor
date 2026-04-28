@@ -51,6 +51,7 @@ class CampaignDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final dateFormat = DateFormat('dd/MM/yyyy'); // Formatador para a data do sorteio
     final CampaignService service = CampaignService();
 
     return StreamBuilder<List<CampaignModel>>(
@@ -119,7 +120,7 @@ class CampaignDetailScreen extends StatelessWidget {
                         const Divider(height: 40),
                         
                         if (campaign.type == CampaignType.rifa)
-                          _buildRifaProgress(context, campaign, currencyFormat),
+                          _buildRifaProgress(context, campaign, currencyFormat, dateFormat),
                         if (campaign.type == CampaignType.bazar)
                           _buildBazarInfo(campaign),
                           
@@ -219,7 +220,7 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRifaProgress(BuildContext context, CampaignModel c, NumberFormat fmt) {
+  Widget _buildRifaProgress(BuildContext context, CampaignModel c, NumberFormat fmt, DateFormat dateFmt) {
     double rawProgress = (c.currentValue ?? 0) / (c.goalValue ?? 1);
     double visualProgress = rawProgress > 1.0 ? 1.0 : rawProgress;
     bool isGoalReached = (c.currentValue ?? 0) >= (c.goalValue ?? 0);
@@ -254,6 +255,35 @@ class CampaignDetailScreen extends StatelessWidget {
         Text('Arrecadado: ${fmt.format(c.currentValue ?? 0)} / Meta: ${fmt.format(c.goalValue ?? 0)}',
             style: const TextStyle(color: Colors.grey, fontSize: 13)),
         
+        // --- NOVA SEÇÃO: DATA DO SORTEIO ---
+        if (c.drawDate != null) ...[
+          const SizedBox(height: 25),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_month, color: Colors.blue.shade800),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Data do Sorteio', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text(
+                      dateFmt.format(c.drawDate!),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+
         if (c.prize != null) ...[
           const SizedBox(height: 20),
           Row(
