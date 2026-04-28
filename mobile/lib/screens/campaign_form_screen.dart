@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart'; // Importante para formatar a data
 import '../models/campaign.dart';
 import '../services/campaign_service.dart';
 
@@ -29,13 +30,16 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
   File? _prizeImage;
   List<File> _receiptFiles = [];
   
-  // Controle de URLs existentes para permitir exclusão
   String? _prizeImageUrl;
   List<String> _existingReceiptUrls = [];
 
   final _goalController = TextEditingController();
   final _ticketValueController = TextEditingController();
   final _prizeController = TextEditingController();
+  
+  // Controle da Data de Sorteio
+  final _drawDateController = TextEditingController();
+  DateTime? _selectedDrawDate;
 
   final _addressController = TextEditingController();
   final _itemsController = TextEditingController();
@@ -68,6 +72,30 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _expenses = List.from(c.expenses ?? []);
     _prizeImageUrl = c.prizeImageUrl;
     _existingReceiptUrls = List.from(c.receiptUrls ?? []);
+    
+    // Preenchendo a data de sorteio se existir
+    if (c.drawDate != null) {
+      _selectedDrawDate = c.drawDate;
+      _drawDateController.text = DateFormat('dd/MM/yyyy').format(c.drawDate!);
+    }
+  }
+
+  // Função para abrir o seletor de data
+  Future<void> _selectDrawDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDrawDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      locale: const Locale('pt', 'BR'),
+    );
+
+    if (picked != null && picked != _selectedDrawDate) {
+      setState(() {
+        _selectedDrawDate = picked;
+        _drawDateController.text = DateFormat('dd/MM/yyyy').format(picked);
+      });
+    }
   }
 
   Future<void> _pickMainImage() async {
@@ -79,7 +107,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) setState(() {
       _prizeImage = File(picked.path);
-      _prizeImageUrl = null; // Se escolheu nova, anula a antiga
+      _prizeImageUrl = null;
     });
   }
 
@@ -109,6 +137,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         goalValue: double.tryParse(_goalController.text),
         ticketValue: double.tryParse(_ticketValueController.text),
         prize: _prizeController.text,
+        drawDate: _selectedDrawDate, // Enviando a data selecionada
         address: _addressController.text,
         itemsForSale: _itemsController.text,
         hasAccountability: _hasAccountability,
@@ -116,8 +145,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         expenses: _expenses,
         currentValue: widget.campaign?.currentValue ?? 0,
         imageUrl: widget.campaign?.imageUrl, 
-        prizeImageUrl: _prizeImageUrl, // Usa a URL controlada pelo estado local
-        receiptUrls: _existingReceiptUrls, // Usa a lista controlada pelo estado local
+        prizeImageUrl: _prizeImageUrl,
+        receiptUrls: _existingReceiptUrls,
       );
 
       await _service.saveCampaign(
@@ -250,6 +279,20 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       TextFormField(controller: _prizeController, decoration: const InputDecoration(labelText: 'Nome do Prêmio', border: OutlineInputBorder())),
       const SizedBox(height: 10),
       
+      // Seletor de Data de Sorteio
+      TextFormField(
+        controller: _drawDateController,
+        readOnly: true,
+        onTap: _selectDrawDate,
+        decoration: const InputDecoration(
+          labelText: 'Data do Sorteio',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.calendar_today),
+          hintText: 'Selecione a data',
+        ),
+      ),
+      const SizedBox(height: 10),
+      
       Stack(
         children: [
           GestureDetector(
@@ -346,7 +389,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[300], foregroundColor: Colors.black87),
           ),
           
-          // Miniaturas de novos arquivos e URLs existentes
           if (_receiptFiles.isNotEmpty || _existingReceiptUrls.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 10),
@@ -355,9 +397,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    // Fotos locais
                     ..._receiptFiles.asMap().entries.map((e) => _buildThumb(File(e.value.path), () => setState(() => _receiptFiles.removeAt(e.key)))),
-                    // Fotos remotas
                     ..._existingReceiptUrls.asMap().entries.map((e) => _buildThumb(e.value, () => setState(() => _existingReceiptUrls.removeAt(e.key)))),
                   ],
                 ),
