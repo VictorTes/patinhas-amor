@@ -21,8 +21,8 @@
         android:label="Patinhas e Amor"
         android:name="${applicationName}"
         android:enableOnBackInvokedCallback="true"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round">
+        android:icon="@mipmap/app_icon_ong"
+        android:roundIcon="@mipmap/app_icon_ong">
         <activity
             android:name=".MainActivity"
             android:exported="true"

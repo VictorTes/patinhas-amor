@@ -62,9 +62,3 @@ flutter:
     - assets/images/
     - .env
 
-flutter_launcher_icons:
-  android: true
-  ios: false
-  image_path: "assets/images/logo.png"
-  adaptive_icon_background: "#ffffff" # Cor de fundo (importante para Android moderno)
-  adaptive_icon_foreground: "assets/images/logo.png"
