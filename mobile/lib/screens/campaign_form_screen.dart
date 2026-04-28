@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart'; // Importante para formatar a data
+import 'package:intl/intl.dart'; 
 import '../models/campaign.dart';
 import '../services/campaign_service.dart';
 
@@ -37,7 +37,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
   final _ticketValueController = TextEditingController();
   final _prizeController = TextEditingController();
   
-  // Controle da Data de Sorteio
   final _drawDateController = TextEditingController();
   DateTime? _selectedDrawDate;
 
@@ -54,6 +53,21 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     if (widget.campaign != null) {
       _fillFields();
     }
+  }
+
+  @override
+  void dispose() {
+    // Limpeza dos controladores para evitar memory leak
+    _titleController.dispose();
+    _descController.dispose();
+    _goalController.dispose();
+    _ticketValueController.dispose();
+    _prizeController.dispose();
+    _drawDateController.dispose();
+    _addressController.dispose();
+    _itemsController.dispose();
+    _totalCollectedController.dispose();
+    super.dispose();
   }
 
   void _fillFields() {
@@ -73,21 +87,19 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _prizeImageUrl = c.prizeImageUrl;
     _existingReceiptUrls = List.from(c.receiptUrls ?? []);
     
-    // Preenchendo a data de sorteio se existir
     if (c.drawDate != null) {
       _selectedDrawDate = c.drawDate;
       _drawDateController.text = DateFormat('dd/MM/yyyy').format(c.drawDate!);
     }
   }
 
-  // Função para abrir o seletor de data
   Future<void> _selectDrawDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDrawDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      locale: const Locale('pt', 'BR'),
+      locale: const Locale('pt', 'BR'), // Agora funcionando com localizationsDelegates
     );
 
     if (picked != null && picked != _selectedDrawDate) {
@@ -98,6 +110,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     }
   }
 
+  // Métodos de seleção de imagem permanecem iguais
   Future<void> _pickMainImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) setState(() => _mainImage = File(picked.path));
@@ -122,6 +135,13 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     setState(() => _expenses.add(ExpenseItem(description: '', value: 0.0)));
   }
 
+  // Função auxiliar para converter texto em double de forma segura
+  double? _parseDouble(String value) {
+    if (value.isEmpty) return null;
+    // Substitui vírgula por ponto antes de tentar converter
+    return double.tryParse(value.replaceAll(',', '.'));
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -130,18 +150,18 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     try {
       final updatedCampaign = CampaignModel(
         id: widget.campaign?.id,
-        title: _titleController.text,
-        description: _descController.text,
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
         type: _selectedType,
         status: _selectedStatus,
-        goalValue: double.tryParse(_goalController.text),
-        ticketValue: double.tryParse(_ticketValueController.text),
-        prize: _prizeController.text,
-        drawDate: _selectedDrawDate, // Enviando a data selecionada
-        address: _addressController.text,
-        itemsForSale: _itemsController.text,
+        goalValue: _parseDouble(_goalController.text),
+        ticketValue: _parseDouble(_ticketValueController.text),
+        prize: _prizeController.text.trim(),
+        drawDate: _selectedDrawDate,
+        address: _addressController.text.trim(),
+        itemsForSale: _itemsController.text.trim(),
         hasAccountability: _hasAccountability,
-        totalCollected: double.tryParse(_totalCollectedController.text),
+        totalCollected: _parseDouble(_totalCollectedController.text),
         expenses: _expenses,
         currentValue: widget.campaign?.currentValue ?? 0,
         imageUrl: widget.campaign?.imageUrl, 
@@ -230,6 +250,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
+  // Seletor de Tipo (Rifa ou Bazar)
   Widget _buildTypeSelector() {
     return SegmentedButton<CampaignType>(
       segments: const [
@@ -241,6 +262,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
+  // Seletor de Status
   Widget _buildStatusSelector() {
     return SegmentedButton<CampaignStatus>(
       segments: const [
@@ -253,6 +275,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
+  // Widget de seleção da imagem principal
   Widget _buildImagePicker() {
     return GestureDetector(
       onTap: _pickMainImage,
@@ -272,6 +295,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
+  // Campos específicos para RIFA
   Widget _buildRifaFields() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Informações da Rifa', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -279,7 +303,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       TextFormField(controller: _prizeController, decoration: const InputDecoration(labelText: 'Nome do Prêmio', border: OutlineInputBorder())),
       const SizedBox(height: 10),
       
-      // Seletor de Data de Sorteio
       TextFormField(
         controller: _drawDateController,
         readOnly: true,
@@ -327,13 +350,14 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       
       const SizedBox(height: 10),
       Row(children: [
-        Expanded(child: TextFormField(controller: _goalController, decoration: const InputDecoration(labelText: 'Meta (R\$)', border: OutlineInputBorder()), keyboardType: TextInputType.number)),
+        Expanded(child: TextFormField(controller: _goalController, decoration: const InputDecoration(labelText: 'Meta (R\$)', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true))),
         const SizedBox(width: 10),
-        Expanded(child: TextFormField(controller: _ticketValueController, decoration: const InputDecoration(labelText: 'Valor do Nº', border: OutlineInputBorder()), keyboardType: TextInputType.number)),
+        Expanded(child: TextFormField(controller: _ticketValueController, decoration: const InputDecoration(labelText: 'Valor do Nº', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true))),
       ]),
     ]);
   }
 
+  // Campos específicos para BAZAR
   Widget _buildBazarFields() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Informações do Bazar', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -344,6 +368,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     ]);
   }
 
+  // Seção de Prestação de Contas
   Widget _buildAccountabilitySection() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -357,7 +382,11 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         ),
         if (_hasAccountability) ...[
           const Divider(),
-          TextFormField(controller: _totalCollectedController, decoration: const InputDecoration(labelText: 'Total Arrecadado (R\$)'), keyboardType: TextInputType.number),
+          TextFormField(
+            controller: _totalCollectedController, 
+            decoration: const InputDecoration(labelText: 'Total Arrecadado (R\$)'), 
+            keyboardType: const TextInputType.numberWithOptions(decimal: true)
+          ),
           const SizedBox(height: 15),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Despesas e Notas Fiscais', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -375,8 +404,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
               SizedBox(width: 90, child: TextFormField(
                 initialValue: _expenses[index].value > 0 ? _expenses[index].value.toString() : null,
                 decoration: const InputDecoration(hintText: 'R\$', border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
-                onChanged: (v) => _expenses[index] = ExpenseItem(description: _expenses[index].description, value: double.tryParse(v) ?? 0),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (v) => _expenses[index] = ExpenseItem(description: _expenses[index].description, value: _parseDouble(v) ?? 0),
               )),
               IconButton(onPressed: () => setState(() => _expenses.removeAt(index)), icon: const Icon(Icons.delete, color: Colors.red)),
             ]),
@@ -408,6 +437,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
+  // Miniaturas das imagens anexadas
   Widget _buildThumb(dynamic source, VoidCallback onRemove) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -423,7 +453,11 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
             top: 0, right: 0,
             child: GestureDetector(
               onTap: onRemove,
-              child: Container(color: Colors.red, child: const Icon(Icons.close, size: 15, color: Colors.white)),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                child: const Icon(Icons.close, size: 12, color: Colors.white),
+              ),
             ),
           )
         ],
