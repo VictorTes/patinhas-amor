@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 24),
                 _buildLiveSummarySection(),
                 const SizedBox(height: 24),
-                _buildActiveCampaignsCard(), // Substituído: Agora focado em Rifas/Campanhas
+                _buildActiveCampaignsCard(context),
                 const SizedBox(height: 24),
                 _buildMapPreview(context),
                 const SizedBox(height: 24),
@@ -84,10 +84,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.orange.withOpacity(0.2), width: 2),
                   ),
-                  child: CircleAvatar(
+                  child: const CircleAvatar(
                     radius: 28,
                     backgroundColor: Colors.white,
-                    backgroundImage: const AssetImage('assets/images/logo.png'),
+                    backgroundImage: AssetImage('assets/images/logo.png'),
                   ),
                 ),
                 Container(
@@ -143,30 +143,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildActionCircle(
-          Icons.pets_rounded, 
-          'Novo Pet', 
-          Colors.green,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen())),
-        ),
-        _buildActionCircle(
-          Icons.notification_important_outlined, 
-          'Nova Ocorr.', 
-          Colors.orange,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen())),
-        ),
-        _buildActionCircle(
-          Icons.analytics_outlined, 
-          'Relatórios', 
-          Colors.blue,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportsScreen())),
-        ),
-        _buildActionCircle(
-          Icons.more_horiz, 
-          'Mais', 
-          Colors.grey,
-          () => Scaffold.of(context).openDrawer(),
-        ),
+        _buildActionCircle(Icons.pets_rounded, 'Novo Pet', Colors.green, 
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AnimalsListScreen()))),
+        _buildActionCircle(Icons.notification_important_outlined, 'Nova Ocorr.', Colors.orange, 
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const OccurrencesListScreen()))),
+        _buildActionCircle(Icons.analytics_outlined, 'Relatórios', Colors.blue, 
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportsScreen()))),
+        _buildActionCircle(Icons.more_horiz, 'Mais', Colors.grey, 
+          () => Scaffold.of(context).openDrawer()),
       ],
     );
   }
@@ -191,56 +175,109 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildActiveCampaignsCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildActiveCampaignsCard(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('campaigns')
+          .where('status', isEqualTo: 'ativa') // Ajustado para o campo 'status' do seu Firestore
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Text('Erro ao carregar campanhas');
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text("Nenhuma rifa ativa encontrada", 
+              style: TextStyle(fontSize: 12, color: Colors.grey)),
+            )
+          );
+        }
+
+        var campaign = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+        String title = campaign['title'] ?? 'Rifa Ativa';
+        
+        // Conversão de valores monetários baseada no seu Firestore
+        double collected = double.tryParse(campaign['totalCollected']?.toString() ?? '0') ?? 0.0;
+        double goal = double.tryParse(campaign['goalValue']?.toString() ?? '1') ?? 1.0;
+        if (goal == 0) goal = 1.0;
+        
+        double progress = (collected / goal).clamp(0.0, 1.0);
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10))
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.confirmation_number_outlined, size: 20, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Text('Rifa Ativa: Cesta de Páscoa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.confirmation_number_outlined, size: 20, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => _showComingSoon(context),
+                    child: Text(
+                      'Ver todas',
+                      style: TextStyle(color: Colors.blue[700], fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8)),
-                child: Text('75%', style: TextStyle(color: Colors.green[700], fontSize: 10, fontWeight: FontWeight.bold)),
-              )
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.grey[100],
+                  color: Colors.orange,
+                  minHeight: 8,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Arrecadado: R\$ ${collected.toStringAsFixed(2)}', 
+                    style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w500)
+                  ),
+                  Text(
+                    'Meta: R\$ ${goal.toStringAsFixed(2)}', 
+                    style: const TextStyle(color: Color(0xFF2D3436), fontSize: 12, fontWeight: FontWeight.bold)
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: 0.75,
-              backgroundColor: Colors.grey[100],
-              color: Colors.orange,
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('300 de 400 números vendidos', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w500)),
-              Text('R\$ 1.500,00', style: TextStyle(color: Color(0xFF2D3436), fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

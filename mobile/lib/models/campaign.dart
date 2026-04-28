@@ -37,7 +37,8 @@ class CampaignModel {
   final double? currentValue;
   final double? ticketValue;
   final String? prize;
-  final String? prizeImageUrl; // Nova imagem da premiação
+  final String? prizeImageUrl;
+  final DateTime? drawDate; // Novo campo: Data do Sorteio
 
   // Campos específicos de Bazar
   final String? address;
@@ -62,6 +63,7 @@ class CampaignModel {
     this.ticketValue,
     this.prize,
     this.prizeImageUrl,
+    this.drawDate,
     this.address,
     this.itemsForSale,
     this.hasAccountability = false,
@@ -70,7 +72,6 @@ class CampaignModel {
     this.receiptUrls,
   });
 
-  // copyWith atualizado para suportar todos os novos campos
   CampaignModel copyWith({
     String? title,
     String? description,
@@ -80,6 +81,7 @@ class CampaignModel {
     String? imageUrl,
     String? prize,
     String? prizeImageUrl,
+    DateTime? drawDate,
     List<String>? receiptUrls,
     List<ExpenseItem>? expenses,
     double? totalCollected,
@@ -97,6 +99,7 @@ class CampaignModel {
       ticketValue: ticketValue,
       prize: prize ?? this.prize,
       prizeImageUrl: prizeImageUrl ?? this.prizeImageUrl,
+      drawDate: drawDate ?? this.drawDate,
       address: address,
       itemsForSale: itemsForSale,
       hasAccountability: hasAccountability,
@@ -119,6 +122,7 @@ class CampaignModel {
       'ticketValue': ticketValue,
       'prize': prize,
       'prizeImageUrl': prizeImageUrl,
+      'drawDate': drawDate != null ? Timestamp.fromDate(drawDate!) : null,
       'address': address,
       'itemsForSale': itemsForSale,
       'hasAccountability': hasAccountability,
@@ -146,6 +150,7 @@ class CampaignModel {
       ticketValue: (data['ticketValue'] as num?)?.toDouble(),
       prize: data['prize'],
       prizeImageUrl: data['prizeImageUrl'],
+      drawDate: (data['drawDate'] as Timestamp?)?.toDate(),
       address: data['address'],
       itemsForSale: data['itemsForSale'],
       hasAccountability: data['hasAccountability'] ?? false,
