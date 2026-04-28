@@ -23,6 +23,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
+  final _winnerController = TextEditingController(); // Controller do Ganhador
+  
   CampaignType _selectedType = CampaignType.rifa;
   CampaignStatus _selectedStatus = CampaignStatus.ativa;
   
@@ -57,9 +59,9 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   @override
   void dispose() {
-    // Limpeza dos controladores para evitar memory leak
     _titleController.dispose();
     _descController.dispose();
+    _winnerController.dispose(); // Limpando o novo controller
     _goalController.dispose();
     _ticketValueController.dispose();
     _prizeController.dispose();
@@ -74,6 +76,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     final c = widget.campaign!;
     _titleController.text = c.title;
     _descController.text = c.description;
+    _winnerController.text = c.winner ?? ''; // Carregando o ganhador
     _selectedType = c.type;
     _selectedStatus = c.status;
     _goalController.text = c.goalValue?.toString() ?? '';
@@ -99,7 +102,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       initialDate: _selectedDrawDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      locale: const Locale('pt', 'BR'), // Agora funcionando com localizationsDelegates
+      locale: const Locale('pt', 'BR'),
     );
 
     if (picked != null && picked != _selectedDrawDate) {
@@ -110,7 +113,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     }
   }
 
-  // Métodos de seleção de imagem permanecem iguais
   Future<void> _pickMainImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) setState(() => _mainImage = File(picked.path));
@@ -135,10 +137,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     setState(() => _expenses.add(ExpenseItem(description: '', value: 0.0)));
   }
 
-  // Função auxiliar para converter texto em double de forma segura
   double? _parseDouble(String value) {
     if (value.isEmpty) return null;
-    // Substitui vírgula por ponto antes de tentar converter
     return double.tryParse(value.replaceAll(',', '.'));
   }
 
@@ -152,6 +152,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         id: widget.campaign?.id,
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
+        winner: _winnerController.text.trim(), // Salvando o ganhador no Model
         type: _selectedType,
         status: _selectedStatus,
         goalValue: _parseDouble(_goalController.text),
@@ -250,7 +251,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
-  // Seletor de Tipo (Rifa ou Bazar)
   Widget _buildTypeSelector() {
     return SegmentedButton<CampaignType>(
       segments: const [
@@ -262,7 +262,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
-  // Seletor de Status
   Widget _buildStatusSelector() {
     return SegmentedButton<CampaignStatus>(
       segments: const [
@@ -275,7 +274,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
-  // Widget de seleção da imagem principal
   Widget _buildImagePicker() {
     return GestureDetector(
       onTap: _pickMainImage,
@@ -295,14 +293,28 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
-  // Campos específicos para RIFA
   Widget _buildRifaFields() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Informações da Rifa', style: TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox(height: 10),
-      TextFormField(controller: _prizeController, decoration: const InputDecoration(labelText: 'Nome do Prêmio', border: OutlineInputBorder())),
+      TextFormField(
+        controller: _prizeController, 
+        decoration: const InputDecoration(labelText: 'Nome do Prêmio', border: OutlineInputBorder())
+      ),
       const SizedBox(height: 10),
       
+      // CAMPO DO GANHADOR: Só aparece para Rifas
+      TextFormField(
+        controller: _winnerController,
+        decoration: const InputDecoration(
+          labelText: 'Ganhador do Prêmio',
+          hintText: 'Nome de quem ganhou (preencher ao concluir)',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.emoji_events_outlined),
+        ),
+      ),
+      const SizedBox(height: 10),
+
       TextFormField(
         controller: _drawDateController,
         readOnly: true,
@@ -357,7 +369,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     ]);
   }
 
-  // Campos específicos para BAZAR
   Widget _buildBazarFields() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Informações do Bazar', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -368,7 +379,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     ]);
   }
 
-  // Seção de Prestação de Contas
   Widget _buildAccountabilitySection() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -437,7 +447,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     );
   }
 
-  // Miniaturas das imagens anexadas
   Widget _buildThumb(dynamic source, VoidCallback onRemove) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
