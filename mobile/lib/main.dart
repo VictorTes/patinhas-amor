@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // Importação necessária
 import 'package:patinhas_amor/widgets/auth_wrapper.dart';
 import 'package:patinhas_amor/screens/home_screen.dart';
 import 'package:patinhas_amor/screens/login_screen.dart';
@@ -31,6 +32,18 @@ class PatinhasAmorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Patinhas e Amor',
       debugShowCheckedModeBanner: false,
+      
+      // --- CONFIGURAÇÃO DE LOCALIZAÇÃO (CORREÇÃO PARA O SELETOR DE DATA) ---
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('pt', 'BR'),
+      ],
+      // --------------------------------------------------------------------
+
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.orange,
@@ -45,25 +58,20 @@ class PatinhasAmorApp extends StatelessWidget {
           ),
         ),
       ),
-      
 
       // Define a tela inicial através do Wrapper
       home: const ConnectivityWrapper(
         child: AuthWrapper(),
       ),
 
-      // --- ADICIONE AS ROTAS AQUI ---
+      // Rotas do Aplicativo
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home': (context) =>
-            const HomeScreen(), // O nome deve bater com o pushReplacementNamed
-        '/forgot-password': (context) =>
-            const ForgotPasswordScreen(), // Opcional, mas organizado
+        '/home': (context) => const HomeScreen(),
+        '/forgot-password': (context) => const ForgotPasswordScreen(),
         '/criar-campanha': (context) => const CampaignFormScreen(),
         '/detalhe-campanha': (context) {
-          // Extrai o ID enviado pelo Navigator
-          final String id =
-              ModalRoute.of(context)!.settings.arguments as String;
+          final String id = ModalRoute.of(context)!.settings.arguments as String;
           return CampaignDetailScreen(campaignId: id);
         },
       },
@@ -71,7 +79,7 @@ class PatinhasAmorApp extends StatelessWidget {
   }
 }
 
-// Widget que monitora a conexão (Seu código original mantido)
+// Widget que monitora a conexão
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
   const ConnectivityWrapper({super.key, required this.child});
