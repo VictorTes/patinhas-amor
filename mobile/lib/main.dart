@@ -32,7 +32,8 @@ class PatinhasAmorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Patinhas e Amor',
       debugShowCheckedModeBanner: false,
-      
+      showPerformanceOverlay: false,
+
       // --- CONFIGURAÇÃO DE LOCALIZAÇÃO (CORREÇÃO PARA O SELETOR DE DATA) ---
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -71,7 +72,8 @@ class PatinhasAmorApp extends StatelessWidget {
         '/forgot-password': (context) => const ForgotPasswordScreen(),
         '/criar-campanha': (context) => const CampaignFormScreen(),
         '/detalhe-campanha': (context) {
-          final String id = ModalRoute.of(context)!.settings.arguments as String;
+          final String id =
+              ModalRoute.of(context)!.settings.arguments as String;
           return CampaignDetailScreen(campaignId: id);
         },
       },

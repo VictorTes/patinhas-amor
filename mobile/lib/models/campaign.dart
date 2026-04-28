@@ -39,6 +39,7 @@ class CampaignModel {
   final String? prize;
   final String? prizeImageUrl;
   final DateTime? drawDate; // Data do Sorteio
+  final String? winner;
 
   // Campos específicos de Bazar
   final String? address;
@@ -56,6 +57,7 @@ class CampaignModel {
     required this.description,
     required this.type,
     required this.status,
+    this.winner,
     this.imageUrl,
     this.createdAt,
     this.goalValue,
@@ -77,6 +79,7 @@ class CampaignModel {
     String? description,
     CampaignStatus? status,
     double? currentValue,
+    String? winner,
     double? goalValue,
     String? imageUrl,
     String? prize,
@@ -90,6 +93,7 @@ class CampaignModel {
       id: id,
       title: title ?? this.title,
       description: description ?? this.description,
+      winner: winner ?? this.winner,
       type: type,
       status: status ?? this.status,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -119,6 +123,7 @@ class CampaignModel {
       // Se createdAt for nulo (nova campanha), o Firestore gera o tempo no servidor
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'goalValue': goalValue,
+      'winner': winner,
       'currentValue': currentValue,
       'ticketValue': ticketValue,
       'prize': prize,
@@ -155,6 +160,7 @@ class CampaignModel {
       goalValue: (data['goalValue'] as num?)?.toDouble(),
       currentValue: (data['currentValue'] as num?)?.toDouble(),
       ticketValue: (data['ticketValue'] as num?)?.toDouble(),
+      winner: data['winner'], // Adicione aqui
       prize: data['prize'],
       prizeImageUrl: data['prizeImageUrl'],
       // Conversão segura de Timestamp do Firebase para DateTime do Dart
