@@ -51,7 +51,7 @@ class CampaignDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    final dateFormat = DateFormat('dd/MM/yyyy'); // Formatador para a data do sorteio
+    final dateFormat = DateFormat('dd/MM/yyyy'); 
     final CampaignService service = CampaignService();
 
     return StreamBuilder<List<CampaignModel>>(
@@ -255,7 +255,7 @@ class CampaignDetailScreen extends StatelessWidget {
         Text('Arrecadado: ${fmt.format(c.currentValue ?? 0)} / Meta: ${fmt.format(c.goalValue ?? 0)}',
             style: const TextStyle(color: Colors.grey, fontSize: 13)),
         
-        // --- NOVA SEÇÃO: DATA DO SORTEIO ---
+        // --- DATA DO SORTEIO ---
         if (c.drawDate != null) ...[
           const SizedBox(height: 25),
           Container(
@@ -278,6 +278,37 @@ class CampaignDetailScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // --- SEÇÃO DO GANHADOR ---
+        if (c.winner != null && c.winner!.isNotEmpty) ...[
+          const SizedBox(height: 15),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.green.shade200),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.stars, color: Colors.green, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('GANHADOR(A)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
+                      Text(
+                        c.winner!.toUpperCase(),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -337,7 +368,7 @@ class CampaignDetailScreen extends StatelessWidget {
   }
 
   Widget _buildAccountability(BuildContext context, CampaignModel c, NumberFormat fmt) {
-    final double totalExpenses = c.expenses?.fold(0, (sum, item) => sum! + item.value) ?? 0;
+    final double totalExpenses = c.expenses?.fold(0.0, (sum, item) => sum! + item.value) ?? 0;
     final double netValue = (c.totalCollected ?? 0) - totalExpenses;
 
     return Column(
