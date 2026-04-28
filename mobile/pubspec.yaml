@@ -28,6 +28,7 @@ dependencies:
   connectivity_plus: ^6.1.0
   http: ^1.1.0
   flutter_dotenv: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
   
   flutter_localizations:
     sdk: flutter
@@ -60,3 +61,10 @@ flutter:
   assets:
     - assets/images/
     - .env
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#ffffff" # Cor de fundo (importante para Android moderno)
+  adaptive_icon_foreground: "assets/images/logo.png"
