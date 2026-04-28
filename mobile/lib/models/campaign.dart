@@ -38,7 +38,7 @@ class CampaignModel {
   final double? ticketValue;
   final String? prize;
   final String? prizeImageUrl;
-  final DateTime? drawDate; // Novo campo: Data do Sorteio
+  final DateTime? drawDate; // Data do Sorteio
 
   // Campos específicos de Bazar
   final String? address;
@@ -116,12 +116,14 @@ class CampaignModel {
       'type': type.name,
       'status': status.name,
       'imageUrl': imageUrl,
-      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      // Se createdAt for nulo (nova campanha), o Firestore gera o tempo no servidor
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'goalValue': goalValue,
       'currentValue': currentValue,
       'ticketValue': ticketValue,
       'prize': prize,
       'prizeImageUrl': prizeImageUrl,
+      // Conversão segura de DateTime para Timestamp do Firebase
       'drawDate': drawDate != null ? Timestamp.fromDate(drawDate!) : null,
       'address': address,
       'itemsForSale': itemsForSale,
@@ -133,12 +135,17 @@ class CampaignModel {
   }
 
   factory CampaignModel.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    // Garantia de que data nunca será null para evitar crash
+    Map<String, dynamic> data = (doc.data() as Map<String, dynamic>?) ?? {};
+    
     return CampaignModel(
       id: doc.id,
       title: data['title'] ?? '',
       description: data['description'] ?? '',
-      type: CampaignType.values.firstWhere((e) => e.name == data['type']),
+      type: CampaignType.values.firstWhere(
+        (e) => e.name == data['type'],
+        orElse: () => CampaignType.outro,
+      ),
       status: CampaignStatus.values.firstWhere(
         (e) => e.name == (data['status'] ?? 'ativa'),
         orElse: () => CampaignStatus.ativa,
@@ -150,15 +157,16 @@ class CampaignModel {
       ticketValue: (data['ticketValue'] as num?)?.toDouble(),
       prize: data['prize'],
       prizeImageUrl: data['prizeImageUrl'],
+      // Conversão segura de Timestamp do Firebase para DateTime do Dart
       drawDate: (data['drawDate'] as Timestamp?)?.toDate(),
       address: data['address'],
       itemsForSale: data['itemsForSale'],
       hasAccountability: data['hasAccountability'] ?? false,
       totalCollected: (data['totalCollected'] as num?)?.toDouble(),
       expenses: (data['expenses'] as List?)
-          ?.map((e) => ExpenseItem.fromMap(e))
+          ?.map((e) => ExpenseItem.fromMap(Map<String, dynamic>.from(e)))
           .toList(),
-      receiptUrls: List<String>.from(data['receiptUrls'] ?? []),
+      receiptUrls: data['receiptUrls'] != null ? List<String>.from(data['receiptUrls']) : [],
     );
   }
 }

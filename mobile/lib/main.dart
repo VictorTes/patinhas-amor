@@ -45,6 +45,7 @@ class PatinhasAmorApp extends StatelessWidget {
           ),
         ),
       ),
+      
 
       // Define a tela inicial através do Wrapper
       home: const ConnectivityWrapper(
