@@ -391,6 +391,16 @@ class CampaignDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Total Arrecadado', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(fmt.format(c.totalCollected ?? 0), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green.shade700)),
+                  ],
+                ),
+                
+                const Divider(height: 24),
+
                 if (c.expenses != null && c.expenses!.isNotEmpty) ...[
                   ...c.expenses!.map((e) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -404,16 +414,7 @@ class CampaignDetailScreen extends StatelessWidget {
                   )),
                   const Divider(height: 24),
                 ],
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Total Arrecadado', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(fmt.format(c.totalCollected ?? 0), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green.shade700)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                
+                           
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
