@@ -4,6 +4,27 @@ enum CampaignType { rifa, bazar, outro }
 
 enum CampaignStatus { ativa, concluida, cancelada }
 
+// Extensões para facilitar a leitura no Relatório (Excel/PDF)
+extension CampaignTypeExtension on CampaignType {
+  String get label {
+    switch (this) {
+      case CampaignType.rifa: return 'Rifa';
+      case CampaignType.bazar: return 'Bazar';
+      case CampaignType.outro: return 'Outro';
+    }
+  }
+}
+
+extension CampaignStatusExtension on CampaignStatus {
+  String get label {
+    switch (this) {
+      case CampaignStatus.ativa: return 'Ativa';
+      case CampaignStatus.concluida: return 'Concluída';
+      case CampaignStatus.cancelada: return 'Cancelada';
+    }
+  }
+}
+
 class ExpenseItem {
   final String description;
   final double value;
@@ -74,6 +95,28 @@ class CampaignModel {
     this.receiptUrls,
   });
 
+  // --- ADIÇÃO PARA O SISTEMA DE EXPORTAÇÃO ---
+  // Se sua tela de preview estiver chamando .toMap(), você pode renomear 
+  // o toMap antigo do Firestore para toFirestore() e usar este aqui como toMap().
+  // Se preferir não mexer em nada, certifique-se de que a tela de preview use esta lógica:
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'type': type.label, // Usa a extensão para sair "Rifa" em vez de "rifa"
+      'status': status.label, // Usa a extensão para sair "Ativa" em vez de "ativa"
+      'goalValue': goalValue ?? 0.0,
+      'totalCollected': totalCollected ?? 0.0,
+      'ticketValue': ticketValue ?? 0.0,
+      'drawDate': drawDate,
+      'winner': winner ?? '-',
+      'createdAt': createdAt,
+      'address': address ?? '-',
+      'currentValue': currentValue ?? 0.0,
+    };
+  }
+
   CampaignModel copyWith({
     String? title,
     String? description,
@@ -113,14 +156,14 @@ class CampaignModel {
     );
   }
 
-  Map<String, dynamic> toMap() {
+  // Mantido original para o Firebase
+  Map<String, dynamic> toJson() {
     return {
       'title': title,
       'description': description,
       'type': type.name,
       'status': status.name,
       'imageUrl': imageUrl,
-      // Se createdAt for nulo (nova campanha), o Firestore gera o tempo no servidor
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'goalValue': goalValue,
       'winner': winner,
@@ -128,7 +171,6 @@ class CampaignModel {
       'ticketValue': ticketValue,
       'prize': prize,
       'prizeImageUrl': prizeImageUrl,
-      // Conversão segura de DateTime para Timestamp do Firebase
       'drawDate': drawDate != null ? Timestamp.fromDate(drawDate!) : null,
       'address': address,
       'itemsForSale': itemsForSale,
@@ -140,7 +182,6 @@ class CampaignModel {
   }
 
   factory CampaignModel.fromFirestore(DocumentSnapshot doc) {
-    // Garantia de que data nunca será null para evitar crash
     Map<String, dynamic> data = (doc.data() as Map<String, dynamic>?) ?? {};
     
     return CampaignModel(
@@ -160,10 +201,9 @@ class CampaignModel {
       goalValue: (data['goalValue'] as num?)?.toDouble(),
       currentValue: (data['currentValue'] as num?)?.toDouble(),
       ticketValue: (data['ticketValue'] as num?)?.toDouble(),
-      winner: data['winner'], // Adicione aqui
+      winner: data['winner'], 
       prize: data['prize'],
       prizeImageUrl: data['prizeImageUrl'],
-      // Conversão segura de Timestamp do Firebase para DateTime do Dart
       drawDate: (data['drawDate'] as Timestamp?)?.toDate(),
       address: data['address'],
       itemsForSale: data['itemsForSale'],
