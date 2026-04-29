@@ -115,13 +115,12 @@ class CampaignModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id, // Adicionado para facilitar identificação no relatório
       'title': title,
       'description': description,
       'type': type.name,
       'status': status.name,
       'imageUrl': imageUrl,
-      // Se createdAt for nulo, usamos o tempo atual para o motor de relatório não filtrar como nulo
+      // Se createdAt for nulo (nova campanha), o Firestore gera o tempo no servidor
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'goalValue': goalValue,
       'winner': winner,
@@ -129,6 +128,7 @@ class CampaignModel {
       'ticketValue': ticketValue,
       'prize': prize,
       'prizeImageUrl': prizeImageUrl,
+      // Conversão segura de DateTime para Timestamp do Firebase
       'drawDate': drawDate != null ? Timestamp.fromDate(drawDate!) : null,
       'address': address,
       'itemsForSale': itemsForSale,
@@ -140,6 +140,7 @@ class CampaignModel {
   }
 
   factory CampaignModel.fromFirestore(DocumentSnapshot doc) {
+    // Garantia de que data nunca será null para evitar crash
     Map<String, dynamic> data = (doc.data() as Map<String, dynamic>?) ?? {};
     
     return CampaignModel(
@@ -159,9 +160,10 @@ class CampaignModel {
       goalValue: (data['goalValue'] as num?)?.toDouble(),
       currentValue: (data['currentValue'] as num?)?.toDouble(),
       ticketValue: (data['ticketValue'] as num?)?.toDouble(),
-      winner: data['winner'],
+      winner: data['winner'], // Adicione aqui
       prize: data['prize'],
       prizeImageUrl: data['prizeImageUrl'],
+      // Conversão segura de Timestamp do Firebase para DateTime do Dart
       drawDate: (data['drawDate'] as Timestamp?)?.toDate(),
       address: data['address'],
       itemsForSale: data['itemsForSale'],

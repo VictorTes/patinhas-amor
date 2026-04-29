@@ -55,6 +55,23 @@ class Occurrence {
     this.statusWeb,
   });
 
+  // --- NOVO MÉTODO PARA EXPORTAÇÃO DINÂMICA ---
+  // Adicionado para suportar o ExportService sem quebrar o resto
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'type': type,
+      'description': description,
+      'location': location,
+      'status': status.label, // Exporta o texto amigável (Pendente, etc)
+      'status_web': statusWeb ?? '-',
+      'createdAt': createdAt,
+      'latitude': latitude,
+      'longitude': longitude,
+      'resolutionDescription': resolutionDescription ?? '-',
+    };
+  }
+
   factory Occurrence.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     return Occurrence.fromJson(data, docId: doc.id);
@@ -72,7 +89,6 @@ class Occurrence {
       latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
       longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
       resolutionDescription: json['resolutionDescription'] as String?,
-      // Mapeia o campo vindo do Firestore (geralmente status_web)
       statusWeb: json['status_web'] as String? ?? json['statusWeb'] as String?,
     );
   }
@@ -87,7 +103,7 @@ class Occurrence {
       'latitude': latitude,
       'longitude': longitude,
       'resolutionDescription': resolutionDescription,
-      'status_web': statusWeb, // Salva de volta se necessário
+      'status_web': statusWeb, 
     };
 
     if (createdAt != null) {

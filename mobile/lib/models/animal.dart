@@ -64,6 +64,26 @@ class Animal {
     this.currentLocation,
   });
 
+  // Método específico para a lógica de exportação de relatórios
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'species': species,
+      'age': age,
+      'description': description,
+      'status': status.label, // Retorna o texto legível para o Excel/PDF
+      'imageUrl': imageUrl,
+      'rescueDate': rescueDate,
+      'sex': sex,
+      'size': size,
+      'adopterName': adopterName,
+      'adopterAddress': adopterAddress,
+      'adopterPhone': adopterPhone,
+      'currentLocation': currentLocation,
+    };
+  }
+
   factory Animal.fromJson(Map<String, dynamic> json, {String? docId}) {
     String? _nullIfEmpty(dynamic value) {
       if (value == null || (value is String && value.isEmpty)) return null;
@@ -84,7 +104,6 @@ class Animal {
       adopterName: _nullIfEmpty(json['adopterName']),
       adopterAddress: _nullIfEmpty(json['adopterAddress']),
       adopterPhone: _nullIfEmpty(json['adopterPhone']),
-      // Novo campo com trava de segurança
       currentLocation: _nullIfEmpty(json['currentLocation']),
     );
   }
@@ -103,7 +122,6 @@ class Animal {
       'adopterName': adopterName,
       'adopterAddress': adopterAddress,
       'adopterPhone': adopterPhone,
-      // Salva o novo campo no Firebase
       'currentLocation': currentLocation,
     };
   }
