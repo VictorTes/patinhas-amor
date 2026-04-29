@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:patinhas_amor/models/animal.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
-// import 'package:patinhas_amor/models/campaign.dart'; // Descomente se tiver o model
+import 'package:patinhas_amor/models/campaign.dart'; 
 import 'package:patinhas_amor/services/animal_service.dart';
 import 'package:patinhas_amor/services/occurrence_service.dart';
-// import 'package:patinhas_amor/services/campaign_service.dart'; // Descomente
+import 'package:patinhas_amor/services/campaign_service.dart'; 
 import 'package:patinhas_amor/services/export_service.dart';
 import 'package:patinhas_amor/widgets/loading_indicator.dart';
 
@@ -250,7 +250,7 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
   final AnimalService _animalService = AnimalService();
   final OccurrenceService _occurrenceService = OccurrenceService();
   final ExportService _exportService = ExportService();
-  // final CampaignService _campaignService = CampaignService(); // Descomente
+  final CampaignService _campaignService = CampaignService(); // Descomente
 
   bool _isLoading = true;
   bool _isExporting = false;

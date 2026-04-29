@@ -12,6 +12,18 @@ class CampaignService {
   final String _cloudName = dotenv.get('CLOUDINARY_CLOUD_NAME', fallback: '');
   final String _uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
 
+  Future<List<CampaignModel>> fetchCampaigns() async {
+    try {
+      final snapshot = await _firestore
+          .collection(_collection)
+          .orderBy('createdAt', descending: true)
+          .get();
+      return snapshot.docs.map((doc) => CampaignModel.fromFirestore(doc)).toList();
+    } catch (e) {
+      throw Exception('Erro ao buscar campanhas para relatório: $e');
+    }
+  }
+
   Future<String?> _uploadToCloudinary(File file) async {
     try {
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/upload');
