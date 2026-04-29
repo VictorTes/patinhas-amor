@@ -22,7 +22,7 @@ class _CampanhasViewState extends State<CampanhasView> {
         backgroundColor: Colors.orange.shade800,
         foregroundColor: Colors.white,
       ),
-      body: _buildList(null), // Null traz todas as campanhas juntas
+      body: _buildList(null), 
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, '/criar-campanha'),
         backgroundColor: Colors.orange.shade800,
@@ -63,7 +63,7 @@ class _CampanhasViewState extends State<CampanhasView> {
   Widget _buildCampaignCard(CampaignModel campaign) {
     bool isRifa = campaign.type == CampaignType.rifa;
     String statusStr = campaign.status.name;
-    bool isActive = campaign.status == CampaignStatus.ativa; // Verifica se está ativa
+    bool isActive = campaign.status == CampaignStatus.ativa;
     String title = campaign.title;
     String imageUrl = campaign.imageUrl ?? 'https://via.placeholder.com/400x200';
 
@@ -78,8 +78,16 @@ class _CampanhasViewState extends State<CampanhasView> {
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 4,
+      // Se não estiver ativa, removemos a sombra para dar aspecto de "desabilitado"
+      elevation: isActive ? 4 : 0, 
+      // Se não estiver ativa, adicionamos uma borda leve para não sumir no fundo
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isActive ? Colors.transparent : Colors.grey.shade300,
+          width: 1,
+        ),
+      ),
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () => Navigator.pushNamed(
@@ -89,26 +97,21 @@ class _CampanhasViewState extends State<CampanhasView> {
         ),
         child: Stack(
           children: [
-            // CONTEÚDO PRINCIPAL (Com efeito cinza/opacidade se inativo)
+            // CONTEÚDO COM OPACIDADE REDUZIDA (Mantendo cores originais)
             Opacity(
-              opacity: isActive ? 1.0 : 0.6, // Fica meio "apagado" se não for ativa
+              opacity: isActive ? 1.0 : 0.45, 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ColorFiltered(
-                    colorFilter: isActive 
-                      ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                      : const ColorFilter.mode(Colors.grey, BlendMode.saturation), // Efeito cinza na imagem
-                    child: Image.network(
-                      imageUrl,
+                  Image.network(
+                    imageUrl,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
                       height: 160,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 160,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-                      ),
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
                     ),
                   ),
                   Padding(
@@ -122,7 +125,7 @@ class _CampanhasViewState extends State<CampanhasView> {
                             Text(
                               isRifa ? '🎟️ RIFA' : '🛍️ BAZAR',
                               style: TextStyle(
-                                color: isActive ? Colors.orange.shade900 : Colors.grey.shade700,
+                                color: Colors.orange.shade900,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -144,7 +147,7 @@ class _CampanhasViewState extends State<CampanhasView> {
                           LinearProgressIndicator(
                             value: progress > 1 ? 1 : progress,
                             backgroundColor: Colors.grey.shade200,
-                            color: isActive ? Colors.orange.shade600 : Colors.grey,
+                            color: Colors.orange.shade600,
                             minHeight: 8,
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -174,7 +177,7 @@ class _CampanhasViewState extends State<CampanhasView> {
                 ],
               ),
             ),
-            // STATUS COLORIDO (Posicionado acima do conteúdo e sem opacidade/filtro)
+            // STATUS COLORIDO (Sempre 100% visível e vibrante)
             Positioned(
               top: 10,
               right: 10,
@@ -183,7 +186,9 @@ class _CampanhasViewState extends State<CampanhasView> {
                 decoration: BoxDecoration(
                   color: _getStatusColor(statusStr),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                  boxShadow: isActive 
+                      ? const [BoxShadow(color: Colors.black26, blurRadius: 4)]
+                      : null,
                 ),
                 child: Text(
                   statusStr.toUpperCase(),
@@ -206,7 +211,7 @@ class _CampanhasViewState extends State<CampanhasView> {
       case 'ativa':
         return Colors.green;
       case 'concluida':
-        return Colors.blue;
+        return const Color.fromARGB(255, 230, 113, 18);
       case 'cancelada':
         return Colors.red;
       default:
