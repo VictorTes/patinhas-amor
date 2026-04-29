@@ -5,35 +5,23 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:patinhas_amor/models/animal.dart';
-import 'package:patinhas_amor/models/occurrence.dart';
 
 class ExportService {
-  final _dateFormat = DateFormat('dd/MM/yyyy');
-
-  /// Verifica saúde via texto da descrição (vacinado, castrado, etc)
-  String _checkHealthStatus(String? description, String keyword) {
-    if (description == null) return 'Não';
-    if (description.toLowerCase().contains(keyword.toLowerCase())) {
-      return 'Sim';
-    }
-    return 'Não';
-  }
+  final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
   // ==========================================
-  // GERAÇÃO DE EXCEL (ANIMAIS)
+  // GERAÇÃO DE EXCEL (DINÂMICO)
   // ==========================================
-  Future<void> generateAnimalsExcel({
-    required List<Animal> animals,
-    required String fileName,
-    DateTime? start,
-    DateTime? end,
-  }) async {
-    // Filtra os dados com base nas datas fornecidas
-    List<Animal> data = _filterAnimalsByDate(animals, start, end);
-
+  Future<void> generateDynamicExcel(
+    Map<String, List<Map<String, dynamic>>> processedData,
+    Map<String, List<String>> selectedFields,
+    Map<String, Map<String, String>> schema,
+  ) async {
     var excel = Excel.createExcel();
-    Sheet sheetObject = excel[excel.getDefaultSheet()!];
+    
+    // Remove a aba padrão inicial do pacote Excel
+    String defaultSheet = excel.getDefaultSheet() ?? 'Sheet1';
+    bool isFirstSheet = true;
 
     CellStyle headerStyle = CellStyle(
       bold: true,
@@ -42,206 +30,123 @@ class ExportService {
       backgroundColorHex: ExcelColor.fromHexString('#FF9800'),
     );
 
-    List<CellValue> headers = [
-      TextCellValue('Nome'),
-      TextCellValue('Especie'),
-      TextCellValue('Sexo'),
-      TextCellValue('Porte'),
-      TextCellValue('Status'),
-      TextCellValue('Localizacao'),
-      TextCellValue('Data Registro'),
-      TextCellValue('Vacinado?'),
-      TextCellValue('Castrado?'),
-      TextCellValue('Adotante'),
-    ];
+    // Itera sobre cada tabela selecionada (Animais, Ocorrências, etc.)
+    for (String tableName in processedData.keys) {
+      List<Map<String, dynamic>> data = processedData[tableName]!;
+      List<String> fields = selectedFields[tableName]!;
+      
+      if (data.isEmpty || fields.isEmpty) continue;
 
-    sheetObject.appendRow(headers);
+      // Se for a primeira tabela, renomeamos a aba padrão. Senão, o Excel cria uma nova automaticamente ao chamá-la.
+      String sheetName = tableName.replaceAll(RegExp(r'[^\w\s]+'), ''); // Remove caracteres especiais pro nome da aba
+      if (isFirstSheet) {
+        excel.rename(defaultSheet, sheetName);
+        isFirstSheet = false;
+      }
+      
+      Sheet sheetObject = excel[sheetName];
 
-    for (int i = 0; i < headers.length; i++) {
-      sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerStyle;
-    }
+      // 1. Criação do Cabeçalho
+      List<CellValue> headers = fields.map((field) {
+        String headerLabel = schema[tableName]![field] ?? field;
+        return TextCellValue(headerLabel);
+      }).toList();
+      
+      sheetObject.appendRow(headers);
 
-    for (var a in data) {
-      sheetObject.appendRow([
-        TextCellValue(a.name),
-        TextCellValue(a.species),
-        TextCellValue(a.sex ?? 'N/A'),
-        TextCellValue(a.size ?? 'N/A'),
-        TextCellValue(a.status.label), // Converte 'available_for_adoption' para 'Disponível para Adoção'
-        TextCellValue(a.currentLocation ?? 'ONG'),
-        TextCellValue(a.rescueDate != null ? _dateFormat.format(a.rescueDate!) : 'S/D'),
-        TextCellValue(_checkHealthStatus(a.description, 'vacinado')),
-        TextCellValue(_checkHealthStatus(a.description, 'castrado')),
-        TextCellValue(a.adopterName ?? '-'),
-      ]);
-    }
+      for (int i = 0; i < headers.length; i++) {
+        sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerStyle;
+      }
 
-    for (int i = 0; i < headers.length; i++) {
-      sheetObject.setColumnAutoFit(i);
+      // 2. Inserção dos Dados
+      for (var row in data) {
+        List<CellValue> rowValues = fields.map((field) {
+          return TextCellValue(row[field]?.toString() ?? '-');
+        }).toList();
+        sheetObject.appendRow(rowValues);
+      }
+
+      // 3. Ajuste de colunas
+      for (int i = 0; i < headers.length; i++) {
+        sheetObject.setColumnAutoFit(i);
+      }
     }
 
     final bytes = excel.save();
-    if (bytes != null) await _saveAndShare(bytes, '$fileName.xlsx');
-  }
-
-  // ==========================================
-  // GERAÇÃO DE PDF (ANIMAIS)
-  // ==========================================
-  Future<void> generateAnimalsPdf({
-    required List<Animal> animals,
-    required String title,
-    required String fileName,
-    DateTime? start,
-    DateTime? end,
-  }) async {
-    List<Animal> data = _filterAnimalsByDate(animals, start, end);
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
-        build: (context) => [
-          _buildPdfHeader(title, start, end),
-          pw.TableHelper.fromTextArray(
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.orange),
-            headers: ['Nome', 'Especie', 'Sexo', 'Status', 'Data Resgate', 'Adotante'],
-            data: data.map((a) => [
-              a.name,
-              a.species,
-              a.sex ?? '-',
-              a.status.label, // Exibe o texto amigável configurado no Enum
-              a.rescueDate != null ? _dateFormat.format(a.rescueDate!) : '-',
-              a.adopterName ?? '-',
-            ]).toList(),
-          ),
-        ],
-      ),
-    );
-
-    await _saveAndShare(await pdf.save(), '$fileName.pdf');
-  }
-
-  // ==========================================
-  // GERAÇÃO DE RELATÓRIO DE OCORRÊNCIAS
-  // ==========================================
-  Future<void> generateOccurrencesReport({
-    required List<Occurrence> occurrences,
-    required String title,
-    required String fileName,
-    required bool isPdf,
-    DateTime? start,
-    DateTime? end,
-  }) async {
-    List<Occurrence> data = _filterOccurrencesByDate(occurrences, start, end);
-
-    if (isPdf) {
-      final pdf = pw.Document();
-      pdf.addPage(pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
-        build: (context) => [
-          _buildPdfHeader(title, start, end),
-          pw.TableHelper.fromTextArray(
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.orange),
-            headers: ['Tipo', 'Localizacao', 'Status', 'Data', 'Resolucao'],
-            data: data.map((o) => [
-              o.type, o.location, o.status.label,
-              o.createdAt != null ? _dateFormat.format(o.createdAt!) : '-',
-              o.resolutionDescription ?? 'Pendente',
-            ]).toList(),
-          ),
-        ],
-      ));
-      await _saveAndShare(await pdf.save(), '$fileName.pdf');
-    } else {
-      var excel = Excel.createExcel();
-      Sheet sheet = excel[excel.getDefaultSheet()!];
-      
-      CellStyle headerStyle = CellStyle(
-        bold: true,
-        fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
-        backgroundColorHex: ExcelColor.fromHexString('#FF9800'),
-      );
-
-      List<CellValue> headers = [
-        TextCellValue('Tipo'), 
-        TextCellValue('Localizacao'), 
-        TextCellValue('Status'), 
-        TextCellValue('Data'), 
-        TextCellValue('Resolucao')
-      ];
-
-      sheet.appendRow(headers);
-      for (int i = 0; i < headers.length; i++) {
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0)).cellStyle = headerStyle;
-      }
-
-      for (var o in data) {
-        sheet.appendRow([
-          TextCellValue(o.type), 
-          TextCellValue(o.location), 
-          TextCellValue(o.status.label),
-          TextCellValue(o.createdAt != null ? _dateFormat.format(o.createdAt!) : '-'),
-          TextCellValue(o.resolutionDescription ?? '-'),
-        ]);
-      }
-      
-      for (int i = 0; i < headers.length; i++) {
-        sheet.setColumnAutoFit(i);
-      }
-      
-      final bytes = excel.save();
-      if (bytes != null) await _saveAndShare(bytes, '$fileName.xlsx');
+    if (bytes != null) {
+      String fileName = 'Relatorio_Exportacao_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.xlsx';
+      await _saveAndShare(bytes, fileName);
     }
   }
 
   // ==========================================
-  // FILTROS DE DATA
+  // GERAÇÃO DE PDF (DINÂMICO)
   // ==========================================
+  Future<void> generateDynamicPdf(
+    Map<String, List<Map<String, dynamic>>> processedData,
+    Map<String, List<String>> selectedFields,
+    Map<String, Map<String, String>> schema, {
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    final pdf = pw.Document();
 
-  List<Animal> _filterAnimalsByDate(List<Animal> list, DateTime? s, DateTime? e) {
-    // Se o período não foi selecionado, retorna a lista original completa
-    if (s == null || e == null) return list;
-
-    final start = DateTime(s.year, s.month, s.day);
-    // Define o fim do dia como 23:59:59 para não perder registros do último dia
-    final end = DateTime(e.year, e.month, e.day, 23, 59, 59);
-
-    return list.where((a) {
-      // Se houver filtro de data, registros sem data são ignorados
-      if (a.rescueDate == null) return false;
+    // Itera sobre cada tabela selecionada
+    for (String tableName in processedData.keys) {
+      List<Map<String, dynamic>> data = processedData[tableName]!;
+      List<String> fields = selectedFields[tableName]!;
       
-      return a.rescueDate!.isAfter(start.subtract(const Duration(seconds: 1))) && 
-             a.rescueDate!.isBefore(end);
-    }).toList();
+      if (data.isEmpty || fields.isEmpty) continue;
+
+      // Cabeçalhos traduzidos pelo schema
+      List<String> headers = fields.map((field) => schema[tableName]![field] ?? field).toList();
+
+      // Transforma a lista de maps em lista de listas de strings para a tabela do PDF
+      List<List<String>> tableData = data.map((row) {
+        return fields.map((field) => row[field]?.toString() ?? '-').toList();
+      }).toList();
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4.landscape, // Landscape para caber mais colunas
+          margin: const pw.EdgeInsets.all(24),
+          build: (context) => [
+            _buildPdfHeader("Relatório: $tableName", start, end),
+            pw.SizedBox(height: 10),
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 10),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.orange),
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              cellAlignment: pw.Alignment.centerLeft,
+              headers: headers,
+              data: tableData,
+            ),
+          ],
+        ),
+      );
+    }
+
+    String fileName = 'Relatorio_Exportacao_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.pdf';
+    await _saveAndShare(await pdf.save(), fileName);
   }
 
-  List<Occurrence> _filterOccurrencesByDate(List<Occurrence> list, DateTime? s, DateTime? e) {
-    if (s == null || e == null) return list;
-
-    final start = DateTime(s.year, s.month, s.day);
-    final end = DateTime(e.year, e.month, e.day, 23, 59, 59);
-
-    return list.where((o) {
-      if (o.createdAt == null) return false;
-      return o.createdAt!.isAfter(start.subtract(const Duration(seconds: 1))) && 
-             o.createdAt!.isBefore(end);
-    }).toList();
-  }
-
+  // ==========================================
+  // COMPONENTES AUXILIARES
+  // ==========================================
   pw.Widget _buildPdfHeader(String title, DateTime? s, DateTime? e) {
     return pw.Header(
       level: 0,
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(title, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+          pw.Text(title, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
           if (s != null && e != null)
-            pw.Text("Periodo: ${_dateFormat.format(s)} - ${_dateFormat.format(e)}", 
-              style: const pw.TextStyle(fontSize: 10)),
-        ]
-      )
+            pw.Text(
+              "Período: ${DateFormat('dd/MM/yyyy').format(s)} - ${DateFormat('dd/MM/yyyy').format(e)}", 
+              style: const pw.TextStyle(fontSize: 10),
+            ),
+        ],
+      ),
     );
   }
 
@@ -249,6 +154,6 @@ class ExportService {
     final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/$fileName');
     await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], text: 'Relatorio Patinhas e Amor');
+    await Share.shareXFiles([XFile(file.path)], text: 'Exportação de Dados - Patinhas de Amor');
   }
 }
