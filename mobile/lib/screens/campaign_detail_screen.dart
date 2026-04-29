@@ -135,71 +135,9 @@ class CampaignDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showManageProgressSheet(context, campaign, service),
-            label: Text(campaign.type == CampaignType.rifa ? 'ATUALIZAR ARRECADAÇÃO' : 'ATUALIZAR VENDAS'),
-            icon: const Icon(Icons.price_check),
-            backgroundColor: Colors.orange.shade800,
-          ),
+          // O FloatingActionButton foi removido conforme solicitado.
         );
       },
-    );
-  }
-
-  void _showManageProgressSheet(BuildContext context, CampaignModel campaign, CampaignService service) {
-    final controller = TextEditingController(text: campaign.currentValue?.toString() ?? '0');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          top: 20, left: 20, right: 20
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Atualizar Valor Arrecadado', 
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text('Editando: ${campaign.title}', style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Valor Total Atual (R\$)',
-                prefixText: 'R\$ ',
-                border: OutlineInputBorder(),
-                helperText: 'Isso atualizará a barra de progresso instantaneamente.',
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700, 
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
-                ),
-                onPressed: () async {
-                  final newValue = double.tryParse(controller.text) ?? 0;
-                  final updated = campaign.copyWith(currentValue: newValue);
-                  await service.saveCampaign(updated, null, []);
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: const Text('SALVAR VALOR'),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -221,9 +159,9 @@ class CampaignDetailScreen extends StatelessWidget {
   }
 
   Widget _buildRifaProgress(BuildContext context, CampaignModel c, NumberFormat fmt, DateFormat dateFmt) {
-    double rawProgress = (c.currentValue ?? 0) / (c.goalValue ?? 1);
+    double rawProgress = (c.totalCollected ?? 0) / (c.goalValue ?? 1);
     double visualProgress = rawProgress > 1.0 ? 1.0 : rawProgress;
-    bool isGoalReached = (c.currentValue ?? 0) >= (c.goalValue ?? 0);
+    bool isGoalReached = (c.totalCollected ?? 0) >= (c.goalValue ?? 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,10 +190,9 @@ class CampaignDetailScreen extends StatelessWidget {
         const SizedBox(height: 10),
         if (isGoalReached)
           const Text('🎉 Meta atingida!', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
-        Text('Arrecadado: ${fmt.format(c.currentValue ?? 0)} / Meta: ${fmt.format(c.goalValue ?? 0)}',
+        Text('Arrecadado: ${fmt.format(c.totalCollected ?? 0)} / Meta: ${fmt.format(c.goalValue ?? 0)}',
             style: const TextStyle(color: Colors.grey, fontSize: 13)),
         
-        // --- DATA DO SORTEIO ---
         if (c.drawDate != null) ...[
           const SizedBox(height: 25),
           Container(
@@ -284,7 +221,6 @@ class CampaignDetailScreen extends StatelessWidget {
           ),
         ],
 
-        // --- SEÇÃO DO GANHADOR ---
         if (c.winner != null && c.winner!.isNotEmpty) ...[
           const SizedBox(height: 15),
           Container(
@@ -369,7 +305,12 @@ class CampaignDetailScreen extends StatelessWidget {
 
   Widget _buildAccountability(BuildContext context, CampaignModel c, NumberFormat fmt) {
     final double totalExpenses = c.expenses?.fold(0.0, (sum, item) => sum! + item.value) ?? 0;
-    final double netValue = (c.totalCollected ?? 0) - totalExpenses;
+    final double totalCollected = c.totalCollected ?? 0;
+    final double netValue = totalCollected - totalExpenses;
+
+    // Define as cores baseadas no saldo
+    final Color netValueColor = netValue < 0 ? Colors.red : Colors.green.shade600;
+    final Color collectedColor = totalCollected < totalExpenses ? Colors.red : Colors.green.shade700;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,15 +332,20 @@ class CampaignDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Total Arrecadado', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(fmt.format(c.totalCollected ?? 0), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green.shade700)),
+                    Text(
+                      fmt.format(totalCollected), 
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: collectedColor)
+                    ),
                   ],
                 ),
-                
+
                 const Divider(height: 24),
+
 
                 if (c.expenses != null && c.expenses!.isNotEmpty) ...[
                   ...c.expenses!.map((e) => Padding(
@@ -414,12 +360,18 @@ class CampaignDetailScreen extends StatelessWidget {
                   )),
                   const Divider(height: 24),
                 ],
-                           
+                
+                
+                const SizedBox(height: 20),
+                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Saldo Final', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(fmt.format(netValue), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green.shade600)),
+                    Text(
+                      fmt.format(netValue), 
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: netValueColor)
+                    ),
                   ],
                 ),
               ],

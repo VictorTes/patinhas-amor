@@ -23,7 +23,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  final _winnerController = TextEditingController(); // Controller do Ganhador
+  final _winnerController = TextEditingController(); 
   
   CampaignType _selectedType = CampaignType.rifa;
   CampaignStatus _selectedStatus = CampaignStatus.ativa;
@@ -61,7 +61,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
-    _winnerController.dispose(); // Limpando o novo controller
+    _winnerController.dispose();
     _goalController.dispose();
     _ticketValueController.dispose();
     _prizeController.dispose();
@@ -76,7 +76,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     final c = widget.campaign!;
     _titleController.text = c.title;
     _descController.text = c.description;
-    _winnerController.text = c.winner ?? ''; // Carregando o ganhador
+    _winnerController.text = c.winner ?? ''; 
     _selectedType = c.type;
     _selectedStatus = c.status;
     _goalController.text = c.goalValue?.toString() ?? '';
@@ -85,7 +85,10 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _addressController.text = c.address ?? '';
     _itemsController.text = c.itemsForSale ?? '';
     _hasAccountability = c.hasAccountability;
+    
+    // Preenchendo o total arrecadado se existir
     _totalCollectedController.text = c.totalCollected?.toString() ?? '';
+    
     _expenses = List.from(c.expenses ?? []);
     _prizeImageUrl = c.prizeImageUrl;
     _existingReceiptUrls = List.from(c.receiptUrls ?? []);
@@ -139,6 +142,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   double? _parseDouble(String value) {
     if (value.isEmpty) return null;
+    // Substitui vírgula por ponto para o parse funcionar corretamente
     return double.tryParse(value.replaceAll(',', '.'));
   }
 
@@ -152,7 +156,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         id: widget.campaign?.id,
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
-        winner: _winnerController.text.trim(), // Salvando o ganhador no Model
+        winner: _winnerController.text.trim(),
         type: _selectedType,
         status: _selectedStatus,
         goalValue: _parseDouble(_goalController.text),
@@ -162,7 +166,10 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         address: _addressController.text.trim(),
         itemsForSale: _itemsController.text.trim(),
         hasAccountability: _hasAccountability,
-        totalCollected: _parseDouble(_totalCollectedController.text),
+        
+        // ATUALIZAÇÃO DO CAMPO AQUI:
+        totalCollected: _parseDouble(_totalCollectedController.text) ?? 0.0,
+        
         expenses: _expenses,
         currentValue: widget.campaign?.currentValue ?? 0,
         imageUrl: widget.campaign?.imageUrl, 
@@ -303,7 +310,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       ),
       const SizedBox(height: 10),
       
-      // CAMPO DO GANHADOR: Só aparece para Rifas
       TextFormField(
         controller: _winnerController,
         decoration: const InputDecoration(
@@ -394,7 +400,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
           const Divider(),
           TextFormField(
             controller: _totalCollectedController, 
-            decoration: const InputDecoration(labelText: 'Total Arrecadado (R\$)'), 
+            decoration: const InputDecoration(labelText: 'Total Arrecadado (R\$)', border: OutlineInputBorder()), 
             keyboardType: const TextInputType.numberWithOptions(decimal: true)
           ),
           const SizedBox(height: 15),
