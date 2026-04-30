@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart'; 
@@ -86,7 +87,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _itemsController.text = c.itemsForSale ?? '';
     _hasAccountability = c.hasAccountability;
     
-    // Preenchendo o total arrecadado se existir
     _totalCollectedController.text = c.totalCollected?.toString() ?? '';
     
     _expenses = List.from(c.expenses ?? []);
@@ -123,10 +123,12 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   Future<void> _pickPrizeImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) setState(() {
-      _prizeImage = File(picked.path);
-      _prizeImageUrl = null;
-    });
+    if (picked != null) {
+      setState(() {
+        _prizeImage = File(picked.path);
+        _prizeImageUrl = null;
+      });
+    }
   }
 
   Future<void> _pickReceipts() async {
@@ -142,7 +144,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   double? _parseDouble(String value) {
     if (value.isEmpty) return null;
-    // Substitui vírgula por ponto para o parse funcionar corretamente
     return double.tryParse(value.replaceAll(',', '.'));
   }
 
@@ -152,6 +153,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final isNew = widget.campaign == null;
+      
       final updatedCampaign = CampaignModel(
         id: widget.campaign?.id,
         title: _titleController.text.trim(),
@@ -166,10 +169,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         address: _addressController.text.trim(),
         itemsForSale: _itemsController.text.trim(),
         hasAccountability: _hasAccountability,
-        
-        // ATUALIZAÇÃO DO CAMPO AQUI:
         totalCollected: _parseDouble(_totalCollectedController.text) ?? 0.0,
-        
         expenses: _expenses,
         currentValue: widget.campaign?.currentValue ?? 0,
         imageUrl: widget.campaign?.imageUrl, 
@@ -177,6 +177,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         receiptUrls: _existingReceiptUrls,
       );
 
+      // Salva o documento usando seu service
       await _service.saveCampaign(
         updatedCampaign, 
         _mainImage, 
@@ -184,6 +185,20 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         prizeImage: _prizeImage
       );
       
+      // Caso seja uma nova campanha, registra a atividade no mural
+      if (isNew) {
+        // Gerando o ID se necessário para garantir o targetId ou lendo do próprio modelo
+        final String targetId = updatedCampaign.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+        
+        await FirebaseFirestore.instance.collection('activities').add({
+          'type': 'campanha',
+          'title': 'Nova Campanha Cadastrada',
+          'description': 'A campanha ${_titleController.text.trim()} foi cadastrada com sucesso.',
+          'targetId': targetId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Campanha salva com sucesso!')),
@@ -309,7 +324,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         decoration: const InputDecoration(labelText: 'Nome do Prêmio', border: OutlineInputBorder())
       ),
       const SizedBox(height: 10),
-      
       TextFormField(
         controller: _winnerController,
         decoration: const InputDecoration(
@@ -320,7 +334,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         ),
       ),
       const SizedBox(height: 10),
-
       TextFormField(
         controller: _drawDateController,
         readOnly: true,
@@ -333,7 +346,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         ),
       ),
       const SizedBox(height: 10),
-      
       Stack(
         children: [
           GestureDetector(
@@ -365,7 +377,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
             )
         ],
       ),
-      
       const SizedBox(height: 10),
       Row(children: [
         Expanded(child: TextFormField(controller: _goalController, decoration: const InputDecoration(labelText: 'Meta (R\$)', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true))),
@@ -433,7 +444,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
             label: const Text('Anexar Novas Notas'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[300], foregroundColor: Colors.black87),
           ),
-          
           if (_receiptFiles.isNotEmpty || _existingReceiptUrls.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 10),
