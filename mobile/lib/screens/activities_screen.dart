@@ -1,6 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+// TODO: Descomente e ajuste os imports das suas telas de detalhes correspondentes
+// import 'package:patinhas_amor/screens/campaign_detail_screen.dart';
+// import 'package:patinhas_amor/screens/animal_detail_screen.dart';
+// import 'package:patinhas_amor/screens/register_occurrence_screen.dart';
+
 class ActivitiesScreen extends StatelessWidget {
   const ActivitiesScreen({super.key});
 
@@ -43,35 +48,61 @@ class ActivitiesScreen extends StatelessWidget {
               final doc = activities[index];
               final activity = doc.data() as Map<String, dynamic>;
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              return Dismissible(
+                // O Key precisa ser único para o Dismissible funcionar corretamente
+                key: Key(doc.id),
+                direction: DismissDirection.endToStart, // Deslizar da direita para a esquerda
+                background: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  child: const Icon(Icons.delete, color: Colors.white, size: 28),
                 ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: _getIcon(activity['type']),
-                  title: Text(
-                    activity['title'] ?? 'Novo item',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                onDismissed: (direction) {
+                  // Apaga o documento do Firestore ao deslizar
+                  FirebaseFirestore.instance.collection('activities').doc(doc.id).delete();
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Notificação apagada'),
+                      duration: Duration(seconds: 2),
                     ),
+                  );
+                },
+                child: Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      activity['description'] ?? '',
-                      style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: _getIcon(activity['type']),
+                    title: Text(
+                      activity['title'] ?? 'Novo item',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        activity['description'] ?? '',
+                        style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                      ),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.orange),
+                    onTap: () {
+                      if (activity['targetId'] != null) {
+                        _redirect(context, activity['type'], activity['targetId']);
+                      }
+                    },
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.orange),
-                  onTap: () {
-                    if (activity['targetId'] != null) {
-                      _redirect(context, activity['type'], activity['targetId']);
-                    }
-                  },
                 ),
               );
             },
@@ -107,9 +138,36 @@ class ActivitiesScreen extends StatelessWidget {
   }
 
   void _redirect(BuildContext context, String? type, String targetId) {
+    // TODO: Ajuste os nomes das classes (AnimalDetailScreen, etc.) conforme o seu projeto.
+    
+    /*
+    Widget? targetScreen;
+
+    switch (type) {
+      case 'campanha':
+        // targetScreen = CampaignDetailScreen(campaignId: targetId);
+        break;
+      case 'animal':
+        // targetScreen = AnimalDetailScreen(animalId: targetId);
+        break;
+      case 'ocorrencia':
+        // targetScreen = RegisterOccurrenceScreen(occurrenceId: targetId); 
+        break;
+    }
+
+    if (targetScreen != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => targetScreen),
+      );
+      return;
+    }
+    */
+
+    // Fallback temporário (Remova após implementar a navegação real acima)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Redirecionando para o item ID: $targetId'),
+        content: Text('Ação de clique acionada. Tipo: $type | ID: $targetId'),
         backgroundColor: Colors.orange,
       ),
     );
