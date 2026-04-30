@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Necessário para tratar Timestamps no pipeline
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:patinhas_amor/models/animal.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 import 'package:patinhas_amor/models/campaign.dart'; 
@@ -96,9 +96,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
   void _toggleField(String table, String fieldKey, bool isSelected) {
     setState(() {
       if (isSelected) {
-        _selectedFields[table]!.add(fieldKey);
+        if (!_selectedFields[table]!.contains(fieldKey)) {
+          _selectedFields[table]!.add(fieldKey);
+        }
       } else {
         _selectedFields[table]!.remove(fieldKey);
+      }
+    });
+  }
+
+  // --- NOVA FUNÇÃO PARA SELECIONAR/DESMARCAR TUDO ---
+  void _toggleSelectAll(String tableName, bool shouldSelectAll) {
+    setState(() {
+      if (shouldSelectAll) {
+        _selectedFields[tableName] = reportSchema[tableName]!.keys.toList();
+      } else {
+        _selectedFields[tableName] = [];
       }
     });
   }
@@ -179,6 +192,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildTableCard(String tableName) {
     final fields = reportSchema[tableName]!;
     final selectedCount = _selectedFields[tableName]!.length;
+    final bool isAllSelected = selectedCount == fields.length;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -193,16 +207,41 @@ class _ReportsScreenState extends State<ReportsScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, color: selectedCount > 0 ? Colors.orange.shade900 : null),
         ),
         subtitle: Text('$selectedCount colunas selecionadas'),
-        children: fields.entries.map((entry) {
-          final isChecked = _selectedFields[tableName]!.contains(entry.key);
-          return CheckboxListTile(
-            title: Text(entry.value, style: const TextStyle(fontSize: 14)),
-            value: isChecked,
-            activeColor: Colors.orange,
-            dense: true,
-            onChanged: (bool? val) => _toggleField(tableName, entry.key, val ?? false),
-          );
-        }).toList(),
+        children: [
+          // BOTÃO SELECIONAR/DESMARCAR TUDO
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _toggleSelectAll(tableName, !isAllSelected),
+                icon: Icon(
+                  isAllSelected ? Icons.deselect : Icons.select_all,
+                  size: 20,
+                  color: Colors.orange.shade800,
+                ),
+                label: Text(
+                  isAllSelected ? "Limpar Seleção" : "Selecionar Todas",
+                  style: TextStyle(
+                    color: Colors.orange.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ...fields.entries.map((entry) {
+            final isChecked = _selectedFields[tableName]!.contains(entry.key);
+            return CheckboxListTile(
+              title: Text(entry.value, style: const TextStyle(fontSize: 14)),
+              value: isChecked,
+              activeColor: Colors.orange,
+              dense: true,
+              onChanged: (bool? val) => _toggleField(tableName, entry.key, val ?? false),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -275,7 +314,6 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
       }
 
       if (widget.selectedFields['Campanhas']!.isNotEmpty) {
-        // CORREÇÃO: Uso do nome correto da classe CampaignModel
         List<CampaignModel> rawCampaigns = await _campaignService.fetchCampaigns();
         _processedData['Campanhas'] = _transformData(rawCampaigns, widget.selectedFields['Campanhas']!, 'createdAt');
       }
@@ -294,7 +332,6 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
 
       if (widget.dateRange != null && itemMap[dateKey] != null) {
         DateTime itemDate;
-        // Tratamento para garantir que Timestamp do Firebase vire DateTime
         if (itemMap[dateKey] is Timestamp) {
           itemDate = (itemMap[dateKey] as Timestamp).toDate();
         } else {
@@ -318,7 +355,6 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
   Future<void> _export(bool isPdf) async {
     setState(() => _isExporting = true);
     try {
-      // Ajuste para o schema interno que o ExportService usa (Map das tabelas)
       final Map<String, Map<String, String>> currentSchema = {
         'Animais': reportSchema['Animais']!,
         'Campanhas': reportSchema['Campanhas']!,
