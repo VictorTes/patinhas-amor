@@ -1,13 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-// TODO: Descomente e ajuste os imports das suas telas de detalhes correspondentes
-// import 'package:patinhas_amor/screens/campaign_detail_screen.dart';
-// import 'package:patinhas_amor/screens/animal_detail_screen.dart';
-// import 'package:patinhas_amor/screens/register_occurrence_screen.dart';
+// Imports dos fluxos de detalhes do projeto
+import 'package:patinhas_amor/screens/campaign_detail_screen.dart';
+import 'package:patinhas_amor/screens/animals_list_screen.dart';
+import 'package:patinhas_amor/screens/occurrence_details_screen.dart';
 
-class ActivitiesScreen extends StatelessWidget {
+// O modelo Occurrence importado para tipagem no redirecionamento
+import 'package:patinhas_amor/models/occurrence.dart';
+
+class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
+
+  @override
+  State<ActivitiesScreen> createState() => _ActivitiesScreenState();
+}
+
+class _ActivitiesScreenState extends State<ActivitiesScreen> {
+  // Armazena os IDs das atividades que foram dispensadas/apagadas pelo usuário localmente
+  final Set<String> _dismissedIds = {};
 
   @override
   Widget build(BuildContext context) {
@@ -39,17 +50,29 @@ class ActivitiesScreen extends StatelessWidget {
             );
           }
 
-          final activities = snapshot.data!.docs;
+          // Filtra os documentos para ignorar os excluídos localmente
+          final allDocs = snapshot.data!.docs;
+          final activeActivities = allDocs
+              .where((doc) => !_dismissedIds.contains(doc.id))
+              .toList();
+
+          if (activeActivities.isEmpty) {
+            return const Center(
+              child: Text(
+                'Nenhuma atividade recente.',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            );
+          }
 
           return ListView.builder(
             physics: const BouncingScrollPhysics(),
-            itemCount: activities.length,
+            itemCount: activeActivities.length,
             itemBuilder: (context, index) {
-              final doc = activities[index];
+              final doc = activeActivities[index];
               final activity = doc.data() as Map<String, dynamic>;
 
               return Dismissible(
-                // O Key precisa ser único para o Dismissible funcionar corretamente
                 key: Key(doc.id),
                 direction: DismissDirection.endToStart, // Deslizar da direita para a esquerda
                 background: Container(
@@ -63,12 +86,14 @@ class ActivitiesScreen extends StatelessWidget {
                   child: const Icon(Icons.delete, color: Colors.white, size: 28),
                 ),
                 onDismissed: (direction) {
-                  // Apaga o documento do Firestore ao deslizar
-                  FirebaseFirestore.instance.collection('activities').doc(doc.id).delete();
-                  
+                  // Adiciona o ID ao conjunto de itens ignorados sem apagar do Firestore
+                  setState(() {
+                    _dismissedIds.add(doc.id);
+                  });
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Notificação apagada'),
+                      content: Text('Notificação apagada localmente'),
                       duration: Duration(seconds: 2),
                     ),
                   );
@@ -99,7 +124,11 @@ class ActivitiesScreen extends StatelessWidget {
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.orange),
                     onTap: () {
                       if (activity['targetId'] != null) {
-                        _redirect(context, activity['type'], activity['targetId']);
+                        _redirect(
+                          context,
+                          activity['type'],
+                          activity['targetId'],
+                        );
                       }
                     },
                   ),
@@ -138,36 +167,42 @@ class ActivitiesScreen extends StatelessWidget {
   }
 
   void _redirect(BuildContext context, String? type, String targetId) {
-    // TODO: Ajuste os nomes das classes (AnimalDetailScreen, etc.) conforme o seu projeto.
-    
-    /*
     Widget? targetScreen;
 
     switch (type) {
       case 'campanha':
-        // targetScreen = CampaignDetailScreen(campaignId: targetId);
+        targetScreen = CampaignDetailScreen(campaignId: targetId);
         break;
       case 'animal':
-        // targetScreen = AnimalDetailScreen(animalId: targetId);
+        // Como 'AnimalsListScreen' é usada para listagem geral, você pode redirecionar para ela ou adicionar um DetailScreen caso possua.
+        targetScreen = const AnimalsListScreen();
         break;
       case 'ocorrencia':
-        // targetScreen = RegisterOccurrenceScreen(occurrenceId: targetId); 
+        // Caso possua o objeto Occurrence completo, adapte se o targetId for uma string
+        targetScreen = OccurrenceDetailsScreen(
+          occurrence: Occurrence(
+            id: targetId,
+            type: '',
+            status: OccurrenceStatus.pending, // Selecione o status padrão adequado
+            description: '',
+            location: '',
+          ),
+        );
         break;
     }
 
     if (targetScreen != null) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => targetScreen),
+        MaterialPageRoute(builder: (context) => targetScreen!),
       );
       return;
     }
-    */
 
-    // Fallback temporário (Remova após implementar a navegação real acima)
+    // Fallback caso nenhuma tela seja compatível
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Ação de clique acionada. Tipo: $type | ID: $targetId'),
+        content: Text('Navegando para detalhes. Tipo: $type | ID: $targetId'),
         backgroundColor: Colors.orange,
       ),
     );
