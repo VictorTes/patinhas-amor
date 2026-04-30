@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Necessário para tratar Timestamps no pipeline
 import 'package:patinhas_amor/models/animal.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 import 'package:patinhas_amor/models/campaign.dart'; 
@@ -12,7 +13,6 @@ import 'package:patinhas_amor/widgets/loading_indicator.dart';
 // ============================================================================
 // 1. DICIONÁRIO DE DADOS (SCHEMA)
 // ============================================================================
-// Centraliza a configuração de todas as tabelas e campos disponíveis para exportação.
 final Map<String, Map<String, String>> reportSchema = {
   'Animais': {
     'name': 'Nome',
@@ -66,7 +66,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
   DateTimeRange? _selectedDateRange;
   final DateFormat _df = DateFormat('dd/MM/yyyy');
   
-  // Estado das seleções: Map<NomeDaTabela, ListaDeCamposSelecionados>
   final Map<String, List<String>> _selectedFields = {
     'Animais': [],
     'Campanhas': [],
@@ -105,7 +104,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _generatePreview() {
-    // Validação: Pelo menos uma tabela deve ter campos selecionados
     bool hasSelection = _selectedFields.values.any((fields) => fields.isNotEmpty);
     if (!hasSelection) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,12 +248,11 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
   final AnimalService _animalService = AnimalService();
   final OccurrenceService _occurrenceService = OccurrenceService();
   final ExportService _exportService = ExportService();
-  final CampaignService _campaignService = CampaignService(); // Descomente
+  final CampaignService _campaignService = CampaignService(); 
 
   bool _isLoading = true;
   bool _isExporting = false;
 
-  // Estrutura processada: Map<NomeDaTabela, ListaDeRegistrosMapeados>
   final Map<String, List<Map<String, dynamic>>> _processedData = {};
 
   @override
@@ -267,9 +264,8 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
   Future<void> _fetchAndTransformData() async {
     setState(() => _isLoading = true);
     try {
-      // 1. Extração: Busca os dados brutos de cada coleção solicitada
       if (widget.selectedFields['Animais']!.isNotEmpty) {
-        List<Animal> rawAnimals = await _animalService.fetchAnimals(); // Considere adicionar filtro de data direto na query do Firebase se possível
+        List<Animal> rawAnimals = await _animalService.fetchAnimals();
         _processedData['Animais'] = _transformData(rawAnimals, widget.selectedFields['Animais']!, 'rescueDate');
       }
 
@@ -278,13 +274,11 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
         _processedData['Ocorrências'] = _transformData(rawOccurrences, widget.selectedFields['Ocorrências']!, 'createdAt');
       }
 
-      /* Descomente quando integrar Campaigns
       if (widget.selectedFields['Campanhas']!.isNotEmpty) {
-        List<Campaign> rawCampaigns = await _campaignService.fetchCampaigns();
+        // CORREÇÃO: Uso do nome correto da classe CampaignModel
+        List<CampaignModel> rawCampaigns = await _campaignService.fetchCampaigns();
         _processedData['Campanhas'] = _transformData(rawCampaigns, widget.selectedFields['Campanhas']!, 'createdAt');
       }
-      */
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao buscar dados: $e')));
     } finally {
@@ -292,24 +286,26 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     }
   }
 
-  // Transformação: Filtra por data e extrai apenas as chaves selecionadas
   List<Map<String, dynamic>> _transformData(List<dynamic> rawData, List<String> fields, String dateKey) {
     List<Map<String, dynamic>> result = [];
     
     for (var item in rawData) {
-      // Nota: Assume que seus Models possuem um método toMap() ou toJson(). 
-      // Caso contrário, você precisará criar um para transformar a instância em um Map.
       Map<String, dynamic> itemMap = item.toMap(); 
 
-      // Filtro de Data (em memória)
       if (widget.dateRange != null && itemMap[dateKey] != null) {
-        DateTime itemDate = (itemMap[dateKey] as DateTime); // Ajuste caso seja Timestamp do Firebase
+        DateTime itemDate;
+        // Tratamento para garantir que Timestamp do Firebase vire DateTime
+        if (itemMap[dateKey] is Timestamp) {
+          itemDate = (itemMap[dateKey] as Timestamp).toDate();
+        } else {
+          itemDate = (itemMap[dateKey] as DateTime);
+        }
+
         if (itemDate.isBefore(widget.dateRange!.start) || itemDate.isAfter(widget.dateRange!.end.add(const Duration(days: 1)))) {
-          continue; // Pula este registro se estiver fora do período
+          continue; 
         }
       }
 
-      // Projeção: Mantém apenas os campos selecionados
       Map<String, dynamic> filteredItem = {};
       for (String field in fields) {
         filteredItem[field] = itemMap[field]?.toString() ?? '-';
@@ -322,16 +318,29 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
   Future<void> _export(bool isPdf) async {
     setState(() => _isExporting = true);
     try {
-      // Aqui você chamará seu ExportService.
-      // Dica: Seu ExportService precisará ser ajustado para receber dados dinâmicos:
-      // Map<String, List<Map<String, dynamic>>> em vez de List<Animal> fixos.
+      // Ajuste para o schema interno que o ExportService usa (Map das tabelas)
+      final Map<String, Map<String, String>> currentSchema = {
+        'Animais': reportSchema['Animais']!,
+        'Campanhas': reportSchema['Campanhas']!,
+        'Ocorrências': reportSchema['Ocorrências']!,
+      };
+
       if (isPdf) {
-         // await _exportService.generateDynamicPdf(_processedData, widget.selectedFields, reportSchema);
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF Gerado com sucesso!')));
+          await _exportService.generateDynamicPdf(
+            processedData: _processedData, 
+            selectedFields: widget.selectedFields, 
+            schema: currentSchema,
+            dateRange: widget.dateRange
+          );
       } else {
-         // await _exportService.generateDynamicExcel(_processedData, widget.selectedFields, reportSchema);
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Excel Gerado com sucesso!')));
+          await _exportService.generateDynamicExcel(
+            processedData: _processedData, 
+            selectedFields: widget.selectedFields, 
+            schema: currentSchema
+          );
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao exportar: $e')));
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -424,13 +433,12 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
+              headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
               columns: fields.map((fieldKey) {
-                // Pega o nome legível do esquema para o cabeçalho da tabela
                 String headerLabel = reportSchema[tableName]![fieldKey] ?? fieldKey;
                 return DataColumn(label: Text(headerLabel, style: const TextStyle(fontWeight: FontWeight.bold)));
               }).toList(),
-              rows: data.take(10).map((row) { // .take(10) limita a preview a 10 linhas para performance
+              rows: data.take(10).map((row) { 
                 return DataRow(
                   cells: fields.map((fieldKey) {
                     return DataCell(Text(row[fieldKey]?.toString() ?? ''));
