@@ -5,7 +5,8 @@ import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/volunteer_register_screen.dart';
 import 'package:patinhas_amor/screens/user_management_screen.dart';
 import 'package:patinhas_amor/screens/moderation_list_screen.dart';
-import 'package:patinhas_amor/screens/campaing_list_screen.dart'; 
+import 'package:patinhas_amor/screens/campaing_list_screen.dart';
+import 'package:patinhas_amor/screens/reports_screen.dart'; // Importação adicionada
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -79,7 +80,6 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
-          // NOVA OPÇÃO: CAMPANHAS E RIFAS
           ListTile(
             leading: const Icon(Icons.confirmation_number_outlined, color: Colors.deepOrange),
             title: const Text('Campanhas e Rifas'),
@@ -93,11 +93,14 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
-          // ÁREA EXCLUSIVA PARA ADMIN
+          // ÁREA EXCLUSIVA PARA ADMIN / SUPERADMIN
           FutureBuilder<Map<String, dynamic>?>(
             future: authService.getUserData(),
             builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data?['role'] == 'admin') {
+              final role = snapshot.data?['role'];
+              
+              // Verificação para ambos os cargos administrativos
+              if (snapshot.hasData && (role == 'admin' || role == 'superAdmin')) {
                 return Column(
                   children: [
                     const Divider(),
@@ -115,7 +118,21 @@ class AppDrawer extends StatelessWidget {
                       ),
                     ),
                     
-                    // NOVA OPÇÃO: MODERAÇÃO DE OCORRÊNCIAS
+                    // NOVA OPÇÃO: RELATÓRIOS (Adicionada conforme solicitado)
+                    ListTile(
+                      leading: const Icon(Icons.bar_chart_outlined,
+                          color: Colors.purple),
+                      title: const Text('Relatórios e Estatísticas'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const ReportsScreen()),
+                        );
+                      },
+                    ),
+
                     ListTile(
                       leading: const Icon(Icons.fact_check_outlined,
                           color: Colors.orange),
@@ -125,12 +142,11 @@ class AppDrawer extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => ModerationListScreen()),
+                              builder: (context) => const ModerationListScreen()),
                         );
                       },
                     ),
 
-                    // OPÇÃO: CADASTRAR NOVO VOLUNTÁRIO
                     ListTile(
                       leading: const Icon(Icons.person_add_alt_1_outlined,
                           color: Colors.blueAccent),
@@ -146,7 +162,6 @@ class AppDrawer extends StatelessWidget {
                       },
                     ),
 
-                    // OPÇÃO: GERENCIAR EXISTENTES
                     ListTile(
                       leading: const Icon(Icons.manage_accounts_outlined,
                           color: Colors.indigo),
