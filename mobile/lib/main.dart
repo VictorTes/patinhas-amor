@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'; // Importação necessária
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:patinhas_amor/widgets/auth_wrapper.dart';
 import 'package:patinhas_amor/screens/home_screen.dart';
 import 'package:patinhas_amor/screens/login_screen.dart';
@@ -32,9 +32,8 @@ class PatinhasAmorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Patinhas e Amor',
       debugShowCheckedModeBanner: false,
-      showPerformanceOverlay: false,
-
-      // --- CONFIGURAÇÃO DE LOCALIZAÇÃO (CORREÇÃO PARA O SELETOR DE DATA) ---
+      
+      // CONFIGURAÇÃO DE LOCALIZAÇÃO
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -43,7 +42,6 @@ class PatinhasAmorApp extends StatelessWidget {
       supportedLocales: const [
         Locale('pt', 'BR'),
       ],
-      // --------------------------------------------------------------------
 
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -60,7 +58,7 @@ class PatinhasAmorApp extends StatelessWidget {
         ),
       ),
 
-      // Define a tela inicial através do Wrapper
+      // O AuthWrapper no 'home' garante que ninguém passe da porta sem login.
       home: const ConnectivityWrapper(
         child: AuthWrapper(),
       ),
@@ -72,16 +70,17 @@ class PatinhasAmorApp extends StatelessWidget {
         '/forgot-password': (context) => const ForgotPasswordScreen(),
         '/criar-campanha': (context) => const CampaignFormScreen(),
         '/detalhe-campanha': (context) {
-          final String id =
-              ModalRoute.of(context)!.settings.arguments as String;
-          return CampaignDetailScreen(campaignId: id);
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is String) {
+            return CampaignDetailScreen(campaignId: args);
+          }
+          return const Scaffold(body: Center(child: Text("Erro ao carregar campanha")));
         },
       },
     );
   }
 }
 
-// Widget que monitora a conexão
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
   const ConnectivityWrapper({super.key, required this.child});
@@ -97,10 +96,19 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   @override
   void initState() {
     super.initState();
+    _checkInitialConnection();
     _subscription = Connectivity().onConnectivityChanged.listen((results) {
       setState(() {
         _isOffline = results.contains(ConnectivityResult.none);
       });
+    });
+  }
+
+  // Verifica a conexão assim que o app abre
+  Future<void> _checkInitialConnection() async {
+    final results = await Connectivity().checkConnectivity();
+    setState(() {
+      _isOffline = results.contains(ConnectivityResult.none);
     });
   }
 
@@ -113,24 +121,27 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Usei o resizeToAvoidBottomInset para evitar que o banner quebre o layout com teclado
+      resizeToAvoidBottomInset: false,
       body: Column(
         children: [
           if (_isOffline)
             Material(
+              elevation: 4,
               child: Container(
                 color: Colors.redAccent,
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 alignment: Alignment.center,
-                child: const SafeArea(
+                child: SafeArea(
                   bottom: false,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: const [
                       Icon(Icons.wifi_off, color: Colors.white, size: 16),
                       SizedBox(width: 8),
                       Text(
-                        "Sem conexão com a internet",
+                        "Modo Offline: Algumas funções podem estar limitadas",
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
