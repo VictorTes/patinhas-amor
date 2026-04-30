@@ -4,7 +4,8 @@ import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_map_screen.dart';
 import 'package:patinhas_amor/widgets/app_drawer.dart';
-import 'package:patinhas_amor/screens/campaing_list_screen.dart'; // Importação do botão de campanhas
+import 'package:patinhas_amor/screens/campaing_list_screen.dart';
+import 'package:patinhas_amor/screens/activities_screen.dart'; // Import da tela de atividades
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -109,9 +110,40 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ],
         ),
         const Spacer(),
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.grey),
-          onPressed: () => _showComingSoon(context),
+        // StreamBuilder para verificar se existem atividades e exibir o alerta
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('activities').limit(1).snapshots(),
+          builder: (context, snapshot) {
+            final hasNotifications = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+
+            return Stack(
+              alignment: Alignment.topRight,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_none, color: Colors.grey),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ActivitiesScreen()),
+                    );
+                  },
+                ),
+                if (hasNotifications)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         )
       ],
     );
@@ -172,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         builder: (context, snapshot) {
           String count = '00';
           if (snapshot.hasData) {
-            count = snapshot.data!.docs.length.toString().padLeft(2, '0'); // Mantido o comportamento original
+            count = snapshot.data!.docs.length.toString().padLeft(2, '0');
           }
 
           return Container(
@@ -320,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _buildMenuItem(
           context,
           'Campanhas',
-          Icons.confirmation_number_outlined, // Ícone atualizado para Campanhas
+          Icons.confirmation_number_outlined,
           Colors.deepOrange,
           () => Navigator.push(context, MaterialPageRoute(builder: (c) => const CampanhasView())),
         ),
