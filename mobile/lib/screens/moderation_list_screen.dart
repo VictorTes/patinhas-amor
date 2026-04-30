@@ -15,7 +15,7 @@ class ModerationListScreen extends StatefulWidget {
 class _ModerationListScreenState extends State<ModerationListScreen> {
   final ModerationService moderationService = ModerationService();
 
-  // Função para forçar o rebuild se necessário (embora o Stream cuide disso)
+  // Função para forçar o rebuild se necessário
   Future<void> _onRefresh() async {
     setState(() {});
     await Future.delayed(const Duration(milliseconds: 500));
@@ -23,7 +23,9 @@ class _ModerationListScreenState extends State<ModerationListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // PROTEÇÃO: RoleGuard configurado para cargos administrativos
     return RoleGuard(
+      requiredRole: 'admin', // Se o seu RoleGuard permitir listas, use ['admin', 'superAdmin']
       fallback: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
@@ -35,13 +37,21 @@ class _ModerationListScreenState extends State<ModerationListScreen> {
               children: [
                 Icon(Icons.lock_person_outlined, size: 80, color: Colors.red[300]),
                 const SizedBox(height: 24),
-                const Text("Acesso Restrito", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const Text(
+                  "Acesso Restrito", 
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
+                ),
                 const SizedBox(height: 12),
                 const Text(
                   "Apenas administradores podem acessar esta área de moderação.",
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 16),
                 ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("VOLTAR"),
+                )
               ],
             ),
           ),
@@ -103,7 +113,6 @@ class _ModerationListScreenState extends State<ModerationListScreen> {
               onRefresh: _onRefresh,
               color: Colors.orange,
               child: ListView.builder(
-                // O physics garante que o scroll funcione mesmo com poucos itens (necessário para o RefreshIndicator)
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                 itemCount: occurrences.length,
@@ -138,8 +147,8 @@ class _ModerationListScreenState extends State<ModerationListScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: SingleChildScrollView( // Adicionado para evitar erro de layout se o teclado abrir ou em telas pequenas
-        physics: const AlwaysScrollableScrollPhysics(), // Permite o pull-to-refresh mesmo vazio
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
