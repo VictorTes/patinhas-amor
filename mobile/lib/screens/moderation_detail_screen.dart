@@ -95,7 +95,7 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
             'isValidated': true,
             'submittedAt': widget.occurrence.submittedAt,
             'userAgent': widget.occurrence.userAgent,
-            'accessCode': widget.occurrence.accessCode, // ADICIONADO: Salvando o código de acesso
+            'accessCode': widget.occurrence.accessCode, 
           },
           widget.occurrence 
         );
@@ -125,8 +125,34 @@ class _ModerationDetailScreenState extends State<ModerationDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // PROTEÇÃO: Apenas admin/superAdmin podem acessar os detalhes da moderação
     return RoleGuard(
-      fallback: const Scaffold(body: Center(child: Text("Acesso Negado"))),
+      requiredRole: 'admin',
+      fallback: Scaffold(
+        appBar: AppBar(title: const Text("Acesso Negado"), backgroundColor: Colors.grey),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.security_rounded, size: 80, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text("Permissão Insuficiente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+                child: Text(
+                  "Você não tem autorização para visualizar ou editar os detalhes desta ocorrência.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("VOLTAR"),
+              ),
+            ],
+          ),
+        ),
+      ),
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Moderação de Relato"),
