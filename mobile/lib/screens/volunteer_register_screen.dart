@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:patinhas_amor/services/auth_service.dart';
+import 'package:patinhas_amor/widgets/role_guard.dart'; // Import do seu Guard
 
 class VolunteerRegisterScreen extends StatefulWidget {
   const VolunteerRegisterScreen({super.key});
@@ -19,30 +19,8 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   
-  String _selectedRole = 'volunteer'; // Valor padrão
+  String _selectedRole = 'volunteer'; 
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkPermission(); // Proteção de rota logo ao abrir a tela
-  }
-
-  /// Verifica se quem está tentando usar esta tela é realmente um Admin
-  void _checkPermission() async {
-    final userData = await AuthService().getUserData();
-    if (userData == null || userData['role'] != 'admin') {
-      if (mounted) {
-        Navigator.pop(context); // Expulsa da tela
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Acesso restrito: Apenas administradores podem cadastrar usuários."),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   /// Função para cadastrar sem deslogar o Admin atual
   Future<void> _registerUser() async {
@@ -50,8 +28,6 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    // Criamos uma instância secundária para não afetar o login atual do Admin
-    // Isso evita que o Firebase faça o login automático do novo usuário no app
     FirebaseApp secondaryApp;
     try {
       secondaryApp = await Firebase.initializeApp(
@@ -65,18 +41,15 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
     FirebaseAuth secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
 
     try {
-      // 1. Geração de senha aleatória
       final random = Random();
       final randomNumber = 100000 + random.nextInt(900000); 
       final temporaryPassword = "MUDAR$randomNumber";
 
-      // 2. Criar o usuário na instância secundária
       UserCredential userCredential = await secondaryAuth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: temporaryPassword, 
       );
 
-      // 3. Salvar no Firestore (usando a instância principal do Firestore)
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -89,11 +62,9 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 4. Desloga a conta secundária e deleta a instância temporária
       await secondaryAuth.signOut();
       await secondaryApp.delete();
 
-      // 5. Notifica via WhatsApp
       await _sendWhatsAppNotification(temporaryPassword);
 
       if (mounted) {
@@ -133,77 +104,99 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Novo Usuário'),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
+    // APLICANDO O SEU ROLEGUARD
+    return RoleGuard(
+      requiredRole: 'admin',
+      fallback: Scaffold(
+        appBar: AppBar(title: const Text("Acesso Restrito"), backgroundColor: Colors.red),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.security, size: 80, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text("Ops! Apenas administradores podem cadastrar voluntários."),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("VOLTAR"),
+              )
+            ],
+          ),
+        ),
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Colors.orange))
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(Icons.person_add_alt_1, size: 80, color: Colors.orange),
-                  const SizedBox(height: 20),
-                  
-                  TextFormField(
-                    controller: _nameController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(labelText: 'Nome Completo', prefixIcon: Icon(Icons.person_outline)),
-                    validator: (v) => v!.isEmpty ? 'Informe o nome' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'E-mail de Acesso', prefixIcon: Icon(Icons.email_outlined)),
-                    validator: (v) => v!.contains('@') ? null : 'E-mail inválido',
-                  ),
-                  const SizedBox(height: 16),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Novo Usuário'),
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+        ),
+        body: _isLoading 
+          ? const Center(child: CircularProgressIndicator(color: Colors.orange))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(Icons.person_add_alt_1, size: 80, color: Colors.orange),
+                    const SizedBox(height: 20),
+                    
+                    TextFormField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(labelText: 'Nome Completo', prefixIcon: Icon(Icons.person_outline)),
+                      validator: (v) => v!.isEmpty ? 'Informe o nome' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(labelText: 'E-mail de Acesso', prefixIcon: Icon(Icons.email_outlined)),
+                      validator: (v) => v!.contains('@') ? null : 'E-mail inválido',
+                    ),
+                    const SizedBox(height: 16),
 
-                  DropdownButtonFormField<String>(
-                    value: _selectedRole,
-                    decoration: const InputDecoration(
-                      labelText: 'Nível de Acesso',
-                      prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+                    DropdownButtonFormField<String>(
+                      value: _selectedRole,
+                      decoration: const InputDecoration(
+                        labelText: 'Nível de Acesso',
+                        prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'volunteer', child: Text('Voluntário')),
+                        DropdownMenuItem(value: 'admin', child: Text('Administrador')),
+                      ],
+                      onChanged: (value) => setState(() => _selectedRole = value!),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'volunteer', child: Text('Voluntário')),
-                      DropdownMenuItem(value: 'admin', child: Text('Administrador')),
-                    ],
-                    onChanged: (value) => setState(() => _selectedRole = value!),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'WhatsApp (com DDD)', prefixIcon: Icon(Icons.phone_android)),
-                    validator: (v) => v!.length < 10 ? 'Telefone inválido' : null,
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  ElevatedButton(
-                    onPressed: _registerUser,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(height: 16),
+                    
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(labelText: 'WhatsApp (com DDD)', prefixIcon: Icon(Icons.phone_android)),
+                      validator: (v) => v!.length < 10 ? 'Telefone inválido' : null,
                     ),
-                    child: const Text('CADASTRAR E NOTIFICAR', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ],
+                    
+                    const SizedBox(height: 32),
+                    
+                    ElevatedButton(
+                      onPressed: _registerUser,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('CADASTRAR E NOTIFICAR', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+      ),
     );
   }
 }
