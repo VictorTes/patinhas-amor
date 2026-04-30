@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:patinhas_amor/screens/animals_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_map_screen.dart';
-import 'package:patinhas_amor/screens/reports_screen.dart';
 import 'package:patinhas_amor/widgets/app_drawer.dart';
+import 'package:patinhas_amor/screens/campaing_list_screen.dart'; // Importação do botão de campanhas
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 const SizedBox(height: 20),
                 _buildHeader(context),
-                const SizedBox(height: 30), // Aumentado para dar mais ar
+                const SizedBox(height: 30),
                 _buildLiveSummarySection(),
                 const SizedBox(height: 30),
                 _buildMapPreview(context),
@@ -117,10 +117,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- SEÇÃO DE ESTATÍSTICAS AMPLIADA ---
   Widget _buildLiveSummarySection() {
     return SizedBox(
-      height: 130, // Altura aumentada para os cards ficarem maiores
+      height: 130,
       child: Row(
         children: [
           _buildCounterStream(
@@ -173,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         builder: (context, snapshot) {
           String count = '00';
           if (snapshot.hasData) {
-            count = snapshot.data!.docs.length.toString().padLeft(2, '0');
+            count = snapshot.data!.docs.length.toString().padLeft(2, '0'); // Mantido o comportamento original
           }
 
           return Container(
@@ -192,7 +191,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animação focada apenas no número que muda
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 600),
                   transitionBuilder: (Widget child, Animation<double> animation) {
@@ -205,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     count,
                     key: ValueKey<String>(count),
                     style: TextStyle(
-                      fontSize: 32, // Número bem maior e destacado
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: color,
                       height: 1.1,
@@ -321,10 +319,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         _buildMenuItem(
           context,
-          'Relatórios',
-          Icons.analytics_outlined,
-          Colors.blueAccent,
-          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportsScreen())),
+          'Campanhas',
+          Icons.confirmation_number_outlined, // Ícone atualizado para Campanhas
+          Colors.deepOrange,
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const CampanhasView())),
         ),
         _buildMenuItem(
           context,
