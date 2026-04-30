@@ -1,13 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
-// Imports dos fluxos de detalhes do projeto
-import 'package:patinhas_amor/screens/campaign_detail_screen.dart';
-import 'package:patinhas_amor/screens/animals_list_screen.dart';
-import 'package:patinhas_amor/screens/occurrence_details_screen.dart';
-
-// O modelo Occurrence importado para tipagem no redirecionamento
-import 'package:patinhas_amor/models/occurrence.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
@@ -17,11 +10,45 @@ class ActivitiesScreen extends StatefulWidget {
 }
 
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
-  // Armazena os IDs das atividades que foram dispensadas/apagadas pelo usuário localmente
+  // Armazena os IDs das atividades que foram dispensadas/apagadas pelo usuário
   final Set<String> _dismissedIds = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDismissedIds();
+  }
+
+  // Carrega os IDs salvos localmente
+  Future<void> _loadDismissedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedIds = prefs.getStringList('dismissed_activity_ids') ?? [];
+    
+    if (mounted) {
+      setState(() {
+        _dismissedIds.addAll(savedIds);
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Salva os IDs no dispositivo
+  Future<void> _saveDismissedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('dismissed_activity_ids', _dismissedIds.toList());
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.orange),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mural de Atividades'),
@@ -50,7 +77,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
             );
           }
 
-          // Filtra os documentos para ignorar os excluídos localmente
+          // Filtra os documentos para ignorar os excluídos localmente e persistidos
           final allDocs = snapshot.data!.docs;
           final activeActivities = allDocs
               .where((doc) => !_dismissedIds.contains(doc.id))
@@ -74,7 +101,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
               return Dismissible(
                 key: Key(doc.id),
-                direction: DismissDirection.endToStart, // Deslizar da direita para a esquerda
+                direction: DismissDirection.endToStart,
                 background: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
@@ -86,10 +113,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   child: const Icon(Icons.delete, color: Colors.white, size: 28),
                 ),
                 onDismissed: (direction) {
-                  // Adiciona o ID ao conjunto de itens ignorados sem apagar do Firestore
+                  // Adiciona o ID ao conjunto e salva no dispositivo
                   setState(() {
                     _dismissedIds.add(doc.id);
                   });
+                  _saveDismissedIds();
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -121,16 +149,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                         style: TextStyle(color: Colors.grey[700], fontSize: 14),
                       ),
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.orange),
-                    onTap: () {
-                      if (activity['targetId'] != null) {
-                        _redirect(
-                          context,
-                          activity['type'],
-                          activity['targetId'],
-                        );
-                      }
-                    },
+                    
                   ),
                 ),
               );
@@ -164,47 +183,5 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           child: Icon(Icons.star, color: Colors.white),
         );
     }
-  }
-
-  void _redirect(BuildContext context, String? type, String targetId) {
-    Widget? targetScreen;
-
-    switch (type) {
-      case 'campanha':
-        targetScreen = CampaignDetailScreen(campaignId: targetId);
-        break;
-      case 'animal':
-        // Como 'AnimalsListScreen' é usada para listagem geral, você pode redirecionar para ela ou adicionar um DetailScreen caso possua.
-        targetScreen = const AnimalsListScreen();
-        break;
-      case 'ocorrencia':
-        // Caso possua o objeto Occurrence completo, adapte se o targetId for uma string
-        targetScreen = OccurrenceDetailsScreen(
-          occurrence: Occurrence(
-            id: targetId,
-            type: '',
-            status: OccurrenceStatus.pending, // Selecione o status padrão adequado
-            description: '',
-            location: '',
-          ),
-        );
-        break;
-    }
-
-    if (targetScreen != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => targetScreen!),
-      );
-      return;
-    }
-
-    // Fallback caso nenhuma tela seja compatível
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Navegando para detalhes. Tipo: $type | ID: $targetId'),
-        backgroundColor: Colors.orange,
-      ),
-    );
   }
 }
