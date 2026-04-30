@@ -9,6 +9,7 @@ import 'package:patinhas_amor/services/occurrence_service.dart';
 import 'package:patinhas_amor/services/campaign_service.dart'; 
 import 'package:patinhas_amor/services/export_service.dart';
 import 'package:patinhas_amor/widgets/loading_indicator.dart';
+import 'package:patinhas_amor/widgets/role_guard.dart'; // Import do seu Guard
 
 // ============================================================================
 // 1. DICIONÁRIO DE DADOS (SCHEMA)
@@ -105,7 +106,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     });
   }
 
-  // --- NOVA FUNÇÃO PARA SELECIONAR/DESMARCAR TUDO ---
   void _toggleSelectAll(String tableName, bool shouldSelectAll) {
     setState(() {
       if (shouldSelectAll) {
@@ -138,25 +138,56 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Exportação de Dados'),
-        backgroundColor: Colors.orange.shade800,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          _buildDateSelector(),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: reportSchema.keys.map((tableName) {
-                return _buildTableCard(tableName);
-              }).toList(),
-            ),
+    return RoleGuard(
+      requiredRole: 'admin',
+      fallback: Scaffold(
+        appBar: AppBar(title: const Text("Exportação"), backgroundColor: Colors.grey),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 70, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                "Acesso Restrito",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+                child: Text(
+                  "Apenas administradores podem gerar relatórios e exportar dados do sistema.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("VOLTAR"),
+              ),
+            ],
           ),
-          _buildBottomBar(),
-        ],
+        ),
+      ),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Exportação de Dados'),
+          backgroundColor: Colors.orange.shade800,
+          foregroundColor: Colors.white,
+        ),
+        body: Column(
+          children: [
+            _buildDateSelector(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: reportSchema.keys.map((tableName) {
+                  return _buildTableCard(tableName);
+                }).toList(),
+              ),
+            ),
+            _buildBottomBar(),
+          ],
+        ),
       ),
     );
   }
@@ -208,7 +239,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
         subtitle: Text('$selectedCount colunas selecionadas'),
         children: [
-          // BOTÃO SELECIONAR/DESMARCAR TUDO
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Align(
