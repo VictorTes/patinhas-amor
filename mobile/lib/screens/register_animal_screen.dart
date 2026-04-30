@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:patinhas_amor/models/animal.dart';
@@ -20,7 +21,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
-  late TextEditingController _locationController; // Localização atual do animal
+  late TextEditingController _locationController;
   late TextEditingController _adopterNameController;
   late TextEditingController _adopterAddressController;
   late TextEditingController _adopterPhoneController;
@@ -120,6 +121,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final isNew = widget.animal == null;
       String? finalImageUrl = _remoteImageUrl;
 
       if (_selectedImagePath != null) {
@@ -133,7 +135,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
         species: _species ?? 'Outro',
         age: _age,
         description: _descriptionController.text.trim(),
-        currentLocation: _locationController.text.trim(), // NOVO CAMPO
+        currentLocation: _locationController.text.trim(),
         status: _status,
         imageUrl: finalImageUrl,
         rescueDate: widget.animal?.rescueDate ?? DateTime.now(),
@@ -144,8 +146,20 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
         adopterPhone: (_status == AnimalStatus.adopted || _status == AnimalStatus.missing) ? _adopterPhoneController.text : null,
       );
 
-      if (widget.animal == null) {
-        await _animalService.createAnimal(animalData);
+      if (isNew) {
+        // Cria o animal e gera o ID
+        final createdAnimal = await _animalService.createAnimal(animalData);
+        
+        // Registra a atividade no mural
+        final String targetId = createdAnimal?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+
+        await FirebaseFirestore.instance.collection('activities').add({
+          'type': 'animal',
+          'title': 'Novo Animal Cadastrado',
+          'description': 'O(a) animal ${_nameController.text.trim()} foi cadastrado(a) no sistema.',
+          'targetId': targetId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       } else {
         await _animalService.updateAnimal(animalData);
       }
@@ -167,9 +181,11 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
         if (mounted) Navigator.pop(context, true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao salvar: $e'), backgroundColor: Colors.red)
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao salvar: $e'), backgroundColor: Colors.red)
+        );
+      }
       setState(() => _isLoading = false);
     }
   }
@@ -287,7 +303,7 @@ class _RegisterAnimalScreenState extends State<RegisterAnimalScreen> {
             onTap: _showImageSourceOptions,
             child: Container(
               width: double.infinity, 
-              height: 220, // Altura padronizada com a tela de ocorrência
+              height: 220,
               decoration: BoxDecoration(
                 color: Colors.grey[200], 
                 borderRadius: BorderRadius.circular(16),
