@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -198,6 +199,7 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
 
     setState(() => _isLoading = true);
     try {
+      final isNew = widget.occurrence == null;
       String? finalImageUrl = _remoteImageUrl;
       if (_selectedImagePath != null) {
         finalImageUrl = await _occurrenceService.uploadOccurrenceImage(File(_selectedImagePath!));
@@ -215,8 +217,19 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
         createdAt: widget.occurrence?.createdAt,
       );
 
-      if (widget.occurrence == null) {
+      String generatedTargetId = widget.occurrence?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+
+      if (isNew) {
+        // Como o createOccurrence pode retornar void, usamos o ID gerado ou o resultado caso haja
         await _occurrenceService.createOccurrence(occurrenceData);
+
+        await FirebaseFirestore.instance.collection('activities').add({
+          'type': 'occurrence',
+          'title': 'Nova Ocorrência Registrada',
+          'description': 'Uma nova ocorrência do tipo ${_typeController.text.trim()} foi adicionada ao sistema.',
+          'targetId': generatedTargetId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       } else {
         await _occurrenceService.updateOccurrence(occurrenceData);
       }
@@ -359,7 +372,7 @@ class _RegisterOccurrenceScreenState extends State<RegisterOccurrenceScreen> {
   }
 }
 
-// --- TELA DE MAPA EM TELA CHEIA (Corrigido e Alinhado) ---
+// --- TELA DE MAPA EM TELA CHEIA ---
 
 class FullScreenMapPicker extends StatefulWidget {
   final LatLng initialCenter;
@@ -431,15 +444,12 @@ class _FullScreenMapPickerState extends State<FullScreenMapPicker> {
                 ),
             ],
           ),
-          // MARCADOR CENTRAL FIXO (Alinhamento Perfeito)
-          // O marcador de seleção fica parado no meio enquanto o mapa desliza por baixo.
           Center(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 40), // Ajuste para a ponta do pin bater no centro
+              margin: const EdgeInsets.only(bottom: 40),
               child: const Icon(Icons.location_on, size: 50, color: Colors.red),
             ),
           ),
-          // Botão Confirmar Flutuante
           Positioned(
             bottom: 20,
             left: 20,
@@ -456,7 +466,6 @@ class _FullScreenMapPickerState extends State<FullScreenMapPicker> {
               ),
             ),
           ),
-          // Botão Centralizar no Usuário
           if (widget.userRealLocation != null)
             Positioned(
               right: 20,
