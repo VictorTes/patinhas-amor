@@ -16,11 +16,13 @@ class ActivitiesScreen extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection('activities')
             .orderBy('createdAt', descending: true)
-            .limit(20) // Limita para as 20 últimas atualizações
+            .limit(20)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.orange),
+            );
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -38,8 +40,9 @@ class ActivitiesScreen extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             itemCount: activities.length,
             itemBuilder: (context, index) {
-              final activity = activities[index].data() as Map<String, dynamic>;
-              
+              final doc = activities[index];
+              final activity = doc.data() as Map<String, dynamic>;
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 elevation: 2,
@@ -104,29 +107,11 @@ class ActivitiesScreen extends StatelessWidget {
   }
 
   void _redirect(BuildContext context, String? type, String targetId) {
-    // Você pode importar e redirecionar para as telas de detalhes correspondentes aqui
-    // Exemplo:
-    /*
-    if (type == 'campanha') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CampaignDetailScreen(campaignId: targetId),
-        ),
-      );
-    } else if (type == 'animal') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AnimalDetailScreen(animalId: targetId),
-        ),
-      );
-    }
-    */
-    
-    // Como alternativa, você pode exibir apenas um SnackBar temporário para teste:
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Redirecionando para o item ID: $targetId')),
+      SnackBar(
+        content: Text('Redirecionando para o item ID: $targetId'),
+        backgroundColor: Colors.orange,
+      ),
     );
   }
 }
