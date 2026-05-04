@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/change_password_screen.dart';
 import 'package:patinhas_amor/screens/forgot_password_screen.dart'; 
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -132,6 +133,20 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _launchPrivacyPolicy() async {
+    final Uri url = Uri.parse('https://github.com/VictorTes/patinhas-amor/blob/main/POLITICA.md');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível abrir o link da política.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -232,7 +247,35 @@ class _LoginScreenState extends State<LoginScreen> {
                   "Acesso restrito a voluntários cadastrados.",
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 12),
-                )
+                ),
+
+                // TERMOS DE POLÍTICA DE PRIVACIDADE
+                const SizedBox(height: 24),
+                Column(
+                  children: [
+                    const Text(
+                      'Ao entrar, você concorda com a nossa',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                    TextButton(
+                      onPressed: _launchPrivacyPolicy,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Política de Privacidade',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
