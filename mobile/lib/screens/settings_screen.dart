@@ -15,7 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _appVersion = 'Carregando...';
   String _buildNumber = '';
   final AuthService _authService = AuthService();
-  final String _supportEmail = 'suporte@patinhasamor.com';
+  final String _supportEmail = 'victortesseroli@hotmail.com';
 
   String _getVersionText() {
   if (_buildNumber.isEmpty) {
@@ -24,7 +24,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   return '$_appVersion (Build $_buildNumber)';
 }
 
-  // Substitua pelo seu link real do GitHub
   final String _privacyUrl = 'https://github.com/VictorTes/patinhas-amor/blob/main/POLITICA.md';
 
   @override
@@ -47,7 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Lógica para copiar o e-mail de suporte
   void _copySupportEmail() {
     Clipboard.setData(ClipboardData(text: _supportEmail));
     ScaffoldMessenger.of(context).showSnackBar(

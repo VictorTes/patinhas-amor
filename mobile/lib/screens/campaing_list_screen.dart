@@ -19,7 +19,7 @@ class _CampanhasViewState extends State<CampanhasView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Campanhas e Rifas'),
-        backgroundColor: Colors.orange.shade800,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
       ),
       body: _buildList(null), 
