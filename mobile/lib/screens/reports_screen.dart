@@ -305,7 +305,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           label: const Text('Gerar Pré-visualização',
               style: TextStyle(fontSize: 16)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
+            backgroundColor: Colors.orange  ,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 50),
             shape:
