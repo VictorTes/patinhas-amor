@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:patinhas_amor/services/auth_service.dart';
-// Importe a tela de FAQ caso vá criá-la:
-// import 'package:patinhas_amor/screens/faq_screen.dart';
-import 'package:patinhas_amor/screens/login_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,6 +15,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _appVersion = 'Carregando...';
   String _buildNumber = '';
   final AuthService _authService = AuthService();
+  final String _supportEmail = 'suporte@patinhasamor.com';
+
+  String _getVersionText() {
+  if (_buildNumber.isEmpty) {
+    return _appVersion;
+  }
+  return '$_appVersion (Build $_buildNumber)';
+}
+
+  // Substitua pelo seu link real do GitHub
+  final String _privacyUrl = 'https://github.com/seu-usuario/seu-repositorio';
 
   @override
   void initState() {
@@ -38,20 +47,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Lógica para enviar e-mail de suporte
-  Future<void> _contactSupport() async {
-    // Substitua pelo e-mail da sua ONG ou de suporte
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: 'suporte@patinhasamor.com',
-      queryParameters: {'subject': 'Suporte / Bug - App Patinhas Amor'},
+  // Lógica para copiar o e-mail de suporte
+  void _copySupportEmail() {
+    Clipboard.setData(ClipboardData(text: _supportEmail));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content:
+            Text('E-mail $_supportEmail copiado para a área de transferência!'),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
+  }
 
-    if (!await launchUrl(emailLaunchUri)) {
+  // Lógica para abrir o link do GitHub no navegador
+  Future<void> _launchPrivacyUrl() async {
+    final Uri url = Uri.parse(_privacyUrl);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Não foi possível abrir o aplicativo de e-mail.'),
+            content: Text('Não foi possível abrir o link.'),
+            backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -66,7 +83,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final bool? confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Sair da conta'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.exit_to_app, color: Colors.red),
+              SizedBox(width: 10),
+              Text('Sair da conta'),
+            ],
+          ),
           content: const Text('Deseja realmente sair da sua conta?'),
           actions: [
             TextButton(
@@ -77,7 +102,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
                 'Sair',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -85,13 +111,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       if (confirm == true) {
-        await _authService.logout(); // Ajuste o método conforme seu Auth Service
-        
+        await _authService.logout();
+
         if (mounted) {
-          // Redireciona para a tela de login e remove as telas anteriores do histórico
           Navigator.pushNamedAndRemoveUntil(
             context,
-            '/login', // Altere para a sua rota de login caso não use nomeada
+            '/login',
             (route) => false,
           );
         }
@@ -112,56 +137,189 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Configurações'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
-        elevation: 1,
+        elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        children: [
-          // Seção de Ajuda
-          ListTile(
-            leading: const Icon(Icons.help_outline, color: Colors.orange),
-            title: const Text('FAQ / Ajuda'),
-            subtitle: const Text('Perguntas frequentes e como usar o app'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // Navegar para a tela de FAQ
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => const FaqScreen()));
-            },
-          ),
-          const Divider(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  // Política de Privacidade - Link externo
+                  Card(
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.privacy_tip_outlined,
+                            color: Colors.orange),
+                      ),
+                      title: const Text(
+                        'Política de Privacidade',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: const Text('Consulte as diretrizes no GitHub'),
+                      trailing: const Icon(Icons.open_in_new,
+                          size: 14, color: Colors.grey),
+                      onTap: _launchPrivacyUrl,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-          // Seção de Contato/Suporte
-          ListTile(
-            leading: const Icon(Icons.mail_outline, color: Colors.orange),
-            title: const Text('Suporte / Bugs'),
-            subtitle: const Text('Entre em contato com o desenvolvedor'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: _contactSupport,
-          ),
-          const Divider(),
+                  // Seção do Desenvolvedor / Suporte Expansível
+                  Card(
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: ExpansionTile(
+                      shape:
+                          const Border(), // Remove a borda padrão do ExpansionTile
+                      collapsedShape: const Border(),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.code, color: Colors.orange),
+                      ),
+                      title: const Text(
+                        'Desenvolvedor e Suporte',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: const Text('Toque para ver mais opções'),
+                      childrenPadding: const EdgeInsets.all(16.0),
+                      children: [
+                        const Divider(height: 1),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Em caso de dúvidas, sugestões ou problemas técnicos (bugs), entre em contato com nossa equipe de suporte pelo endereço de e-mail abaixo:',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 247, 242, 228),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _supportEmail,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              InkWell(
+                                onTap: _copySupportEmail,
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.copy,
+                                          size: 14, color: Colors.orange),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Copiar',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-          // Seção de Versão do App (Informativo)
-          ListTile(
-            leading: const Icon(Icons.info_outline, color: Colors.grey),
-            title: const Text('Versão do App'),
-            subtitle: Text('$_appVersion (Build $_buildNumber)'),
-          ),
-          const Divider(),
-
-          // Seção de Logout
-          ListTile(
-            leading: const Icon(Icons.exit_to_app, color: Colors.red),
-            title: const Text(
-              'Sair da Conta',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  // Seção de Logout
+                  Card(
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.logout, color: Colors.red),
+                      ),
+                      title: const Text(
+                        'Sair da Conta',
+                        style: TextStyle(
+                            color: Colors.red, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text('Encerrar sessão atual'),
+                      onTap: _handleLogout,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            onTap: _handleLogout,
-          ),
-        ],
+
+            // Rodapé com versão do App centralizada
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24.0),
+              child: Text(
+                _getVersionText(), // <-- Substitui a concatenação direta
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
