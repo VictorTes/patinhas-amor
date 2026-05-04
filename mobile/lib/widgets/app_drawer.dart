@@ -182,18 +182,6 @@ class AppDrawer extends StatelessWidget {
               return const SizedBox.shrink();
             },
           ),
-
-          const Spacer(),
-
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text('Sair do App',
-                style: TextStyle(color: Colors.redAccent)),
-            onTap: () async {
-              await authService.logout();
-            },
-          ),
           const SizedBox(height: 20),
         ],
       ),
