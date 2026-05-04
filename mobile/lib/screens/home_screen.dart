@@ -5,7 +5,9 @@ import 'package:patinhas_amor/screens/occurrences_list_screen.dart';
 import 'package:patinhas_amor/screens/occurrences_map_screen.dart';
 import 'package:patinhas_amor/widgets/app_drawer.dart';
 import 'package:patinhas_amor/screens/campaing_list_screen.dart';
-import 'package:patinhas_amor/screens/activities_screen.dart'; // Import da tela de atividades
+import 'package:patinhas_amor/screens/activities_screen.dart'; 
+import 'package:patinhas_amor/screens/settings_screen.dart'; 
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -347,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           'Ajustes',
           Icons.settings_outlined,
           Colors.blueGrey,
-          () => _showComingSoon(context),
+          () => Navigator.push(context, MaterialPageRoute(builder: (c) => const SettingsScreen())),
         ),
       ],
     );
@@ -385,9 +387,5 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidade em desenvolvimento.')),
-    );
-  }
+
 }
