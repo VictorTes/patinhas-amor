@@ -114,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance.collection('activities').limit(1).snapshots(),
           builder: (context, snapshot) {
-            final hasNotifications = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
 
             return Stack(
               alignment: Alignment.topRight,
@@ -128,19 +127,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     );
                   },
                 ),
-                if (hasNotifications)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
               ],
             );
           },
