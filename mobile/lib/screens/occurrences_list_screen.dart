@@ -105,6 +105,9 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
                         .where((o) => o.status == _selectedFilter)
                         .toList();
 
+                // Ordena os itens pela data de criação (do mais recente para o mais antigo)
+                filteredList.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+
                 if (filteredList.isEmpty) {
                   return _buildEmptyState();
                 }
