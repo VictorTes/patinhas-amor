@@ -16,6 +16,9 @@ class AnimalsListScreen extends StatefulWidget {
 class _AnimalsListScreenState extends State<AnimalsListScreen> {
   final AnimalService _animalService = AnimalService();
   dynamic _selectedFilter = 'all';
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   final List<Map<String, dynamic>> _filterOptions = [
     {'value': 'all', 'label': 'Todos'},
@@ -28,6 +31,7 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
   @override
   void dispose() {
     _animalService.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -86,11 +90,41 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Animais Resgatados', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Pesquisar pelo nome...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.black54),
+                ),
+                style: const TextStyle(color: Colors.black87),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+              )
+            : const Text('Animais Resgatados', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: _isSearching ? false : true,
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black87,
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -111,9 +145,12 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
                 }
 
                 final allAnimals = snapshot.data ?? [];
-                final filteredAnimals = _selectedFilter == 'all'
-                    ? allAnimals
-                    : allAnimals.where((a) => a.status == _selectedFilter).toList();
+                
+                final filteredAnimals = allAnimals.where((a) {
+                  final matchesFilter = _selectedFilter == 'all' || a.status == _selectedFilter;
+                  final matchesSearch = _searchQuery.isEmpty || a.name.toLowerCase().contains(_searchQuery);
+                  return matchesFilter && matchesSearch;
+                }).toList();
 
                 if (filteredAnimals.isEmpty) {
                   return _buildEmptyState();
@@ -384,7 +421,6 @@ class _AnimalsListScreenState extends State<AnimalsListScreen> {
   }
 
   void _navigateToRegisterAnimal(BuildContext context, {Animal? animal}) {
-    // Usando PageRouteBuilder nativo para uma transição de Fade sem pacotes externos
     Navigator.push(
       context,
       PageRouteBuilder(
