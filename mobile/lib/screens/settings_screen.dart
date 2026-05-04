@@ -25,7 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
   // Substitua pelo seu link real do GitHub
-  final String _privacyUrl = 'https://github.com/seu-usuario/seu-repositorio';
+  final String _privacyUrl = 'https://github.com/VictorTes/patinhas-amor/blob/main/POLITICA.md';
 
   @override
   void initState() {
