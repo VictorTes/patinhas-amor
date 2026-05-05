@@ -16,12 +16,28 @@ class AuthService {
         email: email.trim(),
         password: password.trim(),
       );
+
+      // --- Verificação de segurança ---
+      User? user = credential.user;
+      if (user != null) {
+        DocumentSnapshot userDoc = await _db.collection('users').doc(user.uid).get();
+        
+        // Se o usuário existir no Firestore mas estiver inativo ou bloqueado
+        if (userDoc.exists && userDoc.data() != null) {
+          final data = userDoc.data() as Map<String, dynamic>;
+          if (data['isActive'] == false) {
+            await logout(); // Desconecta imediatamente
+            throw 'Esta conta foi desativada e não pode ser utilizada.';
+          }
+        }
+      }
+
       await credential.user?.reload();
       return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     } catch (e) {
-      throw 'Ocorreu um erro inesperado. Tente novamente.';
+      throw 'Ocorreu um erro inesperado: $e';
     }
   }
 
@@ -130,23 +146,11 @@ class AuthService {
 
   Future<void> deleteUser(String uid) async {
     try {
-      // 1. Exclui o documento no Firestore
+      // 1. Remove do Firestore
       await _db.collection('users').doc(uid).delete();
-
-      // 2. Exclui do Firebase Authentication
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser != null && currentUser.uid == uid) {
-        await currentUser.delete();
-      } else {
-        // Se for um administrador excluindo outro usuário, pode ser necessário 
-        // utilizar o Admin SDK ou Cloud Functions.
-        final userRecord = FirebaseAuth.instance.currentUser;
-        if (userRecord != null) {
-          // Nota: O SDK do cliente Flutter permite que o usuário atual exclua sua conta.
-          // Para outras contas, utilize um endpoint de backend (ex: deleteUser/Function).
-          // Se você estiver rodando localmente, tente a deleção administrativa que sua regra de segurança suportar.
-        }
-      }
+      
+      // 2. Inativa no Firestore para não permitir login
+      await updateUserStatus(uid, false);
     } catch (e) {
       throw 'Erro ao excluir usuário: $e';
     }
