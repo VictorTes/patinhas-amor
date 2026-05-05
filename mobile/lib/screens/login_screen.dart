@@ -50,9 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Proteção para mensagens técnicas do Firebase, exibindo apenas um erro padrão no front-end
+        String errorMessage = e.toString();
+        if (errorMessage.contains("projects/")) {
+          errorMessage = 'Ocorreu um erro ao processar seu login. Verifique seus dados e tente novamente.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()), 
+            content: Text(errorMessage), 
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),

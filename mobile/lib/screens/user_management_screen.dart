@@ -208,31 +208,34 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           ),
                         ],
                       ),
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            _showEditDialog(user);
-                          } else if (value == 'delete') {
-                            _confirmDelete(user['uid'], user['name'] ?? 'este usuário');
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit', 
-                            child: ListTile(
-                              leading: Icon(Icons.edit), 
-                              title: Text("Editar")
+                      // Esconde ou exibe o botão baseado no status de atividade do usuário
+                      trailing: isActive
+                          ? PopupMenuButton<String>(
+                              onSelected: (value) async {
+                                if (value == 'edit') {
+                                  _showEditDialog(user);
+                                } else if (value == 'delete') {
+                                  _confirmDelete(user['uid'], user['name'] ?? 'este usuário');
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit', 
+                                  child: ListTile(
+                                    leading: Icon(Icons.edit), 
+                                    title: Text("Editar")
+                                  )
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete', 
+                                  child: ListTile(
+                                    leading: Icon(Icons.delete, color: Colors.red), 
+                                    title: Text("Excluir")
+                                  )
+                                ),
+                              ],
                             )
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete', 
-                            child: ListTile(
-                              leading: Icon(Icons.delete, color: Colors.red), 
-                              title: Text("Excluir")
-                            )
-                          ),
-                        ],
-                      ),
+                          : null, // Remove o botão caso o usuário esteja inativo
                     );
                   },
                 );
