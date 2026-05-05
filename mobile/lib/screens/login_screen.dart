@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  /// Lógica de Login com verificação de senha obrigatória
+  /// Lógica de Login com verificação de segurança e tratamento de erros
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -38,33 +38,48 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         // 3. Verifica se o campo 'mustChangePassword' está como true
         if (userData != null && userData['mustChangePassword'] == true) {
-          // Se for um novo voluntário com senha temporária, vai para a troca
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
           );
         } else {
-          // Se já for admin ou voluntário antigo, vai para a home
           Navigator.pushReplacementNamed(context, '/home');
         }
       }
     } catch (e) {
       if (mounted) {
-        // Proteção para mensagens técnicas do Firebase, exibindo apenas um erro padrão no front-end
         String errorMessage = e.toString();
-        if (errorMessage.contains("projects/")) {
-          errorMessage = 'Ocorreu um erro ao processar seu login. Verifique seus dados e tente novamente.';
+
+        // --- TRATAMENTO E PROTEÇÃO DE MENSAGENS DE ERRO ---
+        
+        // 1. Se for a mensagem de conta desativada que você criou no Service
+        if (errorMessage.contains("conta foi desativada")) {
+          errorMessage = "Esta conta está inativa. Entre em contato com o administrador.";
+        } 
+        // 2. Se for erro de e-mail mal formatado vindo do Firebase
+        else if (errorMessage.contains("invalid-email") || errorMessage.contains("malformed")) {
+          errorMessage = "O formato do e-mail digitado é inválido.";
+        }
+        // 3. Se for erro de credenciais (e-mail ou senha errados)
+        else if (errorMessage.contains("invalid-credential") || errorMessage.contains("wrong-password")) {
+          errorMessage = "E-mail ou senha incorretos. Tente novamente.";
+        }
+        // 4. Proteção contra mensagens técnicas (com links de projetos ou códigos [firebase_auth])
+        else if (errorMessage.contains("projects/") || errorMessage.contains("[") || errorMessage.contains("]")) {
+          errorMessage = "Não foi possível realizar o login. Verifique sua conexão ou dados.";
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage), 
+            content: Text(errorMessage),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } finally {
+      // Garante que o estado de carregamento seja interrompido sempre
       if (mounted) setState(() => _isLoading = false);
     }
   }

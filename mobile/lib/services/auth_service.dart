@@ -27,6 +27,7 @@ class AuthService {
           final data = userDoc.data() as Map<String, dynamic>;
           if (data['isActive'] == false) {
             await logout(); // Desconecta imediatamente
+            // Lançamos explicitamente a mensagem que o front-end deve exibir
             throw 'Esta conta foi desativada e não pode ser utilizada.';
           }
         }
@@ -37,6 +38,8 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     } catch (e) {
+      // Se o erro já for uma String (nossa mensagem personalizada), repassa ela
+      if (e is String) throw e; 
       throw 'Ocorreu um erro inesperado: $e';
     }
   }
@@ -146,8 +149,13 @@ class AuthService {
 
   Future<void> deleteUser(String uid) async {
     try {
-      // Exclusão lógica: apenas atualiza o status de atividade mantendo o documento no Firestore
+      // 1. Exclusão lógica no Firestore
       await updateUserStatus(uid, false);
+
+      // 2. Trava de segurança: Se o UID for o do usuário atual, força logout
+      if (uid == _auth.currentUser?.uid) {
+        await logout();
+      }
     } catch (e) {
       throw 'Erro ao excluir/inativar usuário: $e';
     }
