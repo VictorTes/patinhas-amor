@@ -146,13 +146,10 @@ class AuthService {
 
   Future<void> deleteUser(String uid) async {
     try {
-      // 1. Remove do Firestore
-      await _db.collection('users').doc(uid).delete();
-      
-      // 2. Inativa no Firestore para não permitir login
+      // Exclusão lógica: apenas atualiza o status de atividade mantendo o documento no Firestore
       await updateUserStatus(uid, false);
     } catch (e) {
-      throw 'Erro ao excluir usuário: $e';
+      throw 'Erro ao excluir/inativar usuário: $e';
     }
   }
 
