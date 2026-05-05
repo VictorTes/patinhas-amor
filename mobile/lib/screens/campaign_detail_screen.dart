@@ -121,7 +121,7 @@ class CampaignDetailScreen extends StatelessWidget {
                         
                         if (campaign.type == CampaignType.rifa)
                           _buildRifaProgress(context, campaign, currencyFormat, dateFormat),
-                        if (campaign.type == CampaignType.bazar)
+                        if (campaign.type == CampaignType.evento)
                           _buildBazarInfo(campaign),
                           
                         const SizedBox(height: 30),
@@ -149,7 +149,7 @@ class CampaignDetailScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        c.type == CampaignType.rifa ? '🎟️ RIFA' : '🛍️ BAZAR',
+        c.type == CampaignType.rifa ? '🎟️ RIFA' : '🛍️ EVENTO',
         style: TextStyle(
           color: c.type == CampaignType.rifa ? Colors.purple : Colors.orange.shade900,
           fontWeight: FontWeight.bold,
@@ -346,7 +346,6 @@ class CampaignDetailScreen extends StatelessWidget {
 
                 const Divider(height: 24),
 
-
                 if (c.expenses != null && c.expenses!.isNotEmpty) ...[
                   ...c.expenses!.map((e) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -360,7 +359,6 @@ class CampaignDetailScreen extends StatelessWidget {
                   )),
                   const Divider(height: 24),
                 ],
-                
                 
                 const SizedBox(height: 20),
                 
