@@ -54,14 +54,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ElevatedButton(
             onPressed: () async {
               setState(() => _isLoading = true);
-              Navigator.pop(context);
+              Navigator.pop(context); // Fecha o dialog
+
               try {
                 await _authService.updateUserDetails(
                   user['uid'], 
                   nameController.text, 
                   phoneController.text
                 );
-                setState(() {}); 
+                if (mounted) setState(() {}); 
               } finally {
                 if (mounted) setState(() => _isLoading = false);
               }
@@ -88,14 +89,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           TextButton(
             onPressed: () async {
               setState(() => _isLoading = true);
-              Navigator.pop(context);
+              Navigator.pop(context); // Fecha o dialog de confirmação
+              final currentContext = context;
+
               try {
                 // Inativa/Exclui o registro
                 await _authService.deleteUser(uid);
 
-                setState(() {});
+                if (mounted) setState(() {});
+                
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(currentContext).showSnackBar(
                     const SnackBar(
                       content: Text('Usuário inativado com sucesso!'),
                       backgroundColor: Colors.green,
@@ -104,7 +108,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 }
               } on FirebaseAuthException catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(currentContext).showSnackBar(
                     SnackBar(
                       content: Text('Erro de autenticação: ${e.message}'),
                       backgroundColor: Colors.red,
@@ -113,7 +117,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(currentContext).showSnackBar(
                     SnackBar(
                       content: Text('Erro ao excluir: $e'),
                       backgroundColor: Colors.red,
