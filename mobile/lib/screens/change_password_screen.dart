@@ -34,9 +34,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       if (mounted) {
         _showMsg("Senha atualizada! Por segurança, faça login novamente.");
         
-        // IMPORTANTE: Não navegamos para a /home aqui.
-        // O AuthService já chamou o logout(), então o AuthWrapper (no main.dart)
-        // vai detectar que o usuário é null e vai renderizar a LoginScreen sozinho.
+        // Redireciona para a rota /login e remove a tela atual do histórico
+        Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
       if (mounted) _showMsg(e.toString());
