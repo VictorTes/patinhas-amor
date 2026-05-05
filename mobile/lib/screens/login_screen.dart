@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Realiza a autenticação
+      // 1. Realiza a autenticação no Firebase Auth
       await _authService.login(
         _emailController.text.trim(),
         _passwordController.text.trim(),
@@ -35,8 +35,27 @@ class _LoginScreenState extends State<LoginScreen> {
       // 2. Busca os dados complementares no Firestore
       final userData = await _authService.getUserData();
 
+      // 3. Verificação de conta inativa antes de deixar o usuário entrar
+      if (userData != null && userData['isActive'] == false) {
+        // Desloga o usuário imediatamente para que ele não passe pelo wrapper
+        await _authService.logout();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Esta conta está inativa. Entre em contato com o administrador.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        // Sai do método sem redirecionar para a Home
+        return;
+      }
+
+      // 4. Se chegou aqui, o usuário está ativo, verifica a troca de senha
       if (mounted) {
-        // 3. Verifica se o campo 'mustChangePassword' está como true
         if (userData != null && userData['mustChangePassword'] == true) {
           Navigator.pushReplacement(
             context,
@@ -51,22 +70,20 @@ class _LoginScreenState extends State<LoginScreen> {
         String errorMessage = e.toString();
 
         // --- TRATAMENTO E PROTEÇÃO DE MENSAGENS DE ERRO ---
-        
-        // 1. Se for a mensagem de conta desativada que você criou no Service
         if (errorMessage.contains("conta foi desativada")) {
           errorMessage = "Esta conta está inativa. Entre em contato com o administrador.";
-        } 
-        // 2. Se for erro de e-mail mal formatado vindo do Firebase
-        else if (errorMessage.contains("invalid-email") || errorMessage.contains("malformed")) {
+        } else if (errorMessage.contains("invalid-email") || errorMessage.contains("malformed")) {
           errorMessage = "O formato do e-mail digitado é inválido.";
-        }
-        // 3. Se for erro de credenciais (e-mail ou senha errados)
-        else if (errorMessage.contains("invalid-credential") || errorMessage.contains("wrong-password")) {
+        } else if (errorMessage.contains("invalid-credential") || errorMessage.contains("wrong-password")) {
           errorMessage = "E-mail ou senha incorretos. Tente novamente.";
-        }
-        // 4. Proteção contra mensagens técnicas (com links de projetos ou códigos [firebase_auth])
-        else if (errorMessage.contains("projects/") || errorMessage.contains("[") || errorMessage.contains("]")) {
-          errorMessage = "Não foi possível realizar o login. Verifique sua conexão ou dados.";
+        } else if (errorMessage.contains("network-request-failed")) {
+          errorMessage = "Sem conexão com a internet. Verifique sua rede.";
+        } else if (errorMessage.contains("projects/") || errorMessage.contains("[") || errorMessage.contains("]")) {
+          // --- EXCESSÃO: Mensagem genérica para erros técnicos do Firebase ---
+          errorMessage = "Ocorreu um erro ao conectar-se ao servidor. Tente novamente.";
+        } else {
+          // --- EXCESSÃO PADRÃO: Qualquer outra coisa desconhecida pelo dev ---
+          errorMessage = "Ocorreu um erro inesperado. Verifique seus dados e tente novamente.";
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
