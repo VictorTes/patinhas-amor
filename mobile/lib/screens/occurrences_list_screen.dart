@@ -98,12 +98,17 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
 
                 final allOccurrences = snapshot.data ?? [];
                 
-                // Filtro em tempo de execução no App comparando os rótulos do Enum ou String do Firebase
+                // Filtro em tempo de execução no App 
+                // Considera apenas itens cuja validação seja true, ou cujo campo seja nulo (criados pelo app móvel)
+                final validOccurrences = allOccurrences.where((o) {
+                  final isValidated = (o as dynamic).toJson()['isValidated'];
+                  return isValidated == true || isValidated == null;
+                }).toList();
+
                 final filteredList = _selectedFilter == 'all'
-                    ? allOccurrences
-                    : allOccurrences.where((o) {
+                    ? validOccurrences
+                    : validOccurrences.where((o) {
                         if (_selectedFilter is OccurrenceStatus) {
-                          // Converte o valor do Firebase para o Enum para comparar corretamente
                           return o.status == _selectedFilter;
                         }
                         return false;
