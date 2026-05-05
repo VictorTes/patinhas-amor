@@ -240,6 +240,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
             color: selectedCount > 0 ? Colors.orange : Colors.grey.shade300),
       ),
       child: ExpansionTile(
+        // CORREÇÃO: Adicionado o PageStorageKey para memorizar se está aberto/fechado
+        key: PageStorageKey<String>(tableName), 
         title: Text(
           tableName,
           style: TextStyle(
@@ -289,13 +291,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
               color: Colors.black12,
               blurRadius: 10,
-              offset: const Offset(0, -2))
+              offset: Offset(0, -2))
         ],
       ),
       child: SafeArea(
@@ -305,7 +307,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           label: const Text('Gerar Pré-visualização',
               style: TextStyle(fontSize: 16)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange  ,
+            backgroundColor: Colors.orange,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 50),
             shape:
