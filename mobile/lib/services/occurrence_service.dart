@@ -9,6 +9,9 @@ class OccurrenceService {
   final CollectionReference _occurrencesRef =
       FirebaseFirestore.instance.collection('occurrences');
 
+  final CollectionReference _campaignsRef =
+      FirebaseFirestore.instance.collection('campaigns');
+
   final String _cloudName = dotenv.get('CLOUDINARY_CLOUD_NAME', fallback: '');
   final String _uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
 
@@ -132,6 +135,16 @@ class OccurrenceService {
       await _occurrencesRef.doc(id).delete();
     } catch (e) {
       throw Exception('Erro ao remover ocorrência: $e');
+    }
+  }
+
+  // --- SUPORTE A CAMPANHAS ---
+
+  Future<void> deleteCampaign(String id) async {
+    try {
+      await _campaignsRef.doc(id).delete();
+    } catch (e) {
+      throw Exception('Erro ao remover campanha: $e');
     }
   }
 
