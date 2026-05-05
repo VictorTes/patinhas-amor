@@ -78,8 +78,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Excluir Usuário"),
-        content: Text("Tem certeza que deseja excluir $name? Esta ação removerá o usuário do sistema de autenticação e do banco de dados."),
+        title: const Text("Inativar/Excluir Usuário"),
+        content: Text("Tem certeza que deseja inativar $name do sistema?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context), 
@@ -90,14 +90,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               setState(() => _isLoading = true);
               Navigator.pop(context);
               try {
-                // Exclui do Firestore e do Authentication
+                // Inativa/Exclui o registro
                 await _authService.deleteUser(uid);
 
                 setState(() {});
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Usuário excluído com sucesso!'),
+                      content: Text('Usuário inativado com sucesso!'),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -124,7 +124,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 if (mounted) setState(() => _isLoading = false);
               }
             },
-            child: const Text("EXCLUIR", style: TextStyle(color: Colors.red)),
+            child: const Text("INATIVAR", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
