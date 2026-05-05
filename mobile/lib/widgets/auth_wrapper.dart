@@ -27,28 +27,29 @@ class AuthWrapper extends StatelessWidget {
           return const LoginScreen();
         }
 
-        // 3. Usuário logado: Agora ouvimos os dados do Firestore EM TEMPO REAL
+        // 3. Usuário logado: Ouvindo dados do Firestore em tempo real
         return StreamBuilder<Map<String, dynamic>?>(
-          stream: authService.getUserDataStream(), // Usando o novo Stream
+          stream: authService.getUserDataStream(),
           builder: (context, userSnapshot) {
+            // Enquanto carrega os dados do Firestore
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator(color: Colors.orange)),
               );
             }
 
-            // Se o documento do usuário não existir (deletado do banco)
+            // Se o documento do usuário não existir (deletado do banco por engano)
             if (!userSnapshot.hasData || userSnapshot.data == null) {
-              Future.microtask(() => authService.logout());
+              _forceLogout(authService);
               return const LoginScreen();
             }
 
             final userData = userSnapshot.data!;
 
             // --- BLOQUEIO EM TEMPO REAL ---
-            // Se isActive mudar para false no banco, o app volta para o Login instantaneamente
+            // Se isActive mudar para false enquanto o usuário usa o app
             if (userData['isActive'] == false) {
-              Future.microtask(() => authService.logout());
+              _forceLogout(authService);
               return const LoginScreen();
             }
 
@@ -57,11 +58,18 @@ class AuthWrapper extends StatelessWidget {
               return const ChangePasswordScreen();
             }
 
-            // TUDO OK
+            // TUDO OK: Vai para a Home
             return const HomeScreen();
           },
         );
       },
     );
+  }
+
+  /// Função auxiliar para deslogar sem causar conflitos de build
+  void _forceLogout(AuthService authService) {
+    Future.microtask(() async {
+      await authService.logout();
+    });
   }
 }
