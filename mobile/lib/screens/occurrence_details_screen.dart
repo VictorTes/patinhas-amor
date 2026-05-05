@@ -207,6 +207,47 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
     }
   }
 
+  Future<void> _deleteOccurrence() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Ocorrência'),
+        content: const Text('Tem certeza que deseja remover esta ocorrência permanentemente?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCELAR'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('EXCLUIR'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _occurrenceService.deleteOccurrence(_occurrence.id!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ocorrência excluída com sucesso!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context); // Retorna à tela anterior
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showErrorSnackBar('Erro ao excluir ocorrência: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,6 +263,11 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
             icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.redAccent),
             onPressed: _isLoading ? null : _generateAndPreviewReport,
             tooltip: 'Exportar PDF',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: _isLoading ? null : _deleteOccurrence,
+            tooltip: 'Excluir',
           ),
           const SizedBox(width: 8),
         ],
