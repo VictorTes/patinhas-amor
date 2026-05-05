@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:patinhas_amor/models/occurrence.dart';
 
 class OccurrenceService {
@@ -13,23 +13,24 @@ class OccurrenceService {
       FirebaseFirestore.instance.collection('campaigns');
 
   final String _cloudName = dotenv.get('CLOUDINARY_CLOUD_NAME', fallback: '');
-  final String _uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
+  final String _uploadPreset =
+      dotenv.get('CLOUDINARY_UPLOAD_PRESET', fallback: 'padrão');
 
-  // ==========================================
-  // FUNÇÃO DE FILTRAGEM CORRIGIDA
-  // ==========================================
+  // FUNÇÃO DE FILTRAGEM 
   List<Occurrence> _filterWebAndApp(QuerySnapshot snapshot) {
     return snapshot.docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
-      
+
+      final statusWeb = data['status_web'];
+
       // REGRA:
-      // 1. Se tem o campo 'status_web', só mostrar se for 'approved'.
-      // 2. Se NÃO tem 'status_web', significa que foi criada no App (voluntário) -> Sempre mostrar.
-      if (data.containsKey('status_web')) {
-        return data['status_web'] == 'approved';
+      // Se tiver valor no 'status_web', só mostrar se for 'approved'.
+      // Se for nulo (seja por falta da chave ou por estar null no banco), criada no App -> Sempre mostrar.
+      if (statusWeb != null) {
+        return statusWeb == 'approved';
       }
-      
-      return true; // Criada via App
+
+      return true; // Criada via App (statusWeb é null)
     }).map((doc) {
       return Occurrence.fromJson(
         doc.data() as Map<String, dynamic>,
@@ -50,9 +51,8 @@ class OccurrenceService {
   /// Busca para relatórios (estático)
   Future<List<Occurrence>> fetchOccurrences() async {
     try {
-      final querySnapshot = await _occurrencesRef
-          .orderBy('createdAt', descending: true)
-          .get();
+      final querySnapshot =
+          await _occurrencesRef.orderBy('createdAt', descending: true).get();
 
       return _filterWebAndApp(querySnapshot);
     } catch (e) {
@@ -65,7 +65,8 @@ class OccurrenceService {
   Future<String?> uploadOccurrenceImage(File imageFile) async {
     if (_cloudName.isEmpty) return null;
     try {
-      final url = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
+      final url =
+          Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
       final request = http.MultipartRequest('POST', url)
         ..fields['upload_preset'] = _uploadPreset
         ..fields['folder'] = 'ocorrencias'
@@ -88,13 +89,13 @@ class OccurrenceService {
     try {
       final data = occurrence.toJson();
       data['updatedAt'] = FieldValue.serverTimestamp();
-      
+
       // Garante que a data de criação existe
       if (data['createdAt'] == null) {
         data['createdAt'] = FieldValue.serverTimestamp();
       }
 
-      // Ao criar pelo APP, não adicionamos status_web, 
+      // Ao criar pelo APP, não adicionamos status_web,
       // assim o filtro _filterWebAndApp permite a visualização direta.
       await _occurrencesRef.add(data);
     } catch (e) {
@@ -113,14 +114,11 @@ class OccurrenceService {
     }
   }
 
-  Future<void> updateOccurrenceStatus(
-    String id, 
-    OccurrenceStatus status, 
-    {String? resolutionDescription}
-  ) async {
+  Future<void> updateOccurrenceStatus(String id, OccurrenceStatus status,
+      {String? resolutionDescription}) async {
     try {
       final Map<String, dynamic> updateData = {
-        'status': status.value, 
+        'status': status.value,
         'updatedAt': FieldValue.serverTimestamp(),
         'resolutionDescription': resolutionDescription,
       };
