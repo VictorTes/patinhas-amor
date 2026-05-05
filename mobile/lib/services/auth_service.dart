@@ -48,7 +48,6 @@ class AuthService {
     if (user == null) return Stream.value(null);
 
     return _db.collection('users').doc(user.uid).snapshots().map((doc) {
-      // Removido o 'as Map<String, dynamic>?' pois o .data() já retorna este tipo
       return doc.data(); 
     });
   }
@@ -58,7 +57,7 @@ class AuthService {
       User? user = _auth.currentUser;
       if (user != null) {
         DocumentSnapshot<Map<String, dynamic>> doc = await _db.collection('users').doc(user.uid).get();
-        return doc.data(); // Cast removido aqui também
+        return doc.data();
       }
     } catch (e) {
       debugPrint("Erro ao buscar dados: $e");
@@ -94,14 +93,13 @@ class AuthService {
 
   Future<List<Map<String, dynamic>>> getAllUsers() async {
     try {
-      // Especificamos o tipo na busca para evitar casts no map
       QuerySnapshot<Map<String, dynamic>> snapshot = 
           await _db.collection('users').orderBy('name').get();
           
       return snapshot.docs.map((doc) {
         return {
           'uid': doc.id,
-          ...doc.data(), // Cast removido aqui
+          ...doc.data(),
         };
       }).toList();
     } catch (e) {
@@ -132,7 +130,23 @@ class AuthService {
 
   Future<void> deleteUser(String uid) async {
     try {
+      // 1. Exclui o documento no Firestore
       await _db.collection('users').doc(uid).delete();
+
+      // 2. Exclui do Firebase Authentication
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null && currentUser.uid == uid) {
+        await currentUser.delete();
+      } else {
+        // Se for um administrador excluindo outro usuário, pode ser necessário 
+        // utilizar o Admin SDK ou Cloud Functions.
+        final userRecord = FirebaseAuth.instance.currentUser;
+        if (userRecord != null) {
+          // Nota: O SDK do cliente Flutter permite que o usuário atual exclua sua conta.
+          // Para outras contas, utilize um endpoint de backend (ex: deleteUser/Function).
+          // Se você estiver rodando localmente, tente a deleção administrativa que sua regra de segurança suportar.
+        }
+      }
     } catch (e) {
       throw 'Erro ao excluir usuário: $e';
     }
