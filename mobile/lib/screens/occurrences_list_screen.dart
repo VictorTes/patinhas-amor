@@ -98,12 +98,16 @@ class _OccurrencesListScreenState extends State<OccurrencesListScreen> {
 
                 final allOccurrences = snapshot.data ?? [];
                 
-                // Filtro em tempo de execução no App
+                // Filtro em tempo de execução no App comparando os rótulos do Enum ou String do Firebase
                 final filteredList = _selectedFilter == 'all'
                     ? allOccurrences
-                    : allOccurrences
-                        .where((o) => o.status == _selectedFilter)
-                        .toList();
+                    : allOccurrences.where((o) {
+                        if (_selectedFilter is OccurrenceStatus) {
+                          // Converte o valor do Firebase para o Enum para comparar corretamente
+                          return o.status == _selectedFilter;
+                        }
+                        return false;
+                      }).toList();
 
                 // Ordena os itens pela data de criação (do mais recente para o mais antigo)
                 filteredList.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
