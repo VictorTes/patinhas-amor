@@ -21,7 +21,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      // NOMEANDO O CONTEXTO DO DIALOG DIFERENTE PARA NÃO SOBRESCREVER O DA TELA
+      builder: (dialogContext) => AlertDialog(
         title: const Text("Editar Usuário"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -48,13 +49,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), 
+            onPressed: () => Navigator.pop(dialogContext), // Fecha usando o context do dialog
             child: const Text("CANCELAR")
           ),
           ElevatedButton(
             onPressed: () async {
               setState(() => _isLoading = true);
-              Navigator.pop(context); // Fecha o dialog
+              Navigator.pop(dialogContext); // Fecha o dialog de forma segura
 
               try {
                 await _authService.updateUserDetails(
@@ -78,19 +79,19 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void _confirmDelete(String uid, String name) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      // NOMEANDO O CONTEXTO DO DIALOG DIFERENTE
+      builder: (dialogContext) => AlertDialog(
         title: const Text("Inativar/Excluir Usuário"),
         content: Text("Tem certeza que deseja inativar $name do sistema?"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), 
+            onPressed: () => Navigator.pop(dialogContext), 
             child: const Text("CANCELAR")
           ),
           TextButton(
             onPressed: () async {
               setState(() => _isLoading = true);
-              Navigator.pop(context); // Fecha o dialog de confirmação
-              final currentContext = context;
+              Navigator.pop(dialogContext); // Fecha o dialog de forma segura
 
               try {
                 // Inativa/Exclui o registro
@@ -98,8 +99,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
                 if (mounted) setState(() {});
                 
+                // O 'context' aqui agora se refere à tela principal, que está 100% ativa!
                 if (mounted) {
-                  ScaffoldMessenger.of(currentContext).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Usuário inativado com sucesso!'),
                       backgroundColor: Colors.green,
@@ -108,7 +110,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 }
               } on FirebaseAuthException catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(currentContext).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Erro de autenticação: ${e.message}'),
                       backgroundColor: Colors.red,
@@ -117,7 +119,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(currentContext).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Erro ao excluir: $e'),
                       backgroundColor: Colors.red,
