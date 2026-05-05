@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/change_password_screen.dart';
-import 'package:patinhas_amor/screens/forgot_password_screen.dart'; 
 import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -66,71 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Recuperação de senha (Esqueci minha senha)
   void _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-
-    // Primeiro, verifica se o e-mail foi digitado para facilitar a vida do usuário
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Digite seu e-mail no campo acima primeiro.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      // Opcional: Você pode optar por navegar direto para a tela de recuperação
-      // mesmo sem o e-mail preenchido:
-       Navigator.push(
-         context,
-         MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
-       );
-      return;
-    }
-    
-    setState(() => _isLoading = true);
-
-    try {
-      await _authService.resetPassword(email);
-      if (mounted) {
-        _showSuccessDialog();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  /// Diálogo de sucesso para informar que o e-mail foi enviado
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green),
-            SizedBox(width: 10),
-            Text("E-mail enviado!"),
-          ],
-        ),
-        content: const Text(
-          "Enviamos um link de redefinição para o seu e-mail. Por favor, verifique sua caixa de entrada (e a pasta de spam).",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+    Navigator.pushNamed(context, '/forgot-password');
   }
 
   Future<void> _launchPrivacyPolicy() async {
