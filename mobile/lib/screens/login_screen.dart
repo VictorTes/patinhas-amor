@@ -70,7 +70,12 @@ class _LoginScreenState extends State<LoginScreen> {
         String errorMessage = e.toString();
 
         // --- TRATAMENTO E PROTEÇÃO DE MENSAGENS DE ERRO ---
-        if (errorMessage.contains("conta foi desativada")) {
+        if (errorMessage.contains("permission-denied") || errorMessage.contains("PERMISSION_DENIED")) {
+          // Erro comum caso o usuário esteja logado no Auth, mas bloqueado no Firestore.
+          // Deslogamos por segurança.
+          _authService.logout();
+          errorMessage = "Acesso negado: esta conta está inativa ou sem permissões.";
+        } else if (errorMessage.contains("conta foi desativada")) {
           errorMessage = "Esta conta está inativa. Entre em contato com o administrador.";
         } else if (errorMessage.contains("invalid-email") || errorMessage.contains("malformed")) {
           errorMessage = "O formato do e-mail digitado é inválido.";
@@ -182,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Informe sua senha';
-                    if (value.length < 6) return 'A senha deve ter no mínimo 6 caracteres';
+                    // Regra de 6 caracteres removida para evitar que o usuário seja bloqueado na interface antes da API
                     return null;
                   },
                 ),
