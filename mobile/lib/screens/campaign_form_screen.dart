@@ -252,7 +252,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
                 ),
                 const SizedBox(height: 20),
                 if (_selectedType == CampaignType.rifa) _buildRifaFields(),
-                if (_selectedType == CampaignType.bazar) _buildBazarFields(),
+                if (_selectedType == CampaignType.evento) _buildEventoFields(),
                 const SizedBox(height: 20),
                 _buildAccountabilitySection(),
                 const SizedBox(height: 30),
@@ -277,7 +277,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     return SegmentedButton<CampaignType>(
       segments: const [
         ButtonSegment(value: CampaignType.rifa, label: Text('Rifa'), icon: Icon(Icons.confirmation_num)),
-        ButtonSegment(value: CampaignType.bazar, label: Text('Bazar'), icon: Icon(Icons.store)),
+        ButtonSegment(value: CampaignType.evento, label: Text('Evento'), icon: Icon(Icons.event)),
       ],
       selected: {_selectedType},
       onSelectionChanged: (set) => setState(() => _selectedType = set.first),
@@ -386,9 +386,9 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     ]);
   }
 
-  Widget _buildBazarFields() {
+  Widget _buildEventoFields() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Informações do Bazar', style: TextStyle(fontWeight: FontWeight.bold)),
+      const Text('Informações do Evento', style: TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox(height: 10),
       TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Endereço Completo', border: OutlineInputBorder())),
       const SizedBox(height: 10),
