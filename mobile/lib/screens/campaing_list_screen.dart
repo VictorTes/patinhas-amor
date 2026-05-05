@@ -123,7 +123,7 @@ class _CampanhasViewState extends State<CampanhasView> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              isRifa ? '🎟️ RIFA' : '🛍️ BAZAR',
+                              isRifa ? '🎟️ RIFA' : '🛍️ EVENTO',
                               style: TextStyle(
                                 color: Colors.orange.shade900,
                                 fontWeight: FontWeight.bold,
