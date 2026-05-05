@@ -31,6 +31,7 @@ class AuthWrapper extends StatelessWidget {
         return StreamBuilder<Map<String, dynamic>?>(
           stream: authService.getUserDataStream(),
           builder: (context, userSnapshot) {
+            
             // Enquanto carrega os dados do Firestore
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
@@ -49,7 +50,10 @@ class AuthWrapper extends StatelessWidget {
             // --- BLOQUEIO EM TEMPO REAL ---
             // Se isActive mudar para false enquanto o usuário usa o app
             if (userData['isActive'] == false) {
-              _forceLogout(authService);
+              // Somente executa o logout caso já não tenha sido feito (evita loop silencioso)
+              if (authSnapshot.data != null) {
+                _forceLogout(authService);
+              }
               return const LoginScreen();
             }
 
