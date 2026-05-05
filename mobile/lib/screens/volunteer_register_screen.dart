@@ -58,6 +58,7 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
         'role': _selectedRole, 
+        'isActive': true, // Garante que o novo usuário começa com acesso permitido
         'mustChangePassword': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
