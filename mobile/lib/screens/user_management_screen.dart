@@ -91,24 +91,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               setState(() => _isLoading = true);
               Navigator.pop(context);
               try {
-                // 1. Exclui o documento do Firestore (ajuste a coleção se necessário, ex: 'users')
-                await FirebaseFirestore.instance.collection('users').doc(uid).delete();
-
-                // 2. Exclui do Firebase Authentication
-                // Nota: se for deletar um usuário diferente do atual, o SDK nativo do Flutter 
-                // não suporta essa operação diretamente pelo cliente, sendo necessário Admin SDK/Cloud Function.
-                // Caso seja o administrador deletando um usuário e você tenha problemas com permissões do Auth,
-                // certifique-se de usar o Firebase Admin. 
-                // Se o usuário atual estiver deletando a si mesmo, o user.delete() funcionará.
-                final currentUser = FirebaseAuth.instance.currentUser;
-                if (currentUser != null && currentUser.uid == uid) {
-                  await currentUser.delete();
-                } else {
-                  // Opcionalmente, chame seu próprio serviço ou método de remoção caso tenha um endpoint para Admin:
-                  await _authService.deleteUser(uid);
-                }
+                // Exclui do Firestore e do Authentication
+                await _authService.deleteUser(uid);
 
                 setState(() {});
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Usuário excluído com sucesso!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } on FirebaseAuthException catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
