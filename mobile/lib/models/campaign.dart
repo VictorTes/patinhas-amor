@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum CampaignType { rifa, bazar, outro }
+enum CampaignType { rifa, evento, outro }
 
 enum CampaignStatus { ativa, concluida, cancelada }
 
@@ -9,7 +9,7 @@ extension CampaignTypeExtension on CampaignType {
   String get label {
     switch (this) {
       case CampaignType.rifa: return 'Rifa';
-      case CampaignType.bazar: return 'Bazar';
+      case CampaignType.evento: return 'Evento';
       case CampaignType.outro: return 'Outro';
     }
   }
@@ -62,7 +62,7 @@ class CampaignModel {
   final DateTime? drawDate; // Data do Sorteio
   final String? winner;
 
-  // Campos específicos de Bazar
+  // Campos específicos de Evento (genérico para bazar, pastelada, etc.)
   final String? address;
   final String? itemsForSale;
 
