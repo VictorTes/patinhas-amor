@@ -66,6 +66,9 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   DateTimeRange? _selectedDateRange;
   final DateFormat _df = DateFormat('dd/MM/yyyy');
+  
+  // Adicionando um ScrollController para preservar a posição durante o setState
+  final ScrollController _scrollController = ScrollController();
 
   final Map<String, List<String>> _selectedFields = {
     'Animais': [],
@@ -140,6 +143,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return RoleGuard(
       requiredRole: 'admin',
@@ -183,6 +192,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
             _buildDateSelector(),
             Expanded(
               child: ListView(
+                key: const PageStorageKey<String>('reports_list_view'),
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: reportSchema.keys.map((tableName) {
                   return _buildTableCard(tableName);
@@ -240,7 +251,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             color: selectedCount > 0 ? Colors.orange : Colors.grey.shade300),
       ),
       child: ExpansionTile(
-        // CORREÇÃO: Adicionado o PageStorageKey para memorizar se está aberto/fechado
         key: PageStorageKey<String>(tableName), 
         title: Text(
           tableName,
