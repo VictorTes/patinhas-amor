@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:patinhas_amor/services/auth_service.dart';
-import 'package:patinhas_amor/widgets/role_guard.dart'; // Ajuste o caminho se necessário
+import 'package:patinhas_amor/widgets/role_guard.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -72,22 +74,59 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // Função para confirmar exclusão
+  // Função para confirmar exclusão no Authentication e Firestore
   void _confirmDelete(String uid, String name) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Excluir Usuário"),
-        content: Text("Tem certeza que deseja excluir $name? Esta ação não pode ser desfeita no banco de dados."),
+        content: Text("Tem certeza que deseja excluir $name? Esta ação removerá o usuário do sistema de autenticação e do banco de dados."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCELAR")),
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("CANCELAR")
+          ),
           TextButton(
             onPressed: () async {
               setState(() => _isLoading = true);
               Navigator.pop(context);
               try {
-                await _authService.deleteUser(uid);
+                // 1. Exclui o documento do Firestore (ajuste a coleção se necessário, ex: 'users')
+                await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+
+                // 2. Exclui do Firebase Authentication
+                // Nota: se for deletar um usuário diferente do atual, o SDK nativo do Flutter 
+                // não suporta essa operação diretamente pelo cliente, sendo necessário Admin SDK/Cloud Function.
+                // Caso seja o administrador deletando um usuário e você tenha problemas com permissões do Auth,
+                // certifique-se de usar o Firebase Admin. 
+                // Se o usuário atual estiver deletando a si mesmo, o user.delete() funcionará.
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser != null && currentUser.uid == uid) {
+                  await currentUser.delete();
+                } else {
+                  // Opcionalmente, chame seu próprio serviço ou método de remoção caso tenha um endpoint para Admin:
+                  await _authService.deleteUser(uid);
+                }
+
                 setState(() {});
+              } on FirebaseAuthException catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro de autenticação: ${e.message}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao excluir: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               } finally {
                 if (mounted) setState(() => _isLoading = false);
               }
@@ -101,9 +140,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Aplicando o SEU RoleGuard para proteger a tela inteira
     return RoleGuard(
-      requiredRole: 'admin', // Define o cargo necessário como string
+      requiredRole: 'admin',
       fallback: Scaffold(
         body: Center(
           child: Column(
@@ -175,28 +213,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         onSelected: (value) async {
                           if (value == 'edit') {
                             _showEditDialog(user);
-                          } else if (value == 'toggle') {
-                            setState(() => _isLoading = true);
-                            try {
-                              await _authService.updateUserStatus(user['uid'], !isActive);
-                              setState(() {});
-                            } finally {
-                              if (mounted) setState(() => _isLoading = false);
-                            }
                           } else if (value == 'delete') {
                             _confirmDelete(user['uid'], user['name'] ?? 'este usuário');
                           }
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text("Editar"))),
-                          PopupMenuItem(
-                            value: 'toggle', 
+                          const PopupMenuItem(
+                            value: 'edit', 
                             child: ListTile(
-                              leading: Icon(isActive ? Icons.block : Icons.check_circle), 
-                              title: Text(isActive ? "Desativar" : "Ativar"),
-                            ),
+                              leading: Icon(Icons.edit), 
+                              title: Text("Editar")
+                            )
                           ),
-                          const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text("Excluir"))),
+                          const PopupMenuItem(
+                            value: 'delete', 
+                            child: ListTile(
+                              leading: Icon(Icons.delete, color: Colors.red), 
+                              title: Text("Excluir")
+                            )
+                          ),
                         ],
                       ),
                     );
@@ -204,7 +239,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 );
               },
             ),
-            
             if (_isLoading)
               Container(
                 color: Colors.black.withOpacity(0.3),
