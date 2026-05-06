@@ -15,39 +15,37 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: authService.userStream,
       builder: (context, authSnapshot) {
-        // 1. Verifica conexão inicial com Firebase Auth
-        if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator(color: Colors.orange)),
-          );
-        }
+        final user = authSnapshot.data;
 
-        // 2. Se não houver usuário logado
-        if (!authSnapshot.hasData || authSnapshot.data == null) {
-          return const LoginScreen();
-        }
-
-        // 3. Usuário logado: Ouvindo dados do Firestore em tempo real
+        // A GRANDE SACADA DA ARQUITETURA: 
+        // Aninhamos o segundo StreamBuilder incondicionalmente. Se não houver usuário,
+        // passamos um Stream vazio. Isso garante que a hierarquia do LoginScreen NUNCA 
+        // mude na Widget Tree, preservando os campos de texto e garantindo o SnackBar.
         return StreamBuilder<Map<String, dynamic>?>(
-          stream: authService.getUserDataStream(),
+          stream: user != null ? authService.getUserDataStream() : Stream.value(null),
           builder: (context, userSnapshot) {
             
-            // CORREÇÃO CRÍTICA: Ao invés de exibir um CircularProgressIndicator e 
-            // destruir a tela de login, retornamos a própria LoginScreen.
-            // Isso preserva o contexto e o estado de "loading" do botão,
-            // permitindo que o SnackBar seja exibido caso dê erro de permissão.
+            // 1. Verifica conexão inicial com Firebase Auth
+            if (authSnapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator(color: Colors.orange)),
+              );
+            }
+
+            // 2. Se não houver usuário logado (Token expirado ou não autenticado)
+            if (user == null) {
+              return const LoginScreen();
+            }
+
+            // 3. Usuário logado: Ouvindo dados do Firestore em tempo real
+            // Enquanto carrega, mantemos a LoginScreen na tela para preservar o botão girando
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const LoginScreen();
             }
 
-            // Se as regras do Firestore bloquearem (usuário inativo gera erro)
-            if (userSnapshot.hasError) {
-              _forceLogout(authService);
-              return const LoginScreen();
-            }
-
-            // Se o documento não existir
-            if (!userSnapshot.hasData || userSnapshot.data == null) {
+            // Se as regras do Firestore bloquearem (PERMISSION_DENIED gera um erro aqui)
+            // ou se o documento do usuário não existir
+            if (userSnapshot.hasError || !userSnapshot.hasData || userSnapshot.data == null) {
               _forceLogout(authService);
               return const LoginScreen();
             }
