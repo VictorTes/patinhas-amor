@@ -3,7 +3,6 @@ import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/change_password_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -34,25 +33,13 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       // 2. Busca os dados complementares no Firestore
+      // Se o usuário estiver inativo, as regras do Firestore bloquearão
+      // e um erro de PERMISSION_DENIED será atirado direto para o catch.
       final userData = await _authService.getUserData();
 
-      // 3. Verificação de conta inativa antes de deixar o usuário entrar
+      // Proteção redundante caso as regras permitam leitura mas o campo seja false
       if (userData != null && userData['isActive'] == false) {
-        // Desloga o usuário imediatamente para que ele não passe pelo wrapper
-        await _authService.logout();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Esta conta está inativa. Entre em contato com o administrador.'),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-        // Sai do método sem redirecionar para a Home
-        return;
+        throw Exception('permission_denied');
       }
 
       // 4. Se chegou aqui, o usuário está ativo, verifica a troca de senha
@@ -67,26 +54,23 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      // Força a saída para garantir que o usuário não fique preso na sessão com permissão negada
+      // Força a saída em caso de qualquer falha
       await _authService.logout();
       
+      // Como o AuthWrapper preservou a tela, mounted é true!
       if (mounted) {
         String errorMessage = e.toString().toLowerCase();
 
-        // --- TRATAMENTO E PROTEÇÃO DE MENSAGENS DE ERRO ---
-        if (errorMessage.contains("permission-denied") || errorMessage.contains("permission_denied")) {
-          errorMessage = "E-mail ou senha incorretos. Tente novamente.";
-        } else if (errorMessage.contains("invalid-email") || errorMessage.contains("malformed")) {
-          errorMessage = "E-mail ou senha incorretos. Tente novamente.";
-        } else if (errorMessage.contains("invalid-credential") || errorMessage.contains("wrong-password")) {
-          errorMessage = "E-mail ou senha incorretos. Tente novamente.";
+        // --- MASCARANDO USUÁRIO INATIVO COMO ERRO DE LOGIN PADRÃO ---
+        if (errorMessage.contains("permission") || errorMessage.contains("denied")) {
+          errorMessage = "E-mail ou senha incorretos.";
+        } else if (errorMessage.contains("invalid-email") || errorMessage.contains("malformed") || errorMessage.contains("wrong-password") || errorMessage.contains("invalid-credential")) {
+          errorMessage = "E-mail ou senha incorretos.";
         } else if (errorMessage.contains("network-request-failed")) {
           errorMessage = "Sem conexão com a internet. Verifique sua rede.";
         } else if (errorMessage.contains("projects/") || errorMessage.contains("[") || errorMessage.contains("]")) {
-          // --- EXCESSÃO: Mensagem genérica para erros técnicos do Firebase ---
           errorMessage = "Ocorreu um erro ao conectar-se ao servidor. Tente novamente.";
         } else {
-          // --- EXCESSÃO PADRÃO: Qualquer outra coisa desconhecida pelo dev ---
           errorMessage = "Ocorreu um erro inesperado. Verifique seus dados e tente novamente.";
         }
 
@@ -100,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } finally {
-      // Garante que o estado de carregamento seja interrompido sempre
+      // Para o spinner do botão independentemente do resultado
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -137,7 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // LOGO E TÍTULO
                 Icon(Icons.pets, size: 80, color: Colors.orange[400]),
                 const SizedBox(height: 16),
                 Text(
@@ -157,7 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
-                // CAMPO DE E-MAIL
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -171,7 +153,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // CAMPO DE SENHA
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -190,7 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
 
-                // ESQUECI MINHA SENHA
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -203,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // BOTÃO DE LOGIN
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
@@ -225,7 +204,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
 
-                // TERMOS DE POLÍTICA DE PRIVACIDADE
                 const SizedBox(height: 24),
                 Column(
                   children: [
