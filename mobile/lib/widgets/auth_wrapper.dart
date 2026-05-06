@@ -22,7 +22,7 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // 2. Se não houver usuário logado (Token expirado ou Logout)
+        // 2. Se não houver usuário logado
         if (!authSnapshot.hasData || authSnapshot.data == null) {
           return const LoginScreen();
         }
@@ -32,14 +32,21 @@ class AuthWrapper extends StatelessWidget {
           stream: authService.getUserDataStream(),
           builder: (context, userSnapshot) {
             
-            // Enquanto carrega os dados do Firestore
+            // CORREÇÃO CRÍTICA: Ao invés de exibir um CircularProgressIndicator e 
+            // destruir a tela de login, retornamos a própria LoginScreen.
+            // Isso preserva o contexto e o estado de "loading" do botão,
+            // permitindo que o SnackBar seja exibido caso dê erro de permissão.
             if (userSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator(color: Colors.orange)),
-              );
+              return const LoginScreen();
             }
 
-            // Se o documento do usuário não existir (deletado do banco por engano)
+            // Se as regras do Firestore bloquearem (usuário inativo gera erro)
+            if (userSnapshot.hasError) {
+              _forceLogout(authService);
+              return const LoginScreen();
+            }
+
+            // Se o documento não existir
             if (!userSnapshot.hasData || userSnapshot.data == null) {
               _forceLogout(authService);
               return const LoginScreen();
@@ -48,12 +55,8 @@ class AuthWrapper extends StatelessWidget {
             final userData = userSnapshot.data!;
 
             // --- BLOQUEIO EM TEMPO REAL ---
-            // Se isActive mudar para false enquanto o usuário usa o app
             if (userData['isActive'] == false) {
-              // Somente executa o logout caso já não tenha sido feito (evita loop silencioso)
-              if (authSnapshot.data != null) {
-                _forceLogout(authService);
-              }
+              _forceLogout(authService);
               return const LoginScreen();
             }
 
