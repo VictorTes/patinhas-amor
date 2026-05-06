@@ -12,34 +12,15 @@ class AuthService {
 
   Future<UserCredential> login(String email, String password) async {
     try {
-      UserCredential credential = await _auth.signInWithEmailAndPassword(
+      // Faz apenas a autenticação. Se o usuário estiver inativo no Firestore,
+      // as chamadas subsequentes para ler dados lançarão um erro de permissão.
+      return await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password.trim(),
       );
-
-      // --- Verificação de segurança ---
-      User? user = credential.user;
-      if (user != null) {
-        DocumentSnapshot userDoc = await _db.collection('users').doc(user.uid).get();
-        
-        // Se o usuário existir no Firestore mas estiver inativo ou bloqueado
-        if (userDoc.exists && userDoc.data() != null) {
-          final data = userDoc.data() as Map<String, dynamic>;
-          if (data['isActive'] == false) {
-            await logout(); // Desconecta imediatamente
-            // Lançamos explicitamente a mensagem que o front-end deve exibir
-            throw 'Esta conta foi desativada e não pode ser utilizada.';
-          }
-        }
-      }
-
-      await credential.user?.reload();
-      return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     } catch (e) {
-      // Se o erro já for uma String (nossa mensagem personalizada), repassa ela
-      if (e is String) throw e; 
       throw 'Ocorreu um erro inesperado: $e';
     }
   }
@@ -79,7 +60,8 @@ class AuthService {
         return doc.data();
       }
     } catch (e) {
-      debugPrint("Erro ao buscar dados: $e");
+      // Repassamos o erro para ser capturado no catch da tela
+      throw Exception(e);
     }
     return null;
   }
