@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:patinhas_amor/services/auth_service.dart';
 import 'package:patinhas_amor/screens/change_password_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,42 +33,37 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text.trim(),
       );
 
-      // 2. Busca o documento no Firestore para verificar o status de ativação
-      final user = FirebaseAuth.instance.currentUser;
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
+      // 2. Busca os dados complementares no Firestore
+      final userData = await _authService.getUserData();
 
-      if (doc.exists) {
-        final userData = doc.data();
-
-        // 3. Verificação de conta inativa antes de deixar o usuário entrar
-        if (userData != null && userData['isActive'] == false) {
-          // Desloga o usuário imediatamente para que ele não passe pelo wrapper
-          await _authService.logout();
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Esta conta está inativa. Entre em contato com o administrador.'),
-                backgroundColor: Colors.redAccent,
-                behavior: SnackBarBehavior.floating,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
-          // Sai do método sem redirecionar para a Home
-          return;
-        }
-
-        // 4. Se chegou aqui, o usuário está ativo, verifica a troca de senha
+      // 3. Verificação de conta inativa antes de deixar o usuário entrar
+      if (userData != null && userData['isActive'] == false) {
+        // Desloga o usuário imediatamente para que ele não passe pelo wrapper
+        await _authService.logout();
+        
         if (mounted) {
-          if (userData != null && userData['mustChangePassword'] == true) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-            );
-          } else {
-            Navigator.pushReplacementNamed(context, '/home');
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Esta conta está inativa. Entre em contato com o administrador.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        // Sai do método sem redirecionar para a Home
+        return;
+      }
+
+      // 4. Se chegou aqui, o usuário está ativo, verifica a troca de senha
+      if (mounted) {
+        if (userData != null && userData['mustChangePassword'] == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+          );
+        } else {
+          Navigator.pushReplacementNamed(context, '/home');
         }
       }
     } catch (e) {
@@ -81,9 +75,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // --- TRATAMENTO E PROTEÇÃO DE MENSAGENS DE ERRO ---
         if (errorMessage.contains("permission-denied") || errorMessage.contains("permission_denied")) {
-          errorMessage = "Esta conta está inativa. Entre em contato com o administrador.";
+          errorMessage = "E-mail ou senha incorretos. Tente novamente.";
         } else if (errorMessage.contains("invalid-email") || errorMessage.contains("malformed")) {
-          errorMessage = "O formato do e-mail digitado é inválido.";
+          errorMessage = "E-mail ou senha incorretos. Tente novamente.";
         } else if (errorMessage.contains("invalid-credential") || errorMessage.contains("wrong-password")) {
           errorMessage = "E-mail ou senha incorretos. Tente novamente.";
         } else if (errorMessage.contains("network-request-failed")) {
@@ -192,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Informe sua senha';
-                    // Validação de 6 dígitos removida para permitir a digitação de qualquer senha
                     return null;
                   },
                 ),
