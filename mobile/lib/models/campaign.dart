@@ -4,7 +4,6 @@ enum CampaignType { rifa, evento, outro }
 
 enum CampaignStatus { ativa, concluida, cancelada }
 
-// Extensões para facilitar a leitura no Relatório (Excel/PDF)
 extension CampaignTypeExtension on CampaignType {
   String get label {
     switch (this) {
@@ -59,12 +58,13 @@ class CampaignModel {
   final double? ticketValue;
   final String? prize;
   final String? prizeImageUrl;
-  final DateTime? drawDate; // Data do Sorteio
+  final DateTime? drawDate; 
   final String? winner;
 
-  // Campos específicos de Evento (genérico para bazar, pastelada, etc.)
+  // Campos específicos de Evento
   final String? address;
   final String? itemsForSale;
+  final String? eventDateTime; // NOVO: Suporte a dia e horário
 
   // Prestação de Contas
   final bool hasAccountability;
@@ -89,23 +89,21 @@ class CampaignModel {
     this.drawDate,
     this.address,
     this.itemsForSale,
+    this.eventDateTime, // NOVO
     this.hasAccountability = false,
     this.totalCollected,
     this.expenses,
     this.receiptUrls,
   });
 
-  // --- ADIÇÃO PARA O SISTEMA DE EXPORTAÇÃO ---
-  // Se sua tela de preview estiver chamando .toMap(), você pode renomear 
-  // o toMap antigo do Firestore para toFirestore() e usar este aqui como toMap().
-  // Se preferir não mexer em nada, certifique-se de que a tela de preview use esta lógica:
+  // Usado para exportação e listagens
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'description': description,
-      'type': type.label, // Usa a extensão para sair "Rifa" em vez de "rifa"
-      'status': status.label, // Usa a extensão para sair "Ativa" em vez de "ativa"
+      'type': type.label,
+      'status': status.label,
       'goalValue': goalValue ?? 0.0,
       'totalCollected': totalCollected ?? 0.0,
       'ticketValue': ticketValue ?? 0.0,
@@ -113,6 +111,7 @@ class CampaignModel {
       'winner': winner ?? '-',
       'createdAt': createdAt,
       'address': address ?? '-',
+      'eventDateTime': eventDateTime ?? '-', // NOVO
       'currentValue': currentValue ?? 0.0,
     };
   }
@@ -128,6 +127,7 @@ class CampaignModel {
     String? prize,
     String? prizeImageUrl,
     DateTime? drawDate,
+    String? eventDateTime, // NOVO
     List<String>? receiptUrls,
     List<ExpenseItem>? expenses,
     double? totalCollected,
@@ -149,6 +149,7 @@ class CampaignModel {
       drawDate: drawDate ?? this.drawDate,
       address: address,
       itemsForSale: itemsForSale,
+      eventDateTime: eventDateTime ?? this.eventDateTime, // NOVO
       hasAccountability: hasAccountability,
       totalCollected: totalCollected ?? this.totalCollected,
       expenses: expenses ?? this.expenses,
@@ -156,12 +157,12 @@ class CampaignModel {
     );
   }
 
-  // Mantido original para o Firebase
+  // Envio de dados para o Firestore
   Map<String, dynamic> toJson() {
     return {
       'title': title,
       'description': description,
-      'type': type.name,
+      'type': type.name, // Garante salvar o nome exato do enum
       'status': status.name,
       'imageUrl': imageUrl,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
@@ -174,6 +175,7 @@ class CampaignModel {
       'drawDate': drawDate != null ? Timestamp.fromDate(drawDate!) : null,
       'address': address,
       'itemsForSale': itemsForSale,
+      'eventDateTime': eventDateTime, // NOVO
       'hasAccountability': hasAccountability,
       'totalCollected': totalCollected,
       'expenses': expenses?.map((e) => e.toMap()).toList(),
@@ -207,6 +209,7 @@ class CampaignModel {
       drawDate: (data['drawDate'] as Timestamp?)?.toDate(),
       address: data['address'],
       itemsForSale: data['itemsForSale'],
+      eventDateTime: data['eventDateTime'], // NOVO
       hasAccountability: data['hasAccountability'] ?? false,
       totalCollected: (data['totalCollected'] as num?)?.toDouble(),
       expenses: (data['expenses'] as List?)
