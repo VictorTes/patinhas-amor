@@ -49,6 +49,22 @@ class _CampanhasViewState extends State<CampanhasView> {
           return const Center(child: Text('Nenhuma campanha encontrada.'));
         }
 
+        // --- LÓGICA DE ORDENAÇÃO ATUALIZADA ---
+        campaigns.sort((a, b) {
+          // 1º Critério: Status (Ativa vem primeiro)
+          if (a.status == CampaignStatus.ativa && b.status != CampaignStatus.ativa) {
+            return -1;
+          }
+          if (a.status != CampaignStatus.ativa && b.status == CampaignStatus.ativa) {
+            return 1;
+          }
+
+          // 2º Critério: Data de Criação (Mais recente primeiro)
+          DateTime dateA = a.createdAt ?? DateTime(2000);
+          DateTime dateB = b.createdAt ?? DateTime(2000);
+          return dateB.compareTo(dateA); 
+        });
+
         return ListView.builder(
           padding: const EdgeInsets.all(12),
           itemCount: campaigns.length,
@@ -155,7 +171,6 @@ class _CampanhasViewState extends State<CampanhasView> {
                           ),
                         ],
                         if (!isRifa) ...[
-                          // NOVO: Exibição do Dia e Horário do Evento
                           if (campaign.eventDateTime != null && campaign.eventDateTime!.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 4),
