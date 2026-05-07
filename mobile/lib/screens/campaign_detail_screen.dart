@@ -105,6 +105,8 @@ class CampaignDetailScreen extends StatelessWidget {
                               onPressed: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                  // Passando a campanha inteira aqui garante que o Form Screen 
+                                  // saiba se é Rifa ou Evento e carregue os campos certos.
                                   builder: (context) => CampaignFormScreen(campaign: campaign),
                                 ),
                               ),
@@ -135,7 +137,6 @@ class CampaignDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          // O FloatingActionButton foi removido conforme solicitado.
         );
       },
     );
@@ -287,6 +288,14 @@ class CampaignDetailScreen extends StatelessWidget {
   Widget _buildBazarInfo(CampaignModel c) {
     return Column(
       children: [
+        // NOVO: Exibição do Dia e Horário se for um Evento
+        if (c.eventDateTime != null && c.eventDateTime!.isNotEmpty)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.access_time, color: Colors.orange),
+            title: const Text('Dia e Horário'),
+            subtitle: Text(c.eventDateTime!, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.location_on, color: Colors.red),
@@ -308,7 +317,6 @@ class CampaignDetailScreen extends StatelessWidget {
     final double totalCollected = c.totalCollected ?? 0;
     final double netValue = totalCollected - totalExpenses;
 
-    // Define as cores baseadas no saldo
     final Color netValueColor = netValue < 0 ? Colors.red : Colors.green.shade600;
     final Color collectedColor = totalCollected < totalExpenses ? Colors.red : Colors.green.shade700;
 
