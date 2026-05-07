@@ -9,7 +9,7 @@ class CampaignDetailScreen extends StatelessWidget {
 
   const CampaignDetailScreen({super.key, required this.campaignId});
 
-  // Método para exibir imagem em tela cheia com botão fechar
+  // RESTAURADO: Método para exibir imagem em tela cheia com botão fechar
   void _showFullScreenImage(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -105,8 +105,6 @@ class CampaignDetailScreen extends StatelessWidget {
                               onPressed: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  // Passando a campanha inteira aqui garante que o Form Screen 
-                                  // saiba se é Rifa ou Evento e carregue os campos certos.
                                   builder: (context) => CampaignFormScreen(campaign: campaign),
                                 ),
                               ),
@@ -121,10 +119,12 @@ class CampaignDetailScreen extends StatelessWidget {
                             style: const TextStyle(fontSize: 16, color: Colors.grey)),
                         const Divider(height: 40),
                         
+                        // LÓGICA DE SEÇÃO - CORRIGIDA
                         if (campaign.type == CampaignType.rifa)
                           _buildRifaProgress(context, campaign, currencyFormat, dateFormat),
+                        
                         if (campaign.type == CampaignType.evento)
-                          _buildBazarInfo(campaign),
+                          _buildBazarInfo(campaign), // Onde o problema reside
                           
                         const SizedBox(height: 30),
                         if (campaign.hasAccountability)
@@ -172,10 +172,7 @@ class CampaignDetailScreen extends StatelessWidget {
           children: [
             const Text('Progresso da Arrecadação', style: TextStyle(fontWeight: FontWeight.bold)),
             Text('${(rawProgress * 100).toStringAsFixed(1)}%',
-                style: const TextStyle(
-                  color: Colors.orange, 
-                  fontWeight: FontWeight.bold
-                )),
+                style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 10),
@@ -285,28 +282,46 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
+  // --- SEÇÃO DE EVENTO (CORREÇÃO DE ENGENHARIA) ---
   Widget _buildBazarInfo(CampaignModel c) {
     return Column(
+      mainAxisSize: MainAxisSize.min, // Evita que a column tente ocupar espaço infinito
+      crossAxisAlignment: CrossAxisAlignment.start, // Alinha os ListTiles à esquerda
       children: [
-        // NOVO: Exibição do Dia e Horário se for um Evento
-        if (c.eventDateTime != null && c.eventDateTime!.isNotEmpty)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.access_time, color: Colors.orange),
-            title: const Text('Dia e Horário'),
-            subtitle: Text(c.eventDateTime!, style: const TextStyle(fontWeight: FontWeight.w500)),
+        const Text('Detalhes do Evento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        
+        // Data e Horário
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const CircleAvatar(backgroundColor: Colors.orangeAccent, child: Icon(Icons.access_time, color: Colors.white, size: 20)),
+          title: const Text('Dia e Horário', style: TextStyle(fontSize: 14, color: Colors.grey)),
+          subtitle: Text(
+            (c.eventDateTime != null && c.eventDateTime!.isNotEmpty) ? c.eventDateTime! : 'Data não informada',
+            style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 16),
           ),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.location_on, color: Colors.red),
-          title: const Text('Localização'),
-          subtitle: Text(c.address ?? 'Não informado'),
         ),
+
+        // Localização
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.shopping_bag, color: Colors.blue),
-          title: const Text('Itens Disponíveis'),
-          subtitle: Text(c.itemsForSale ?? 'Verificar no local'),
+          leading: const CircleAvatar(backgroundColor: Colors.redAccent, child: Icon(Icons.location_on, color: Colors.white, size: 20)),
+          title: const Text('Localização', style: TextStyle(fontSize: 14, color: Colors.grey)),
+          subtitle: Text(
+            (c.address != null && c.address!.isNotEmpty) ? c.address! : 'Local não informado',
+            style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 16),
+          ),
+        ),
+
+        // Itens Disponíveis
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.shopping_bag, color: Colors.white, size: 20)),
+          title: const Text('Itens Disponíveis', style: TextStyle(fontSize: 14, color: Colors.grey)),
+          subtitle: Text(
+            (c.itemsForSale != null && c.itemsForSale!.isNotEmpty) ? c.itemsForSale! : 'Verificar no local',
+            style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 16),
+          ),
         ),
       ],
     );
@@ -340,7 +355,6 @@ class CampaignDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -351,9 +365,7 @@ class CampaignDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const Divider(height: 24),
-
                 if (c.expenses != null && c.expenses!.isNotEmpty) ...[
                   ...c.expenses!.map((e) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -367,9 +379,7 @@ class CampaignDetailScreen extends StatelessWidget {
                   )),
                   const Divider(height: 24),
                 ],
-                
                 const SizedBox(height: 20),
-                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
