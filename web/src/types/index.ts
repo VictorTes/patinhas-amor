@@ -53,16 +53,15 @@ export interface Occurrence {
 export const CampaignType = {
   rifa: 'rifa',
   bazar: 'bazar',
-  ajuda: 'ajuda', 
   outro: 'outro'
 } as const;
 
 export type CampaignType = typeof CampaignType[keyof typeof CampaignType];
 
 export const CampaignStatus = {
-  ativa: 'ativa',
+  ativa: 'Ativa',
   pausada: 'pausada',
-  finalizada: 'finalizada'
+  finalizada: 'concluida'
 } as const;
 
 export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus];

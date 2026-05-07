@@ -11,7 +11,7 @@ import { FadeIn } from '../components/FadeIn';
 const CampaignsWebPage: React.FC = () => {
   const [campaigns, setCampaigns] = useState<CampaignModel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<CampaignStatus | 'todas'>('ativa');
+  const [filter, setFilter] = useState<CampaignStatus | 'todas'>('Ativa');
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignModel | null>(null);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ const CampaignsWebPage: React.FC = () => {
               borderRadius: '12px',
               gap: '4px'
             }}>
-              {(['todas', 'ativa', 'finalizada'] as const).map((f) => (
+              {(['todas', 'Ativa', 'concluida'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -88,7 +88,7 @@ const CampaignsWebPage: React.FC = () => {
                     boxShadow: filter === f ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
                   }}
                 >
-                  {f === 'todas' ? 'Todas' : f === 'ativa' ? 'Ativas' : 'Concluídas'}
+                  {f === 'todas' ? 'Todas' : f === 'Ativa' ? 'Ativas' : 'Concluídas'}
                 </button>
               ))}
             </div>
