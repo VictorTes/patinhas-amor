@@ -7,7 +7,7 @@ enum CampaignStatus { ativa, concluida, cancelada }
 extension CampaignTypeExtension on CampaignType {
   String get label {
     switch (this) {
-      case CampaignType.rifa: return 'Rifa';
+      case CampaignType.rifa: return 'rifa';
       case CampaignType.evento: return 'Evento';
       case CampaignType.outro: return 'Outro';
     }
@@ -19,7 +19,7 @@ extension CampaignStatusExtension on CampaignStatus {
     switch (this) {
       case CampaignStatus.ativa: return 'Ativa';
       case CampaignStatus.concluida: return 'Concluída';
-      case CampaignStatus.cancelada: return 'Cancelada';
+      case CampaignStatus.cancelada: return 'cancelada';
     }
   }
 }

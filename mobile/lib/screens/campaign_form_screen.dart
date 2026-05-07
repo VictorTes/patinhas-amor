@@ -22,23 +22,10 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   bool _isLoading = false;
 
-  // Getters para facilitar a legibilidade
-  bool get isEditing => widget.campaign != null;
-
-  // Controladores
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final _winnerController = TextEditingController(); 
-  final _goalController = TextEditingController();
-  final _ticketValueController = TextEditingController();
-  final _prizeController = TextEditingController();
-  final _drawDateController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _itemsController = TextEditingController();
-  final _eventDateTimeController = TextEditingController();
-  final _totalCollectedController = TextEditingController();
-
-  // Estado dos Campos
+  
   CampaignType _selectedType = CampaignType.rifa;
   CampaignStatus _selectedStatus = CampaignStatus.ativa;
   
@@ -48,14 +35,25 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
   
   String? _prizeImageUrl;
   List<String> _existingReceiptUrls = [];
+
+  final _goalController = TextEditingController();
+  final _ticketValueController = TextEditingController();
+  final _prizeController = TextEditingController();
+  
+  final _drawDateController = TextEditingController();
   DateTime? _selectedDrawDate;
+
+  final _addressController = TextEditingController();
+  final _itemsController = TextEditingController();
+
   bool _hasAccountability = false;
+  final _totalCollectedController = TextEditingController();
   List<ExpenseItem> _expenses = [];
 
   @override
   void initState() {
     super.initState();
-    if (isEditing) {
+    if (widget.campaign != null) {
       _fillFields();
     }
   }
@@ -71,7 +69,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _drawDateController.dispose();
     _addressController.dispose();
     _itemsController.dispose();
-    _eventDateTimeController.dispose();
     _totalCollectedController.dispose();
     super.dispose();
   }
@@ -88,8 +85,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _prizeController.text = c.prize ?? '';
     _addressController.text = c.address ?? '';
     _itemsController.text = c.itemsForSale ?? '';
-    _eventDateTimeController.text = c.eventDateTime ?? ''; 
     _hasAccountability = c.hasAccountability;
+    
     _totalCollectedController.text = c.totalCollected?.toString() ?? '';
     
     _expenses = List.from(c.expenses ?? []);
@@ -102,7 +99,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     }
   }
 
-  // Métodos de Seleção de Mídia e Data
   Future<void> _selectDrawDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -112,7 +108,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       locale: const Locale('pt', 'BR'),
     );
 
-    if (picked != null) {
+    if (picked != null && picked != _selectedDrawDate) {
       setState(() {
         _selectedDrawDate = picked;
         _drawDateController.text = DateFormat('dd/MM/yyyy').format(picked);
@@ -121,12 +117,12 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
   }
 
   Future<void> _pickMainImage() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) setState(() => _mainImage = File(picked.path));
   }
 
   Future<void> _pickPrizeImage() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() {
         _prizeImage = File(picked.path);
@@ -136,7 +132,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
   }
 
   Future<void> _pickReceipts() async {
-    final picked = await _picker.pickMultiImage(imageQuality: 60);
+    final picked = await _picker.pickMultiImage();
     if (picked.isNotEmpty) {
       setState(() => _receiptFiles.addAll(picked.map((e) => File(e.path))));
     }
@@ -159,11 +155,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     try {
       final isNew = widget.campaign == null;
       
-      // Se estiver editando, usa o ID existente. Se for novo, deixa nulo para o Service/Firestore gerar.
-      final String? docId = widget.campaign?.id;
-
       final updatedCampaign = CampaignModel(
-        id: docId,
+        id: widget.campaign?.id,
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         winner: _winnerController.text.trim(),
@@ -175,7 +168,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         drawDate: _selectedDrawDate,
         address: _addressController.text.trim(),
         itemsForSale: _itemsController.text.trim(),
-        eventDateTime: _eventDateTimeController.text.trim(),
         hasAccountability: _hasAccountability,
         totalCollected: _parseDouble(_totalCollectedController.text) ?? 0.0,
         expenses: _expenses,
@@ -185,7 +177,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         receiptUrls: _existingReceiptUrls,
       );
 
-      // Salva no Service
+      // Salva o documento usando seu service
       await _service.saveCampaign(
         updatedCampaign, 
         _mainImage, 
@@ -193,13 +185,16 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         prizeImage: _prizeImage
       );
       
-      // Mural de Atividades
+      // Caso seja uma nova campanha, registra a atividade no mural
       if (isNew) {
+        // Gerando o ID se necessário para garantir o targetId ou lendo do próprio modelo
+        final String targetId = updatedCampaign.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+        
         await FirebaseFirestore.instance.collection('activities').add({
           'type': 'campanha',
           'title': 'Nova Campanha Cadastrada',
-          'description': 'A campanha ${updatedCampaign.title} foi lançada!',
-          'targetId': docId,
+          'description': 'A campanha ${_titleController.text.trim()} foi cadastrada com sucesso.',
+          'targetId': targetId,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -313,7 +308,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         ),
         child: _mainImage != null 
           ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(_mainImage!, fit: BoxFit.cover))
-          : (isEditing && widget.campaign?.imageUrl != null)
+          : widget.campaign?.imageUrl != null
             ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(widget.campaign!.imageUrl!, fit: BoxFit.cover))
             : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 40), Text('Foto da Campanha')]),
       ),
@@ -333,7 +328,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         controller: _winnerController,
         decoration: const InputDecoration(
           labelText: 'Ganhador do Prêmio',
-          hintText: 'Nome de quem ganhou',
+          hintText: 'Nome de quem ganhou (preencher ao concluir)',
           border: OutlineInputBorder(),
           prefixIcon: Icon(Icons.emoji_events_outlined),
         ),
@@ -347,10 +342,41 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
           labelText: 'Data do Sorteio',
           border: OutlineInputBorder(),
           prefixIcon: Icon(Icons.calendar_today),
+          hintText: 'Selecione a data',
         ),
       ),
       const SizedBox(height: 10),
-      _buildPrizeImageSection(),
+      Stack(
+        children: [
+          GestureDetector(
+            onTap: _pickPrizeImage,
+            child: Container(
+              height: 120, width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.orange.shade200)
+              ),
+              child: _prizeImage != null 
+                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(_prizeImage!, fit: BoxFit.cover))
+                : _prizeImageUrl != null
+                  ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(_prizeImageUrl!, fit: BoxFit.cover))
+                  : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.card_giftcard, color: Colors.orange), SizedBox(width: 10), Text('Adicionar Foto do Prêmio')]),
+            ),
+          ),
+          if (_prizeImage != null || _prizeImageUrl != null)
+            Positioned(
+              top: 5, right: 5,
+              child: CircleAvatar(
+                radius: 15, backgroundColor: Colors.red,
+                child: IconButton(
+                  icon: const Icon(Icons.close, size: 15, color: Colors.white),
+                  onPressed: () => setState(() { _prizeImage = null; _prizeImageUrl = null; }),
+                ),
+              ),
+            )
+        ],
+      ),
       const SizedBox(height: 10),
       Row(children: [
         Expanded(child: TextFormField(controller: _goalController, decoration: const InputDecoration(labelText: 'Meta (R\$)', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true))),
@@ -360,61 +386,13 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     ]);
   }
 
-  Widget _buildPrizeImageSection() {
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: _pickPrizeImage,
-          child: Container(
-            height: 120, width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.orange.shade200)
-            ),
-            child: _prizeImage != null 
-              ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(_prizeImage!, fit: BoxFit.cover))
-              : _prizeImageUrl != null
-                ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(_prizeImageUrl!, fit: BoxFit.cover))
-                : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.card_giftcard, color: Colors.orange), SizedBox(width: 10), Text('Adicionar Foto do Prêmio')]),
-          ),
-        ),
-        if (_prizeImage != null || _prizeImageUrl != null)
-          Positioned(
-            top: 5, right: 5,
-            child: GestureDetector(
-              onTap: () => setState(() { _prizeImage = null; _prizeImageUrl = null; }),
-              child: const CircleAvatar(radius: 12, backgroundColor: Colors.red, child: Icon(Icons.close, size: 15, color: Colors.white)),
-            ),
-          )
-      ],
-    );
-  }
-
   Widget _buildEventoFields() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Informações do Evento', style: TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox(height: 10),
-      TextFormField(
-        controller: _eventDateTimeController,
-        decoration: const InputDecoration(
-          labelText: 'Dia e Horário', 
-          hintText: 'Ex: Sábado, 15/10 às 14:00',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.access_time)
-        )
-      ),
+      TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Endereço Completo', border: OutlineInputBorder())),
       const SizedBox(height: 10),
-      TextFormField(
-        controller: _addressController, 
-        decoration: const InputDecoration(labelText: 'Endereço Completo', border: OutlineInputBorder())
-      ),
-      const SizedBox(height: 10),
-      TextFormField(
-        controller: _itemsController, 
-        decoration: const InputDecoration(labelText: 'Principais itens à venda', border: OutlineInputBorder()), 
-        maxLines: 2
-      ),
+      TextFormField(controller: _itemsController, decoration: const InputDecoration(labelText: 'Principais itens à venda', border: OutlineInputBorder()), maxLines: 2),
     ]);
   }
 
@@ -474,8 +452,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    ..._receiptFiles.map((file) => _buildThumb(file, () => setState(() => _receiptFiles.remove(file)))),
-                    ..._existingReceiptUrls.map((url) => _buildThumb(url, () => setState(() => _existingReceiptUrls.remove(url)))),
+                    ..._receiptFiles.asMap().entries.map((e) => _buildThumb(File(e.value.path), () => setState(() => _receiptFiles.removeAt(e.key)))),
+                    ..._existingReceiptUrls.asMap().entries.map((e) => _buildThumb(e.value, () => setState(() => _existingReceiptUrls.removeAt(e.key)))),
                   ],
                 ),
               ),
@@ -494,7 +472,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
             borderRadius: BorderRadius.circular(8),
             child: source is File 
               ? Image.file(source, width: 70, height: 70, fit: BoxFit.cover)
-              : Image.network(source as String, width: 70, height: 70, fit: BoxFit.cover),
+              : Image.network(source, width: 70, height: 70, fit: BoxFit.cover),
           ),
           Positioned(
             top: 0, right: 0,
@@ -511,4 +489,6 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
       ),
     );
   }
+
+  bool get isEditing => widget.campaign != null;
 }
