@@ -27,8 +27,10 @@ const CampaignsWebPage: React.FC = () => {
   }, [selectedCampaign]);
 
   const filteredCampaigns = campaigns.filter((c) => {
-    if (filter === 'todas') return true;
-    return c.status === filter;
+    if (filter === 'todas') {
+    return c.status !== 'cancelada'; 
+  }
+  return c.status === filter;
   });
 
   if (loading) {

@@ -60,7 +60,7 @@ export type CampaignType = typeof CampaignType[keyof typeof CampaignType];
 
 export const CampaignStatus = {
   ativa: 'Ativa',
-  pausada: 'pausada',
+  cancelada: 'cancelada',
   finalizada: 'concluida'
 } as const;
 
