@@ -78,9 +78,7 @@ class _CampanhasViewState extends State<CampanhasView> {
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      // Se não estiver ativa, removemos a sombra para dar aspecto de "desabilitado"
       elevation: isActive ? 4 : 0, 
-      // Se não estiver ativa, adicionamos uma borda leve para não sumir no fundo
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
@@ -97,7 +95,6 @@ class _CampanhasViewState extends State<CampanhasView> {
         ),
         child: Stack(
           children: [
-            // CONTEÚDO COM OPACIDADE REDUZIDA (Mantendo cores originais)
             Opacity(
               opacity: isActive ? 1.0 : 0.45, 
               child: Column(
@@ -158,6 +155,21 @@ class _CampanhasViewState extends State<CampanhasView> {
                           ),
                         ],
                         if (!isRifa) ...[
+                          // NOVO: Exibição do Dia e Horário do Evento
+                          if (campaign.eventDateTime != null && campaign.eventDateTime!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.access_time, size: 14, color: Colors.orange),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    campaign.eventDateTime!,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+                                  ),
+                                ],
+                              ),
+                            ),
                           Row(
                             children: [
                               const Icon(Icons.location_on, size: 14, color: Colors.grey),
@@ -177,7 +189,6 @@ class _CampanhasViewState extends State<CampanhasView> {
                 ],
               ),
             ),
-            // STATUS COLORIDO (Sempre 100% visível e vibrante)
             Positioned(
               top: 10,
               right: 10,
