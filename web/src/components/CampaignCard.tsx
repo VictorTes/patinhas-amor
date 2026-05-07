@@ -59,7 +59,7 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
         <span style={{ 
           position: 'absolute', top: '12px', right: '12px',
           fontSize: '11px', fontWeight: 800, padding: '6px 12px', borderRadius: '20px',
-          backgroundColor: campaign.status === 'ativa' ? '#27ae60' : '#e74c3c',
+          backgroundColor: campaign.status === 'Ativa' ? '#27ae60' : '#e74c3c',
           color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
         }}>

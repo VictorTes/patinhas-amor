@@ -9,7 +9,7 @@ class CampaignDetailScreen extends StatelessWidget {
 
   const CampaignDetailScreen({super.key, required this.campaignId});
 
-  // RESTAURADO: Método para exibir imagem em tela cheia com botão fechar
+  // Método para exibir imagem em tela cheia
   void _showFullScreenImage(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -48,10 +48,50 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
+  // Caixa de diálogo de confirmação de exclusão
+  Future<void> _confirmDelete(BuildContext context, CampaignService service, String title) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Campanha?'),
+        content: Text('Tem certeza que deseja apagar a campanha "$title"? Esta ação não pode ser desfeita.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCELAR'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('EXCLUIR', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await service.deleteCampaign(campaignId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Campanha removida com sucesso')),
+          );
+          Navigator.pop(context); // Volta para a lista
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao excluir: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    final dateFormat = DateFormat('dd/MM/yyyy'); 
+    final dateFormat = DateFormat('dd/MM/yyyy');
     final CampaignService service = CampaignService();
 
     return StreamBuilder<List<CampaignModel>>(
@@ -100,31 +140,38 @@ class CampaignDetailScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             _buildBadge(campaign),
-                            IconButton(
-                              icon: const Icon(Icons.edit, size: 24, color: Colors.grey),
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CampaignFormScreen(campaign: campaign),
+                            Row(
+                              children: [
+                                // Botão Deletar
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 24, color: Colors.redAccent),
+                                  onPressed: () => _confirmDelete(context, service, campaign.title),
                                 ),
-                              ),
+                                // Botão Editar
+                                IconButton(
+                                  icon: const Icon(Icons.edit, size: 24, color: Colors.grey),
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CampaignFormScreen(campaign: campaign),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Text(campaign.title,
-                            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                        Text(campaign.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
-                        Text(campaign.description,
-                            style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                        Text(campaign.description, style: const TextStyle(fontSize: 16, color: Colors.grey)),
                         const Divider(height: 40),
                         
-                        // LÓGICA DE SEÇÃO - CORRIGIDA
                         if (campaign.type == CampaignType.rifa)
                           _buildRifaProgress(context, campaign, currencyFormat, dateFormat),
                         
                         if (campaign.type == CampaignType.evento || campaign.type == CampaignType.outro)
-                          _buildBazarInfo(campaign), // Onde o problema reside
+                          _buildBazarInfo(campaign),
                           
                         const SizedBox(height: 30),
                         if (campaign.hasAccountability)
@@ -208,8 +255,7 @@ class CampaignDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Data do Sorteio', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                    Text(
-                      dateFmt.format(c.drawDate!),
+                    Text(dateFmt.format(c.drawDate!),
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
                     ),
                   ],
@@ -237,8 +283,7 @@ class CampaignDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('GANHADOR(A)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
-                      Text(
-                        c.winner!.toUpperCase(),
+                      Text(c.winner!.toUpperCase(),
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green.shade900),
                       ),
                     ],
@@ -282,16 +327,13 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
-  // --- SEÇÃO DE EVENTO (CORREÇÃO DE ENGENHARIA) ---
   Widget _buildBazarInfo(CampaignModel c) {
     return Column(
-      mainAxisSize: MainAxisSize.min, // Evita que a column tente ocupar espaço infinito
-      crossAxisAlignment: CrossAxisAlignment.start, // Alinha os ListTiles à esquerda
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Detalhes do Evento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
-        
-        // Data e Horário
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const CircleAvatar(backgroundColor: Colors.orangeAccent, child: Icon(Icons.access_time, color: Colors.white, size: 20)),
@@ -301,8 +343,6 @@ class CampaignDetailScreen extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 16),
           ),
         ),
-
-        // Localização
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const CircleAvatar(backgroundColor: Colors.redAccent, child: Icon(Icons.location_on, color: Colors.white, size: 20)),
@@ -312,8 +352,6 @@ class CampaignDetailScreen extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 16),
           ),
         ),
-
-        // Itens Disponíveis
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.shopping_bag, color: Colors.white, size: 20)),
@@ -332,9 +370,6 @@ class CampaignDetailScreen extends StatelessWidget {
     final double totalCollected = c.totalCollected ?? 0;
     final double netValue = totalCollected - totalExpenses;
 
-    final Color netValueColor = netValue < 0 ? Colors.red : Colors.green.shade600;
-    final Color collectedColor = totalCollected < totalExpenses ? Colors.red : Colors.green.shade700;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -347,10 +382,7 @@ class CampaignDetailScreen extends StatelessWidget {
         ),
         const SizedBox(height: 15),
         Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -359,10 +391,7 @@ class CampaignDetailScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Total Arrecadado', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(
-                      fmt.format(totalCollected), 
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: collectedColor)
-                    ),
+                    Text(fmt.format(totalCollected), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: totalCollected < totalExpenses ? Colors.red : Colors.green.shade700)),
                   ],
                 ),
                 const Divider(height: 24),
@@ -379,15 +408,11 @@ class CampaignDetailScreen extends StatelessWidget {
                   )),
                   const Divider(height: 24),
                 ],
-                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Saldo Final', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(
-                      fmt.format(netValue), 
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: netValueColor)
-                    ),
+                    Text(fmt.format(netValue), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: netValue < 0 ? Colors.red : Colors.green.shade600)),
                   ],
                 ),
               ],

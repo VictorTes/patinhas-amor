@@ -31,11 +31,14 @@ export function Home() {
   useEffect(() => {
     async function fetchHomeData() {
       try {
-        const [available, missing, activeCampaigns] = await Promise.all([
+        const [available, missing, allCampaigns] = await Promise.all([
           getAnimalsByStatus('available_for_adoption'),
           getAnimalsByStatus('missing'),
           getCampaignsOnce()
         ]);
+
+        // Filtro para garantir que apenas campanhas ATIVAS apareçam na Home
+        const activeCampaigns = allCampaigns.filter(c => c.status === 'Ativa');
 
         setAvailableAnimals(available.slice(0, 4));
         setMissingAnimals(missing.slice(0, 4));
@@ -188,21 +191,22 @@ export function Home() {
         <section className="py-16 lg:py-24 bg-gradient-to-b from-red-50 to-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn direction="up">
-              <div className="bg-[#b91c1c] text-red-50 rounded-2xl p-6 md:p-8 mb-10 shadow-xl shadow-red-900/10 border border-red-800/20">                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-start md:items-center gap-4">                  
-                    <span className="text-3xl">⚠️</span>      
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-1">Nos ajude a encontrá-los</h2>
-                    <p className="text-red-100">Esses animais estão desaparecidos e precisam voltar para casa</p>
+              <div className="bg-[#b91c1c] text-red-50 rounded-2xl p-6 md:p-8 mb-10 shadow-xl shadow-red-900/10 border border-red-800/20">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-start md:items-center gap-4">
+                    <span className="text-3xl">⚠️</span>
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-bold mb-1">Nos ajude a encontrá-los</h2>
+                      <p className="text-red-100">Esses animais estão desaparecidos e precisam voltar para casa</p>
+                    </div>
                   </div>
+                  <Link
+                    to="/desaparecidos"
+                    className="hidden md:inline-flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+                  >
+                    Ver todos
+                  </Link>
                 </div>
-                <Link
-                  to="/desaparecidos"
-                  className="hidden md:inline-flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors"
-                >
-                  Ver todos
-                </Link>
-              </div>
               </div>
             </FadeIn>
 
