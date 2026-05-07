@@ -45,6 +45,9 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   final _addressController = TextEditingController();
   final _itemsController = TextEditingController();
+  
+  // NOVO: Controlador para dia e horário do evento
+  final _eventDateTimeController = TextEditingController();
 
   bool _hasAccountability = false;
   final _totalCollectedController = TextEditingController();
@@ -69,6 +72,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _drawDateController.dispose();
     _addressController.dispose();
     _itemsController.dispose();
+    _eventDateTimeController.dispose(); // NOVO
     _totalCollectedController.dispose();
     super.dispose();
   }
@@ -85,8 +89,11 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _prizeController.text = c.prize ?? '';
     _addressController.text = c.address ?? '';
     _itemsController.text = c.itemsForSale ?? '';
-    _hasAccountability = c.hasAccountability;
     
+    // NOVO: Preenche o campo de dia/horário se existir
+    _eventDateTimeController.text = c.eventDateTime ?? ''; 
+    
+    _hasAccountability = c.hasAccountability;
     _totalCollectedController.text = c.totalCollected?.toString() ?? '';
     
     _expenses = List.from(c.expenses ?? []);
@@ -168,6 +175,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         drawDate: _selectedDrawDate,
         address: _addressController.text.trim(),
         itemsForSale: _itemsController.text.trim(),
+        eventDateTime: _eventDateTimeController.text.trim(), // NOVO: Passando o valor para o model
         hasAccountability: _hasAccountability,
         totalCollected: _parseDouble(_totalCollectedController.text) ?? 0.0,
         expenses: _expenses,
@@ -251,6 +259,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 20),
+                // Aqui a tela reage instantaneamente ao _selectedType e mostra os campos corretos
                 if (_selectedType == CampaignType.rifa) _buildRifaFields(),
                 if (_selectedType == CampaignType.evento) _buildEventoFields(),
                 const SizedBox(height: 20),
@@ -390,9 +399,29 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Informações do Evento', style: TextStyle(fontWeight: FontWeight.bold)),
       const SizedBox(height: 10),
-      TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Endereço Completo', border: OutlineInputBorder())),
+      
+      // NOVO CAMPO: Dia e Horário do Evento
+      TextFormField(
+        controller: _eventDateTimeController,
+        decoration: const InputDecoration(
+          labelText: 'Dia e Horário', 
+          hintText: 'Ex: Sábado, 15/10 às 14:00',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.access_time)
+        )
+      ),
       const SizedBox(height: 10),
-      TextFormField(controller: _itemsController, decoration: const InputDecoration(labelText: 'Principais itens à venda', border: OutlineInputBorder()), maxLines: 2),
+      
+      TextFormField(
+        controller: _addressController, 
+        decoration: const InputDecoration(labelText: 'Endereço Completo', border: OutlineInputBorder())
+      ),
+      const SizedBox(height: 10),
+      TextFormField(
+        controller: _itemsController, 
+        decoration: const InputDecoration(labelText: 'Principais itens à venda', border: OutlineInputBorder()), 
+        maxLines: 2
+      ),
     ]);
   }
 
