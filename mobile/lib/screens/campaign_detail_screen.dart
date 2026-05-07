@@ -123,7 +123,7 @@ class CampaignDetailScreen extends StatelessWidget {
                         if (campaign.type == CampaignType.rifa)
                           _buildRifaProgress(context, campaign, currencyFormat, dateFormat),
                         
-                        if (campaign.type == CampaignType.evento)
+                        if (campaign.type == CampaignType.evento || campaign.type == CampaignType.outro)
                           _buildBazarInfo(campaign), // Onde o problema reside
                           
                         const SizedBox(height: 30),
@@ -411,7 +411,7 @@ class CampaignDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(c.receiptUrls![index], width: 100, height: 100, fit: BoxFit.cover),
                   ),
-                ),
+                ),  
               ),
             ),
           )

@@ -159,8 +159,8 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     try {
       final isNew = widget.campaign == null;
       
-      // Criamos uma referência de ID caso seja novo para usar no log de atividades
-      final String docId = widget.campaign?.id ?? FirebaseFirestore.instance.collection('campaigns').doc().id;
+      // Se estiver editando, usa o ID existente. Se for novo, deixa nulo para o Service/Firestore gerar.
+      final String? docId = widget.campaign?.id;
 
       final updatedCampaign = CampaignModel(
         id: docId,
@@ -257,7 +257,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
                 ),
                 const SizedBox(height: 20),
                 if (_selectedType == CampaignType.rifa) _buildRifaFields(),
-                if (_selectedType == CampaignType.evento) _buildEventoFields(),
+                if (_selectedType == CampaignType.outro) _buildEventoFields(),
                 const SizedBox(height: 20),
                 _buildAccountabilitySection(),
                 const SizedBox(height: 30),
@@ -282,7 +282,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     return SegmentedButton<CampaignType>(
       segments: const [
         ButtonSegment(value: CampaignType.rifa, label: Text('Rifa'), icon: Icon(Icons.confirmation_num)),
-        ButtonSegment(value: CampaignType.evento, label: Text('Evento'), icon: Icon(Icons.event)),
+        ButtonSegment(value: CampaignType.outro, label: Text('Evento'), icon: Icon(Icons.event)),
       ],
       selected: {_selectedType},
       onSelectionChanged: (set) => setState(() => _selectedType = set.first),
