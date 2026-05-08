@@ -8,8 +8,10 @@ interface Props {
 
 export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
   // Cálculo do progresso
-  const progress = Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100);
+  const progress = Math.round(((campaign.totalCollected || 0) / (campaign.goalValue || 1)) * 100);
 
+
+  const isCompleted = campaign.status !== 'Ativa';
   /**
    * Helper para formatação de moeda no padrão R$ 0.000,00
    */
@@ -34,7 +36,9 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
         flexDirection: 'column',
         height: '100%', 
         minHeight: '550px', 
-        border: '1px solid #f0f0f0'
+        border: '1px solid #f0f0f0',
+        opacity: isCompleted ? 0.6 : 1,
+        filter: isCompleted ? 'grayscale(0.4)' : 'none'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-6px)';

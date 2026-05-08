@@ -33,7 +33,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
     }).format(value);
   };
 
-  const progress = Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100);
+  const progress = Math.round(((campaign.totalCollected || 0) / (campaign.goalValue || 1)) * 100);
 
   const handleWhatsApp = () => {
     const phone = "5547999999999";
@@ -105,7 +105,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
               <div style={styles.progressBarBg}>
                 <div style={{ ...styles.progressBarFill, width: `${progress}%` }} />
               </div>
-              <p style={{ textAlign: 'right', fontSize: '13px', color: '#2ecc71', fontWeight: 600, marginTop: '5px' }}>
+              <p style={{ textAlign: 'right', fontSize: '13px', color: '#e67e22', fontWeight: 600, marginTop: '5px' }}>
                 {progress}% concluído
               </p>
             </div>
@@ -213,7 +213,7 @@ const styles: Record<string, React.CSSProperties> = {
   prizeSplash: { width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e67e22', cursor: 'pointer', flexShrink: 0 },
   progressContainer: { marginBottom: '30px', backgroundColor: '#fcfcfc', padding: '20px', borderRadius: '16px', border: '1px solid #f0f0f0' },
   progressBarBg: { height: '12px', backgroundColor: '#eee', borderRadius: '6px', overflow: 'hidden' },
-  progressBarFill: { height: '100%', backgroundColor: '#2ecc71', borderRadius: '6px' },
+  progressBarFill: { height: '100%', backgroundColor: '#e67e22', borderRadius: '6px' },
   actionBox: { backgroundColor: '#fff', padding: '25px', borderRadius: '20px', border: '2px solid #ffe0b2', marginBottom: '30px' },
   input: { padding: '14px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '16px', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#f9f9f9' },
   buyBtn: { flex: 1, padding: '16px', backgroundColor: '#25D366', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px' },
