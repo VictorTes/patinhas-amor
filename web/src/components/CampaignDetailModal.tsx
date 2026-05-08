@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { CampaignModel } from '../types';
 import { CampaignType, CampaignStatus } from '../types';
+import { formatDate } from '../utils/formatters';
 
 interface Props {
   campaign: CampaignModel;
@@ -61,34 +62,125 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
             height: isMobile ? '350px' : 'auto',
             minHeight: isMobile ? '350px' : '600px'
           }}>
-            <img 
-              src={campaign.imageUrl} 
-              alt={campaign.title} 
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} 
+            <img
+              src={campaign.imageUrl}
+              alt={campaign.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }}
             />
           </div>
 
           <div style={{ ...styles.infoSection, flex: '1 1 auto' }}>
             <header style={{ marginBottom: '25px' }}>
-              <span style={styles.badge}>{campaign.type.toUpperCase()}</span>
-              <h2 style={styles.title}>{campaign.title}</h2>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start', // Alinha os itens no topo
+                marginBottom: '10px'
+              }}>
+                {/* Grupo da Esquerda: Tipo e Título */}
+                <div style={{ flex: 1 }}>
+                  <span style={{ ...styles.badge, marginBottom: '8px', display: 'inline-block' }}>
+                    {campaign.type.toUpperCase()}
+                  </span>
+                  <h2 style={{ ...styles.title, marginTop: '5px' }}>{campaign.title}</h2>
+                </div>
+
+                {/* Grupo da Direita: Status em evidência */}
+                <span style={{
+                  ...styles.badge,
+                  backgroundColor: campaign.status === 'Ativa' ? '#27ae60' : '#e74c3c', // Verde se Ativa, Vermelho caso contrário
+                  color: '#fff',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  letterSpacing: '1px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  marginLeft: '20px',
+                  whiteSpace: 'nowrap' // Garante que o texto não quebre em duas linhas
+                }}>
+                  {campaign.status === 'Ativa' ? '● ATIVA' : '● ENCERRADA'}
+                </span>
+              </div>
+
+              {/* Linha decorativa laranja */}
               <div style={{ height: '4px', width: '40px', backgroundColor: '#e67e22', borderRadius: '2px' }} />
             </header>
 
             <p style={styles.description}>{campaign.description}</p>
 
             {campaign.prize && (
-              <div style={styles.prizeBox}>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#e67e22', textTransform: 'uppercase' }}>🎁 Premiação</h4>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#333' }}>{campaign.prize}</p>
+              <div style={{
+                ...styles.prizeBox,
+                display: 'flex',
+                gap: '20px',
+                alignItems: 'center',
+                flexWrap: 'wrap' // Garante que em telas menores os itens quebrem linha
+              }}>
+
+                {/* Coluna 1: O Prêmio (Sempre aparece) */}
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <h4 style={{ margin: '0 0 5px 0', fontSize: '11px', color: '#e67e22', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    🎁 Premiação
+                  </h4>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>{campaign.prize}</p>
                 </div>
+
+                {/* Coluna 2: Sorteio (Sempre aparece) */}
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <h4 style={{ margin: '0 0 5px 0', fontSize: '11px', color: '#e67e22', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    🗓️ Data do Sorteio
+                  </h4>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>
+                    {formatDate(campaign.drawDate)}
+                  </p>
+                </div>
+
+                {/* Coluna 3: Ganhador (SÓ APARECE SE TIVER VALOR) */}
+                {campaign.winner && (
+                  <div style={{
+                    flex: 1.2,
+                    minWidth: '200px',
+                    backgroundColor: '#f0fff4', // Verde bem clarinho de fundo
+                    padding: '10px 15px',
+                    borderRadius: '12px',
+                    border: '1px dashed #27ae60', // Borda tracejada para destaque
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <span style={{ fontSize: '24px' }}>🏆</span>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '10px', color: '#27ae60', textTransform: 'uppercase', fontWeight: 800 }}>
+                        Ganhador(a)
+                      </h4>
+                      <p style={{ margin: 0, fontWeight: 800, color: '#1b5e20', fontSize: '16px' }}>
+                        {campaign.winner}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Coluna 4: Imagem do Prêmio (Se existir) */}
                 {campaign.prizeImageUrl && (
-                  <div 
-                    style={styles.prizeSplash} 
+                  <div
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: '2px solid #fff',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                      flexShrink: 0 // Não deixa a imagem esmagar
+                    }}
                     onClick={() => setActiveFullImage(campaign.prizeImageUrl!)}
                   >
-                    <img src={campaign.prizeImageUrl} alt="Foto do prêmio" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img
+                      src={campaign.prizeImageUrl}
+                      alt="Prêmio"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </div>
                 )}
               </div>
@@ -140,7 +232,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                         <span style={{ fontWeight: 600, color: '#d32f2f' }}>- {formatCurrency(exp.value)}</span>
                       </div>
                     ))}
-                    
+
                     <div style={{ ...styles.expenseItem, borderTop: '1px solid #ddd', marginTop: '10px', paddingTop: '10px' }}>
                       <strong style={{ color: '#333' }}>Total Arrecadado</strong>
                       <strong style={{ color: '#2e7d32' }}>{formatCurrency(campaign.totalCollected || 0)}</strong>
@@ -159,7 +251,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                       </div>
                     )}
                     {balance < 0 && (
-                      <div style={{...styles.balanceNote, color: '#d32f2f', backgroundColor: '#fff5f5', borderLeftColor: '#f44336'}}>
+                      <div style={{ ...styles.balanceNote, color: '#d32f2f', backgroundColor: '#fff5f5', borderLeftColor: '#f44336' }}>
                         Faltou <strong>{formatCurrency(Math.abs(balance))}</strong> para cobrir todas as despesas desta campanha.
                       </div>
                     )}

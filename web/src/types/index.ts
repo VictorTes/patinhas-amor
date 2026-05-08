@@ -52,8 +52,7 @@ export interface Occurrence {
 
 export const CampaignType = {
   rifa: 'rifa',
-  bazar: 'bazar',
-  outro: 'outro'
+  outro: 'Outro'
 } as const;
 
 export type CampaignType = typeof CampaignType[keyof typeof CampaignType];
@@ -85,6 +84,8 @@ export interface CampaignModel {
   // Premiação
   prize?: string;
   prizeImageUrl?: string; // <--- ADICIONADO: Para a lógica da foto da cesta/kit/etc
+  drawDate?:Timestamp | Date | null;
+  winner?: string;
   
   address?: string;
   itemsForSale?: string;

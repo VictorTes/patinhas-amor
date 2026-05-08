@@ -67,7 +67,7 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
           color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
         }}>
-          {campaign.status}
+          {campaign.status === 'Ativa' ? '● ATIVA' : '● ENCERRADA'}
         </span>
       </div>
 
