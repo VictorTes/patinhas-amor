@@ -50,21 +50,21 @@ export interface Occurrence {
 
 // --- TIPOS DE CAMPANHAS ---
 
-// Ajustado para refletir o valor exato salvo no Firebase ("Outro")
 export const CampaignType = {
   rifa: 'rifa',
-  outro: 'Outro'
+  bazar: 'bazar',
+  outro: 'outro'
 } as const;
 
-export type CampaignType = typeof CampaignType[keyof typeof CampaignType] | string;
+export type CampaignType = typeof CampaignType[keyof typeof CampaignType];
 
 export const CampaignStatus = {
   ativa: 'Ativa',
   cancelada: 'cancelada',
-  finalizada: 'concluida' // ou 'Concluída'
+  finalizada: 'concluida'
 } as const;
 
-export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus] | string;
+export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus];
 
 export interface ExpenseItem {
   description: string;
@@ -78,31 +78,24 @@ export interface CampaignModel {
   type: CampaignType;
   status: CampaignStatus;
   imageUrl?: string;
-  
-  // Valores financeiros
   currentValue?: number;
   goalValue?: number;
   ticketValue?: number;
-  totalCollected?: number; // Usado agora como fonte primária
-  
-  // Dados específicos Rifa / Outros
-  drawDate?: string | null;
-  eventDateTime?: string | null;
-  winner?: string | null;
-  address?: string | null;
   
   // Premiação
-  prize?: string | null;
-  prizeImageUrl?: string | null; 
+  prize?: string;
+  prizeImageUrl?: string; // <--- ADICIONADO: Para a lógica da foto da cesta/kit/etc
   
+  address?: string;
   itemsForSale?: string;
   
   // Prestação de Contas
   hasAccountability: boolean;
+  totalCollected?: number;
   expenses?: ExpenseItem[];
   
   // Campos de recibos sincronizados:
-  receiptUrls?: string[] | null; 
-  receipts?: string[] | null;    
+  receiptUrls?: string[]; // Nome exato como está no Firestore
+  receipts?: string[];    // Nome usado no front-end/mapeamento
   createdAt?: Timestamp | any;
 }

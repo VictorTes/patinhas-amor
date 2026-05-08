@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { CampaignModel } from '../types';
+import { CampaignType, CampaignStatus } from '../types';
 
 interface Props {
   campaign: CampaignModel;
@@ -9,20 +10,15 @@ interface Props {
 export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  // Unifiquei o lightbox para suportar tanto os comprovantes quanto a imagem do prêmio
   const [activeFullImage, setActiveFullImage] = useState<string | null>(null);
 
-  const isFinalized = campaign.status?.toLowerCase() === 'concluída' || campaign.status?.toLowerCase() === 'concluida';
-  const isRifa = campaign.type?.toLowerCase() === 'rifa';
-  
-  // Tratamento de segurança para arrays vindos nulos do firebase
-  const receipts = campaign.receiptUrls || campaign.receipts || [];
+  const isFinalized = campaign.status === CampaignStatus.finalizada;
+  const receipts = campaign.receipts || [];
 
   // Cálculos da prestação de contas
   const totalExpenses = campaign.expenses?.reduce((acc, exp) => acc + exp.value, 0) || 0;
   const balance = (campaign.totalCollected || 0) - totalExpenses;
-
-  // Barra de progresso baseada no totalCollected
-  const progress = Math.round(((campaign.totalCollected || 0) / (campaign.goalValue || 1)) * 100);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -37,11 +33,13 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
     }).format(value);
   };
 
+  const progress = Math.round(((campaign.currentValue || 0) / (campaign.goalValue || 1)) * 100);
+
   const handleWhatsApp = () => {
     const phone = "5547999999999";
-    const message = isRifa
-      ? `Olá! Gostaria de participar da rifa: ${campaign.title}. Quero comprar ${ticketQuantity} cota(s).`
-      : `Olá! Tenho interesse em ajudar/participar do evento: ${campaign.title}.`;
+    const message = campaign.type === CampaignType.rifa
+      ? `Olá! Gostaria de participar da campanha: ${campaign.title}. Quero comprar ${ticketQuantity} cota(s).`
+      : `Olá! Tenho interesse em ajudar na campanha: ${campaign.title}`;
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -71,28 +69,13 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
           </div>
 
           <div style={{ ...styles.infoSection, flex: '1 1 auto' }}>
-            <header style={{ marginBottom: '20px' }}>
-              <span style={styles.badge}>{campaign.type?.toUpperCase()}</span>
+            <header style={{ marginBottom: '25px' }}>
+              <span style={styles.badge}>{campaign.type.toUpperCase()}</span>
               <h2 style={styles.title}>{campaign.title}</h2>
               <div style={{ height: '4px', width: '40px', backgroundColor: '#e67e22', borderRadius: '2px' }} />
             </header>
 
             <p style={styles.description}>{campaign.description}</p>
-
-            {/* --- DETALHES ESPECÍFICOS DE DATA/LOCAL/GANHADOR --- */}
-            <div style={styles.detailsBox}>
-              {isRifa ? (
-                <>
-                  {campaign.drawDate && <div style={styles.detailRow}>📅 <strong>Data do Sorteio:</strong> {campaign.drawDate}</div>}
-                  {campaign.winner && <div style={{...styles.detailRow, color: '#059669', fontSize: '16px'}}>🏆 <strong>Ganhador:</strong> {campaign.winner}</div>}
-                </>
-              ) : (
-                <>
-                  {campaign.eventDateTime && campaign.eventDateTime !== "-" && <div style={styles.detailRow}>📅 <strong>Data:</strong> {campaign.eventDateTime}</div>}
-                  {campaign.address && <div style={styles.detailRow}>📍 <strong>Local:</strong> {campaign.address}</div>}
-                </>
-              )}
-            </div>
 
             {campaign.prize && (
               <div style={styles.prizeBox}>
@@ -114,42 +97,33 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
             <div style={styles.progressContainer}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'flex-end' }}>
                 <div>
-                  <span style={{ fontSize: '12px', color: '#888', display: 'block' }}>Total Arrecadado</span>
-                  <span style={{ fontWeight: 700, fontSize: '20px', color: '#333' }}>{formatCurrency(campaign.totalCollected || 0)}</span>
+                  <span style={{ fontSize: '12px', color: '#888', display: 'block' }}>Arrecadado</span>
+                  <span style={{ fontWeight: 700, fontSize: '20px', color: '#333' }}>{formatCurrency(campaign.currentValue || 0)}</span>
                 </div>
                 <span style={{ color: '#888', fontSize: '13px' }}>meta: {formatCurrency(campaign.goalValue || 0)}</span>
               </div>
               <div style={styles.progressBarBg}>
-                <div style={{ ...styles.progressBarFill, width: `${progress}%`, backgroundColor: isFinalized ? '#94a3b8' : '#2ecc71' }} />
+                <div style={{ ...styles.progressBarFill, width: `${progress}%` }} />
               </div>
-              <p style={{ textAlign: 'right', fontSize: '13px', color: isFinalized ? '#64748b' : '#2ecc71', fontWeight: 600, marginTop: '5px' }}>
+              <p style={{ textAlign: 'right', fontSize: '13px', color: '#2ecc71', fontWeight: 600, marginTop: '5px' }}>
                 {progress}% concluído
               </p>
             </div>
 
             {!isFinalized && (
               <div style={styles.actionBox}>
-                {isRifa && campaign.ticketValue ? (
-                  <>
-                    <div style={{ marginBottom: '15px' }}>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Valor por cota</p>
-                      <p style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a1a1a' }}>{formatCurrency(campaign.ticketValue || 0)}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', flexDirection: isMobile ? 'column' : 'row' }}>
-                      <input
-                        type="number" min="1" value={ticketQuantity}
-                        onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
-                        style={{ ...styles.input, width: isMobile ? '100%' : '80px' }}
-                      />
-                      <button onClick={handleWhatsApp} style={styles.buyBtn}>COMPRAR VIA WHATSAPP</button>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <p style={{ margin: 0, fontSize: '15px', color: '#333', fontWeight: 600 }}>Quer apoiar este evento?</p>
-                    <button onClick={handleWhatsApp} style={styles.buyBtn}>ENTRAR EM CONTATO</button>
-                  </div>
-                )}
+                <div style={{ marginBottom: '15px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Valor por cota</p>
+                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a1a1a' }}>{formatCurrency(campaign.ticketValue || 0)}</p>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', flexDirection: isMobile ? 'column' : 'row' }}>
+                  <input
+                    type="number" min="1" value={ticketQuantity}
+                    onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
+                    style={{ ...styles.input, width: isMobile ? '100%' : '80px' }}
+                  />
+                  <button onClick={handleWhatsApp} style={styles.buyBtn}>AJUDAR VIA WHATSAPP</button>
+                </div>
               </div>
             )}
 
@@ -212,6 +186,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
         </div>
       </div>
 
+      {/* LIGHTBOX GENÉRICO (FOTOS E PREMIAÇÃO) */}
       {activeFullImage && (
         <div style={styles.lightboxOverlay} onClick={() => setActiveFullImage(null)}>
           <button style={styles.lightboxClose} onClick={() => setActiveFullImage(null)}>✕</button>
@@ -233,17 +208,12 @@ const styles: Record<string, React.CSSProperties> = {
   infoSection: { padding: '40px', minWidth: '300px' },
   badge: { fontSize: '10px', fontWeight: 800, color: '#e67e22', letterSpacing: '1px', marginBottom: '8px', display: 'block' },
   title: { margin: '0 0 12px 0', fontSize: '28px', color: '#1a1a1a', fontWeight: 800 },
-  description: { color: '#555', lineHeight: '1.7', marginBottom: '15px', fontSize: '15px' },
-  
-  // Novo estilo para a caixa de Data/Local/Ganhador
-  detailsBox: { backgroundColor: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '25px' },
-  detailRow: { fontSize: '14px', color: '#475569', marginBottom: '6px' },
-
+  description: { color: '#555', lineHeight: '1.7', marginBottom: '20px', fontSize: '15px' },
   prizeBox: { backgroundColor: '#fffbe6', padding: '15px', borderRadius: '12px', border: '1px solid #ffe58f', marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '15px' },
   prizeSplash: { width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e67e22', cursor: 'pointer', flexShrink: 0 },
   progressContainer: { marginBottom: '30px', backgroundColor: '#fcfcfc', padding: '20px', borderRadius: '16px', border: '1px solid #f0f0f0' },
   progressBarBg: { height: '12px', backgroundColor: '#eee', borderRadius: '6px', overflow: 'hidden' },
-  progressBarFill: { height: '100%', borderRadius: '6px', transition: 'width 1s ease-in-out' },
+  progressBarFill: { height: '100%', backgroundColor: '#2ecc71', borderRadius: '6px' },
   actionBox: { backgroundColor: '#fff', padding: '25px', borderRadius: '20px', border: '2px solid #ffe0b2', marginBottom: '30px' },
   input: { padding: '14px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '16px', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#f9f9f9' },
   buyBtn: { flex: 1, padding: '16px', backgroundColor: '#25D366', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px' },
