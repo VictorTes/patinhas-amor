@@ -79,9 +79,6 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
               }}>
                 {/* Grupo da Esquerda: Tipo e Título */}
                 <div style={{ flex: 1 }}>
-                  <span style={{ ...styles.badge, marginBottom: '8px', display: 'inline-block' }}>
-                    {campaign.type.toUpperCase()}
-                  </span>
                   <h2 style={{ ...styles.title, marginTop: '5px' }}>{campaign.title}</h2>
                 </div>
 
@@ -109,6 +106,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
 
             <p style={styles.description}>{campaign.description}</p>
 
+            {/* CAIXA DE INFORMAÇÕES - RIFA */}
             {campaign.prize && (
               <div style={{
                 ...styles.prizeBox,
@@ -181,6 +179,48 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                       alt="Prêmio"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CAIXA DE INFORMAÇÕES - EVENTO (NOVO) */}
+            {campaign.type === CampaignType.outro && (
+              <div style={{
+                ...styles.prizeBox,
+                display: 'flex',
+                gap: '20px',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <h4 style={{ margin: '0 0 5px 0', fontSize: '11px', color: '#e67e22', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    📅 Data / Horário
+                  </h4>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>
+                    {campaign.eventDateTime && campaign.eventDateTime !== "-" ? campaign.eventDateTime : 'A definir'}
+                  </p>
+                </div>
+
+                {campaign.address && (
+                  <div style={{ flex: 1, minWidth: '150px' }}>
+                    <h4 style={{ margin: '0 0 5px 0', fontSize: '11px', color: '#e67e22', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      📍 Local
+                    </h4>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>
+                      {campaign.address}
+                    </p>
+                  </div>
+                )}
+
+                {campaign.itemsForSale && (
+                  <div style={{ flex: '1 1 100%', borderTop: '1px dashed #ffe58f', paddingTop: '12px', marginTop: '5px' }}>
+                    <h4 style={{ margin: '0 0 5px 0', fontSize: '11px', color: '#e67e22', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      🛍️ Itens à Venda
+                    </h4>
+                    <p style={{ margin: 0, fontWeight: 500, color: '#444', fontSize: '14px' }}>
+                      {campaign.itemsForSale}
+                    </p>
                   </div>
                 )}
               </div>
