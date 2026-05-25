@@ -86,6 +86,7 @@ export interface CampaignModel {
   prizeImageUrl?: string; // <--- ADICIONADO: Para a lógica da foto da cesta/kit/etc
   drawDate?:Timestamp | Date | null;
   winner?: string;
+  eventDateTime?: string;
   
   address?: string;
   itemsForSale?: string;

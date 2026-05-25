@@ -3,15 +3,17 @@ import type { CampaignModel } from '../types';
 
 interface Props {
   campaign: CampaignModel;
-  onClick: (campaign: CampaignModel) => void; 
+  onClick: (campaign: CampaignModel) => void;
 }
 
 export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
-  // Cálculo do progresso
+  // Verificação do tipo de campanha (ajusta minúsculas para evitar erros)
+  const isRifa = campaign.type?.toLowerCase() === 'rifa';
+  const isCompleted = campaign.status !== 'Ativa';
+
+  // Cálculo do progresso (usado apenas se for rifa)
   const progress = Math.round(((campaign.totalCollected || 0) / (campaign.goalValue || 1)) * 100);
 
-
-  const isCompleted = campaign.status !== 'Ativa';
   /**
    * Helper para formatação de moeda no padrão R$ 0.000,00
    */
@@ -23,7 +25,7 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
   };
 
   return (
-    <div 
+    <div
       onClick={() => onClick(campaign)}
       style={{
         borderRadius: '16px',
@@ -34,36 +36,38 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%', 
-        minHeight: '550px', 
+        height: '100%',
+        minHeight: '550px',
         border: '1px solid #f0f0f0',
         opacity: isCompleted ? 0.6 : 1,
         filter: isCompleted ? 'grayscale(0.4)' : 'none'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-6px)';
-        e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.12)';
+        if (!isCompleted) {
+          e.currentTarget.style.transform = 'translateY(-6px)';
+          e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.12)';
+        }
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
       }}
     >
-      {/* Container da Imagem mais alto (Padrão Retrato) */}
+      {/* Container da Imagem */}
       <div style={{ position: 'relative', height: '380px', overflow: 'hidden' }}>
-        <img 
-          src={campaign.imageUrl} 
-          alt={campaign.title} 
-          style={{ 
-            width: '100%', 
-            height: '100%', 
-            objectFit: 'cover' 
-          }} 
+        <img
+          src={campaign.imageUrl}
+          alt={campaign.title}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
         />
-        <span style={{ 
+        <span style={{
           position: 'absolute', top: '12px', right: '12px',
           fontSize: '11px', fontWeight: 800, padding: '6px 12px', borderRadius: '20px',
-          backgroundColor: campaign.status === 'Ativa' ? '#27ae60' : '#e74c3c',
+          backgroundColor: campaign.status === 'Ativa' ? '#27ae60' : '#7f8c8d',
           color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
         }}>
@@ -72,17 +76,28 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
       </div>
 
       <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <h3 style={{ 
-          margin: '0 0 10px 0', 
-          color: '#1a1a1a', 
-          fontSize: '1.2rem', 
+        {/* Badge do Tipo (Opcional, mas ajuda visualmente a saber se é Rifa ou Evento/Outro) */}
+        <span style={{
+          fontSize: '10px',
+          color: '#e67e22',
+          textTransform: 'uppercase',
+          fontWeight: 800,
+          marginBottom: '5px'
+        }}>
+          {campaign.type}
+        </span>
+
+        <h3 style={{
+          margin: '0 0 10px 0',
+          color: '#1a1a1a',
+          fontSize: '1.2rem',
           lineHeight: '1.3',
-          fontWeight: 700 
+          fontWeight: 700
         }}>
           {campaign.title}
         </h3>
-        
-        <p style={{ 
+
+        <p style={{
           fontSize: '14px', color: '#666', marginBottom: '20px',
           display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           lineHeight: '1.5'
@@ -91,44 +106,99 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
         </p>
 
         {/* Informações fixadas no rodapé do card */}
-        <div style={{ marginTop: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-            <span style={{ color: '#888', fontWeight: 500 }}>Progresso</span>
-            <span style={{ fontWeight: 'bold', color: '#e67e22' }}>{progress}%</span>
-          </div>
-          
-          <div style={{ width: '100%', height: '8px', backgroundColor: '#f0f0f0', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
-            <div style={{ 
-              width: `${progress}%`, 
-              height: '100%', 
-              backgroundColor: '#e67e22', 
-              borderRadius: '10px', 
-              transition: 'width 1s ease-in-out' 
-            }} />
-          </div>
+        <div style={{ marginTop: 'auto', minHeight: '85px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
 
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            paddingTop: '10px',
-            borderTop: '1px solid #f9f9f9'
-          }}>
-            <div>
-              <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Arrecadado</p>
-              <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>
-                {formatCurrency(campaign.currentValue || 0)}
-              </p>
-            </div>
-            {campaign.ticketValue && (
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Cota</p>
-                <p style={{ margin: 0, fontWeight: 700, color: '#e67e22', fontSize: '15px' }}>
-                  {formatCurrency(campaign.ticketValue)}
-                </p>
+          {isRifa ? (
+            /* CONTEÚDO PARA RIFA */
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                <span style={{ color: '#888', fontWeight: 500 }}>Progresso</span>
+                <span style={{ fontWeight: 'bold', color: '#e67e22' }}>{progress}%</span>
               </div>
-            )}
-          </div>
+
+              <div style={{
+                width: '100%',
+                height: '8px',
+                backgroundColor: '#f0f0f0',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                marginBottom: '15px'
+              }}>
+                <div style={{
+                  width: `${progress}%`,
+                  height: '100%',
+                  backgroundColor: '#e67e22',
+                  borderRadius: '10px',
+                  transition: 'width 1s ease-in-out'
+                }} />
+              </div>
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingTop: '10px',
+                borderTop: '1px solid #f9f9f9'
+              }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Arrecadado</p>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '15px' }}>
+                    {formatCurrency(campaign.currentValue || 0)}
+                  </p>
+                </div>
+
+                {campaign.ticketValue ? (
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Cota</p>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#e67e22', fontSize: '15px' }}>
+                      {formatCurrency(campaign.ticketValue)}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            /* CONTEÚDO PARA EVENTOS / OUTROS */
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              paddingTop: '10px',
+              borderTop: '1px solid #f9f9f9'
+            }}>
+              {/* Área de Informações de Evento */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span style={{ fontSize: '16px' }}>📅</span>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Data / Horário</p>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#333', fontSize: '14px' }}>
+                    {campaign.eventDateTime && campaign.eventDateTime !== "-" ? campaign.eventDateTime : 'A definir'}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span style={{ fontSize: '16px' }}>📍</span>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#aaa', textTransform: 'uppercase' }}>Local</p>
+                  <p style={{
+                    margin: 0,
+                    fontWeight: 700,
+                    color: '#333',
+                    fontSize: '14px',
+                    // Corta o texto com "..." se o endereço for longo demais para o card
+                    display: '-webkit-box',
+                    WebkitLineClamp: 1,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}>
+                    {campaign.address && campaign.address !== "" ? campaign.address : 'A definir'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
