@@ -45,6 +45,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
 
   final _addressController = TextEditingController();
   final _itemsController = TextEditingController();
+  final _eventDateTimeController = TextEditingController(); // NOVO: Controller para a data/horário do evento
 
   bool _hasAccountability = false;
   final _totalCollectedController = TextEditingController();
@@ -69,6 +70,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _drawDateController.dispose();
     _addressController.dispose();
     _itemsController.dispose();
+    _eventDateTimeController.dispose(); // NOVO: Dispose do novo controller
     _totalCollectedController.dispose();
     super.dispose();
   }
@@ -85,6 +87,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
     _prizeController.text = c.prize ?? '';
     _addressController.text = c.address ?? '';
     _itemsController.text = c.itemsForSale ?? '';
+    _eventDateTimeController.text = c.eventDateTime ?? ''; // NOVO: Preenche a data do evento se existir
     _hasAccountability = c.hasAccountability;
     
     _totalCollectedController.text = c.totalCollected?.toString() ?? '';
@@ -168,6 +171,7 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
         drawDate: _selectedDrawDate,
         address: _addressController.text.trim(),
         itemsForSale: _itemsController.text.trim(),
+        eventDateTime: _eventDateTimeController.text.trim(), // NOVO: Salva o novo campo
         hasAccountability: _hasAccountability,
         totalCollected: _parseDouble(_totalCollectedController.text) ?? 0.0,
         expenses: _expenses,
@@ -389,6 +393,16 @@ class _CampaignFormScreenState extends State<CampaignFormScreen> {
   Widget _buildEventoFields() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Informações do Evento', style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 10),
+      // NOVO: Adicionado campo do eventDateTime
+      TextFormField(
+        controller: _eventDateTimeController, 
+        decoration: const InputDecoration(
+          labelText: 'Data / Horário', 
+          border: OutlineInputBorder(),
+          hintText: 'Ex: 25 de Dezembro às 15h'
+        )
+      ),
       const SizedBox(height: 10),
       TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Endereço Completo', border: OutlineInputBorder())),
       const SizedBox(height: 10),
