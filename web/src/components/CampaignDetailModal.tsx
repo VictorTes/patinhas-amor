@@ -226,23 +226,27 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
               </div>
             )}
 
-            <div style={styles.progressContainer}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'flex-end' }}>
-                <div>
-                  <span style={{ fontSize: '12px', color: '#888', display: 'block' }}>Arrecadado</span>
-                  <span style={{ fontWeight: 700, fontSize: '20px', color: '#333' }}>{formatCurrency(campaign.currentValue || 0)}</span>
+            {/* BARRA DE PROGRESSO - RESTRITO A RIFAS */}
+            {campaign.type === CampaignType.rifa && (
+              <div style={styles.progressContainer}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'flex-end' }}>
+                  <div>
+                    <span style={{ fontSize: '12px', color: '#888', display: 'block' }}>Arrecadado</span>
+                    <span style={{ fontWeight: 700, fontSize: '20px', color: '#333' }}>{formatCurrency(campaign.currentValue || 0)}</span>
+                  </div>
+                  <span style={{ color: '#888', fontSize: '13px' }}>meta: {formatCurrency(campaign.goalValue || 0)}</span>
                 </div>
-                <span style={{ color: '#888', fontSize: '13px' }}>meta: {formatCurrency(campaign.goalValue || 0)}</span>
+                <div style={styles.progressBarBg}>
+                  <div style={{ ...styles.progressBarFill, width: `${progress}%` }} />
+                </div>
+                <p style={{ textAlign: 'right', fontSize: '13px', color: '#e67e22', fontWeight: 600, marginTop: '5px' }}>
+                  {progress}% concluído
+                </p>
               </div>
-              <div style={styles.progressBarBg}>
-                <div style={{ ...styles.progressBarFill, width: `${progress}%` }} />
-              </div>
-              <p style={{ textAlign: 'right', fontSize: '13px', color: '#e67e22', fontWeight: 600, marginTop: '5px' }}>
-                {progress}% concluído
-              </p>
-            </div>
+            )}
 
-            {!isFinalized && (
+            {/* OPÇÕES DE COMPRA / WHATSAPP - RESTRITO A RIFAS ATIVAS */}
+            {campaign.type === CampaignType.rifa && !isFinalized && (
               <div style={styles.actionBox}>
                 <div style={{ marginBottom: '15px' }}>
                   <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Valor por cota</p>
