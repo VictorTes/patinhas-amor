@@ -83,6 +83,25 @@ export function Sobre() {
         </FadeIn>
       </div>
 
+      {/* Seção Pré-visualização do Instagram */}
+      <section className="bg-slate-50 py-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <FadeIn>
+            <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center justify-center gap-2">
+              <span className="text-pink-600">📸</span> Acompanhe nosso dia a dia
+            </h3>
+            <a 
+              href="https://www.instagram.com/patinhaseamorgemeasdoiguacu" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            >
+              Ver mais no Instagram
+            </a>
+          </FadeIn>
+        </div>
+      </section>
+
       <footer className="bg-slate-900 text-slate-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn direction="up">
