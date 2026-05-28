@@ -185,7 +185,8 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
             )}
 
             {/* CAIXA DE INFORMAÇÕES - EVENTO (NOVO) */}
-            {campaign.type === CampaignType.outro && (
+            {/* Aceita o Enum ou a string em minúsculo para evitar falhas de case-sensitive */}
+            {(campaign.type === CampaignType.outro || String(campaign.type).toLowerCase() === 'outro') && (
               <div style={{
                 ...styles.prizeBox,
                 display: 'flex',
