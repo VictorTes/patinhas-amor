@@ -9,7 +9,7 @@ interface Props {
 export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
   // Verificação do tipo de campanha (ajusta minúsculas para evitar erros)
   const isRifa = campaign.type?.toLowerCase() === 'rifa';
-  const isCompleted = campaign.status !== 'Ativa';
+  const isCompleted = campaign.status !== 'ativa';
 
   // Cálculo do progresso (usado apenas se for rifa)
   const progress = Math.round(((campaign.totalCollected || 0) / (campaign.goalValue || 1)) * 100);
@@ -67,25 +67,16 @@ export const CampaignCard: React.FC<Props> = ({ campaign, onClick }) => {
         <span style={{
           position: 'absolute', top: '12px', right: '12px',
           fontSize: '11px', fontWeight: 800, padding: '6px 12px', borderRadius: '20px',
-          backgroundColor: campaign.status === 'Ativa' ? '#27ae60' : '#7f8c8d',
+          backgroundColor: campaign.status === 'ativa' ? '#27ae60' : '#7f8c8d',
           color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
         }}>
-          {campaign.status === 'Ativa' ? '● ATIVA' : '● ENCERRADA'}
+          {campaign.status === 'ativa' ? '● ATIVA' : '● ENCERRADA'}
         </span>
       </div>
 
       <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Badge do Tipo (Opcional, mas ajuda visualmente a saber se é Rifa ou Evento/Outro) */}
-        <span style={{
-          fontSize: '10px',
-          color: '#e67e22',
-          textTransform: 'uppercase',
-          fontWeight: 800,
-          marginBottom: '5px'
-        }}>
-          {campaign.type}
-        </span>
+        
 
         <h3 style={{
           margin: '0 0 10px 0',

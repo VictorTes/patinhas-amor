@@ -85,7 +85,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                 {/* Grupo da Direita: Status em evidência */}
                 <span style={{
                   ...styles.badge,
-                  backgroundColor: campaign.status === 'Ativa' ? '#27ae60' : '#e74c3c', // Verde se Ativa, Vermelho caso contrário
+                  backgroundColor: campaign.status === 'ativa' ? '#27ae60' : '#e74c3c', // Verde se Ativa, Vermelho caso contrário
                   color: '#fff',
                   padding: '6px 16px',
                   borderRadius: '20px',
@@ -96,7 +96,7 @@ export const CampaignDetailModal: React.FC<Props> = ({ campaign, onClose }) => {
                   marginLeft: '20px',
                   whiteSpace: 'nowrap' // Garante que o texto não quebre em duas linhas
                 }}>
-                  {campaign.status === 'Ativa' ? '● ATIVA' : '● ENCERRADA'}
+                  {campaign.status === 'ativa' ? '● ATIVA' : '● ENCERRADA'}
                 </span>
               </div>
 
