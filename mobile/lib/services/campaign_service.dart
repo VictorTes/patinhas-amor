@@ -52,7 +52,7 @@ class CampaignService {
     CampaignModel campaign, 
     File? mainImage, 
     List<File>? receipts, 
-    {File? prizeImage} // Adicionado parâmetro opcional para imagem do prêmio
+    {File? prizeImage}
   ) async {
     try {
       String? mainImageUrl = campaign.imageUrl;
@@ -65,7 +65,7 @@ class CampaignService {
         if (uploadedUrl != null) mainImageUrl = uploadedUrl;
       }
 
-      // 2. Upload da imagem do prêmio (Novo)
+      // 2. Upload da imagem do prêmio
       if (prizeImage != null) {
         String? uploadedPrizeUrl = await _uploadToCloudinary(prizeImage);
         if (uploadedPrizeUrl != null) prizeImageUrl = uploadedPrizeUrl;
@@ -81,15 +81,21 @@ class CampaignService {
         }
       }
 
-      // 4. Montar dados para o Firestore
-      final data = campaign.toMap();
+      // 4. Montar dados para o Firestore usando toJson() (AQUI ESTAVA O BUG)
+      final Map<String, dynamic> data = campaign.toJson();
+      
+      // Atualizar o map com as URLs que acabaram de subir
       data['imageUrl'] = mainImageUrl;
-      data['prizeImageUrl'] = prizeImageUrl; // Garante a persistência da URL da premiação
+      data['prizeImageUrl'] = prizeImageUrl; 
       data['receiptUrls'] = receiptUrls;
 
+      // 5. Salvar no banco
       if (campaign.id != null && campaign.id!.isNotEmpty) {
+        // Remove o createdAt para não sobrescrever a data original de criação na edição
+        data.remove('createdAt'); 
         await _firestore.collection(_collection).doc(campaign.id).update(data);
       } else {
+        // Nova campanha recebe o timestamp do servidor
         data['createdAt'] = FieldValue.serverTimestamp();
         await _firestore.collection(_collection).add(data);
       }
