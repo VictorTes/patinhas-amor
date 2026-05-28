@@ -9,7 +9,39 @@ class CampaignDetailScreen extends StatelessWidget {
 
   const CampaignDetailScreen({super.key, required this.campaignId});
 
-  // Método para exibir imagem em tela cheia com proteção
+  // Widget auxiliar para carregar imagens com tratamento de erro
+  Widget _buildSafeImage(String? url,
+      {double? height, double? width, BoxFit fit = BoxFit.cover}) {
+    if (url == null || url.isEmpty) {
+      return Container(
+        height: height,
+        width: width,
+        color: Colors.grey[200],
+        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+      );
+    }
+    return Image.network(
+      url,
+      height: height,
+      width: width,
+      fit: fit,
+      errorBuilder: (context, error, stackTrace) => Container(
+        height: height,
+        width: width,
+        color: Colors.grey[200],
+        child: const Icon(Icons.broken_image, color: Colors.redAccent),
+      ),
+      loadingBuilder: (context, child, progress) => progress == null
+          ? child
+          : Container(
+              height: height,
+              width: width,
+              color: Colors.grey[100],
+              child: const Center(child: CircularProgressIndicator.adaptive()),
+            ),
+    );
+  }
+
   void _showFullScreenImage(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -19,30 +51,15 @@ class CampaignDetailScreen extends StatelessWidget {
           children: [
             Center(
               child: InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 100, color: Colors.white54),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                        child: CircularProgressIndicator(color: Colors.white));
-                  },
-                ),
+                child: _buildSafeImage(imageUrl, fit: BoxFit.contain),
               ),
             ),
             Positioned(
               top: 40,
               right: 20,
-              child: CircleAvatar(
-                backgroundColor: Colors.black54,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
           ],
@@ -52,43 +69,32 @@ class CampaignDetailScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(
-      BuildContext context, CampaignService service, String title) async {
+      BuildContext context, CampaignService service, String? title) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Campanha?'),
-        content: Text(
-            'Tem certeza que deseja apagar a campanha "$title"? Esta ação não pode ser desfeita.'),
+        content: Text('Deseja apagar a campanha "${title ?? 'sem título'}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCELAR'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('CANCELAR')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('EXCLUIR',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('EXCLUIR'),
           ),
         ],
       ),
     );
 
-    if (confirm == true) {
+    if (confirm == true && context.mounted) {
       try {
         await service.deleteCampaign(campaignId);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Campanha removida com sucesso')),
-          );
-          Navigator.pop(context);
-        }
+        Navigator.pop(context);
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro ao excluir: $e')),
-          );
-        }
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     }
   }
@@ -103,24 +109,22 @@ class CampaignDetailScreen extends StatelessWidget {
     return StreamBuilder<List<CampaignModel>>(
       stream: service.getCampaignsStream(null),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Scaffold(body: Center(child: Text('Erro ao carregar')));
-        }
-        if (!snapshot.hasData) {
+        if (snapshot.hasError)
+          return Scaffold(body: Center(child: Text('Erro: ${snapshot.error}')));
+        if (!snapshot.hasData)
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
-        }
 
         final campaigns = snapshot.data!;
-        final campaign = campaigns
-            .cast<CampaignModel?>()
-            .firstWhere((c) => c?.id == campaignId, orElse: () => null);
+        final campaign = campaigns.cast<CampaignModel?>().firstWhere(
+              (c) => c?.id == campaignId,
+              orElse: () => null,
+            );
 
         if (campaign == null) {
           return Scaffold(
-            appBar: AppBar(),
-            body: const Center(child: Text('Campanha não encontrada.')),
-          );
+              appBar: AppBar(),
+              body: const Center(child: Text('Campanha não encontrada.')));
         }
 
         return Scaffold(
@@ -130,15 +134,7 @@ class CampaignDetailScreen extends StatelessWidget {
                 expandedHeight: 250,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Image.network(
-                    campaign.imageUrl != null && campaign.imageUrl!.isNotEmpty
-                        ? campaign.imageUrl!
-                        : 'https://via.placeholder.com/600x300',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Image.network(
-                        'https://via.placeholder.com/600x300',
-                        fit: BoxFit.cover),
-                  ),
+                  background: _buildSafeImage(campaign.imageUrl),
                 ),
               ),
               SliverList(
@@ -156,20 +152,18 @@ class CampaignDetailScreen extends StatelessWidget {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline,
-                                      size: 24, color: Colors.redAccent),
+                                      color: Colors.redAccent),
                                   onPressed: () => _confirmDelete(
                                       context, service, campaign.title),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.edit,
-                                      size: 24, color: Colors.grey),
+                                      color: Colors.grey),
                                   onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CampaignFormScreen(
-                                          campaign: campaign),
-                                    ),
-                                  ),
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => CampaignFormScreen(
+                                              campaign: campaign))),
                                 ),
                               ],
                             ),
@@ -207,26 +201,20 @@ class CampaignDetailScreen extends StatelessWidget {
     );
   }
 
-  // --- Widgets auxiliares ---
+  // --- Widgets auxiliares seguem a mesma lógica de tratamento de nulos ---
 
   Widget _buildBadge(CampaignModel c) {
+    bool isRifa = c.type == CampaignType.rifa;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: c.type == CampaignType.rifa
-            ? Colors.purple.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
+        color: (isRifa ? Colors.purple : Colors.orange).withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        c.type == CampaignType.rifa ? '🎟️ RIFA' : '🛍️ EVENTO',
-        style: TextStyle(
-          color: c.type == CampaignType.rifa
-              ? Colors.purple
-              : Colors.orange.shade900,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      child: Text(isRifa ? '🎟️ RIFA' : '🛍️ EVENTO',
+          style: TextStyle(
+              color: isRifa ? Colors.purple : Colors.orange.shade900,
+              fontWeight: FontWeight.bold)),
     );
   }
 
