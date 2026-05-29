@@ -38,7 +38,7 @@ export function Home() {
         ]);
 
         // Filtro para garantir que apenas campanhas ATIVAS apareçam na Home
-        const activeCampaigns = allCampaigns.filter(c => c.status === 'Ativa');
+        const activeCampaigns = allCampaigns.filter(c => c.status === 'ativa');
 
         setAvailableAnimals(available.slice(0, 4));
         setMissingAnimals(missing.slice(0, 4));
