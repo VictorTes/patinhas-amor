@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Patinhas e Amor',
+              'Patinhas & Amor',
               style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,

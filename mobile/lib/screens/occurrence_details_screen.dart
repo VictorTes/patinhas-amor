@@ -69,7 +69,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('PATINHAS AMOR - RELATORIO DE OCORRENCIA',
+                  pw.Text('PATINHAS & AMOR - RELATORIO DE OCORRENCIA',
                       style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
                   pw.Text(_formatDate(_occurrence.createdAt ?? DateTime.now()), 
                       style: const pw.TextStyle(fontSize: 10)),
@@ -115,7 +115,7 @@ class _OccurrenceDetailsScreenState extends State<OccurrenceDetailsScreen> {
               pw.Spacer(),
               pw.Divider(thickness: 0.5),
               pw.Center(
-                child: pw.Text('Gerado automaticamente via App Patinhas Amor', 
+                child: pw.Text('Gerado automaticamente via App Patinhas & Amor', 
                     style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
               ),
             ],

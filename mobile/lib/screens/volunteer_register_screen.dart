@@ -132,7 +132,7 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
     String roleLabel = _selectedRole == 'admin' ? "Administrador(a)" : "Voluntário(a)";
 
     String message = "Olá ${_nameController.text.trim()}! 🐾\n\n"
-        "Seu acesso como *$roleLabel* no App Patinhas de Amor está pronto!\n"
+        "Seu acesso como *$roleLabel* no App Patinhas & Amor está pronto!\n"
         "Login: ${_emailController.text.trim()}\n"
         "Senha Temporária: $password\n\n"
         "Por segurança, o app solicitará a troca da senha no seu primeiro acesso.";

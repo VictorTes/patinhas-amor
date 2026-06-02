@@ -124,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Icon(Icons.pets, size: 80, color: Colors.orange[400]),
                 const SizedBox(height: 16),
                 Text(
-                  'Patinhas e Amor',
+                  'Patinhas & Amor',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 28,
