@@ -6,7 +6,7 @@ export function Sobre() {
     // Substitua pelo número real da ONG (DDI + DDD + Número)
     const phone = "5542999999999";
     const message = encodeURIComponent(
-      "Olá! Vi o site da Patinhas e Amor e gostaria de saber mais sobre como posso ser um voluntário."
+      "Olá! Vi o site da Patinhas & Amor e gostaria de saber mais sobre como posso ser um voluntário."
     );
     const url = `https://wa.me/${phone}?text=${message}`;
 
@@ -27,7 +27,7 @@ export function Sobre() {
               Transformando vidas, <br /> um latido por vez. 🐾
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed">
-              A <strong>Patinhas e Amor</strong> nasceu do sonho de dar uma segunda chance para animais
+              A <strong>Patinhas & Amor</strong> nasceu do sonho de dar uma segunda chance para animais
               que conheceram apenas o abandono e o frio das ruas.
             </p>
           </FadeIn>
@@ -107,7 +107,7 @@ export function Sobre() {
           <FadeIn direction="up">
             <div className="flex items-center justify-center gap-2 mb-4">
               <span className="text-2xl">🐾</span>
-              <span className="text-xl font-bold text-white">Patinhas e Amor</span>
+              <span className="text-xl font-bold text-white">Patinhas & Amor</span>
             </div>
             <a
               href="https://www.instagram.com/patinhaseamorgemeasdoiguacu"
@@ -124,7 +124,7 @@ export function Sobre() {
             </a>
 
             <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
-            <p className="text-sm mt-2">© 2026 Patinhas e Amor. União da Vitória - PR.</p>
+            <p className="text-sm mt-2">© 2026 Patinhas & Amor. União da Vitória - PR.</p>
           </FadeIn>
         </div>
       </footer>

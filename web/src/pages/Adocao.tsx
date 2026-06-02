@@ -43,7 +43,7 @@ export function Adocao() {
   }, [selectedSpecies, selectedSex, animals]);
 
   const handleAdoptClick = (animal: Animal) => {
-    const message = `Olá! Vi o(a) ${animal.name} no site Patinhas e Amor. Ele(a) é um ${animal.species} ${animal.sex} de porte ${animal.size} e gostaria de saber mais sobre a adoção!`;
+    const message = `Olá! Vi o(a) ${animal.name} no site Patinhas & Amor. Ele(a) é um ${animal.species} ${animal.sex} de porte ${animal.size} e gostaria de saber mais sobre a adoção!`;
     const whatsappUrl = `https://wa.me/${ONG_PHONE}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -220,7 +220,7 @@ export function Adocao() {
           <FadeIn direction="up">
             <div className="flex items-center justify-center gap-2 mb-4">
               <span className="text-2xl">🐾</span>
-              <span className="text-xl font-bold text-white">Patinhas e Amor</span>
+              <span className="text-xl font-bold text-white">Patinhas & Amor</span>
             </div>
             <a
               href="https://www.instagram.com/patinhaseamorgemeasdoiguacu"
@@ -237,7 +237,7 @@ export function Adocao() {
             </a>
 
             <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
-            <p className="text-sm mt-2">© 2026 Patinhas e Amor. União da Vitória - PR.</p>
+            <p className="text-sm mt-2">© 2026 Patinhas & Amor. União da Vitória - PR.</p>
           </FadeIn>
         </div>
       </footer>

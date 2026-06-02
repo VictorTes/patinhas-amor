@@ -140,7 +140,7 @@ const CampaignsWebPage: React.FC = () => {
           <FadeIn direction="up">
             <div className="flex items-center justify-center gap-2 mb-4">
               <span className="text-2xl">🐾</span>
-              <span className="text-xl font-bold text-white">Patinhas e Amor</span>
+              <span className="text-xl font-bold text-white">Patinhas & Amor</span>
             </div>
             <a
               href="https://www.instagram.com/patinhaseamorgemeasdoiguacu"
@@ -157,7 +157,7 @@ const CampaignsWebPage: React.FC = () => {
             </a>
 
             <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
-            <p className="text-sm mt-2">© 2026 Patinhas e Amor. União da Vitória - PR.</p>
+            <p className="text-sm mt-2">© 2026 Patinhas & Amor. União da Vitória - PR.</p>
           </FadeIn>
         </div>
       </footer>
