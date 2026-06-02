@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import logoOng from '../assets/logo.png';
+import qrCodePix from '../assets/qr-code.png';
 
 export function Header() {
   const location = useLocation();
@@ -9,7 +10,7 @@ export function Header() {
   const [copied, setCopied] = useState(false);
   const [, setIsMobile] = useState(false);
 
-  const pixKey = "suachavepix@aqui.com";
+  const pixKey = "61365226000180";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(pixKey);
@@ -50,12 +51,12 @@ export function Header() {
             <Link to="/" className="flex items-center gap-2 group">
               <img
                 src={logoOng}
-                alt="Logo Patinhas e Amor"
+                alt="Logo Patinhas & Amor"
                 className="w-20 h-20 object-contain transition-transform group-hover:scale-105"
               />
               <div className="hidden sm:block">
                 <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
-                  Patinhas e Amor
+                  Patinhas & Amor
                 </span>
               </div>
             </Link>
@@ -167,15 +168,19 @@ export function Header() {
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Ajude nossa causa</h2>
             <p className="text-slate-600 mb-6 text-sm">Escaneie o QR Code ou copie a chave Pix abaixo.</p>
 
-            <div className="bg-slate-100 aspect-square rounded-2xl flex items-center justify-center mb-6 border-2 border-dashed border-slate-300">
-              <span className="text-slate-400 font-medium text-xs">[QR CODE]</span>
+            <div className="bg-slate-100 aspect-square rounded-2xl flex items-center justify-center mb-6 overflow-hidden shadow-sm">
+              <img
+                src={qrCodePix}
+                alt="QR Code para doação via Pix"
+                className="w-full h-full object-contain p-4" // p-4 para dar um respiro nas bordas
+              />
             </div>
 
             <button
               onClick={handleCopy}
               className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${copied
-                  ? 'bg-green-500 text-white scale-105'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-green-500 text-white scale-105'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
             >
               {copied ? (

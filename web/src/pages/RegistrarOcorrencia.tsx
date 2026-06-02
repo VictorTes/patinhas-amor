@@ -13,20 +13,11 @@ import {
 import { LocationPicker } from '../components/LocationPicker';
 import { FadeIn } from '../components/FadeIn';
 
-const occurrenceTypes = [
-  { value: '', label: 'Selecione o tipo' },
-  { value: 'Desaparecido', label: '🔍 Animal Desaparecido' },
-  { value: 'Abandono', label: '🚷 Abandono' },
-  { value: 'Maus Tratos', label: '🚨 Maus Tratos' },
-  { value: 'Animal Ferido', label: '🩹 Animal Ferido' },
-  { value: 'Outro', label: '📝 Outros' },
-];
-
 export function RegistrarOcorrencia() {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
-    type: '',
+    type: 'Desaparecido', // Fixo como Desaparecido
     location: '',
     description: '',
     lat: undefined as number | undefined,
@@ -99,10 +90,6 @@ export function RegistrarOcorrencia() {
       newErrors.phone = 'Telefone incompleto';
     }
 
-    if (!formData.type) {
-      newErrors.type = 'Selecione o tipo de ocorrência';
-    }
-
     if (!formData.location.trim()) {
       newErrors.location = 'Localização é obrigatória';
     }
@@ -119,10 +106,9 @@ export function RegistrarOcorrencia() {
 
   const handleShareWhatsapp = () => {
     const baseUrl = window.location.origin;
-    // Link que preenche automaticamente os campos na tela de busca/acompanhamento
     const trackingLink = `${baseUrl}/acompanhar?p=${successData.protocol}&c=${successData.code}`;
     
-    const message = `🐾 *Patinhas & Amor - Ocorrência Registrada*\n\nOlá! Salve estes dados para acompanhar sua denúncia:\n\n📍 *Protocolo:* ${successData.protocol}\n🔑 *Código PIN:* ${successData.code}\n\n🔗 *Acompanhe em tempo real por aqui:* ${trackingLink}`;
+    const message = `🐾 *Patinhas & Amor - Registro de Animal Desaparecido*\n\nOlá! Salve estes dados para acompanhar sua solicitação:\n\n📍 *Protocolo:* ${successData.protocol}\n🔑 *Código PIN:* ${successData.code}\n\n🔗 *Acompanhe em tempo real por aqui:* ${trackingLink}`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -150,13 +136,12 @@ export function RegistrarOcorrencia() {
         setUploadProgress('Foto enviada!');
       }
 
-      // Gera o código PIN de 6 dígitos
       const accessCode = Math.floor(100000 + Math.random() * 900000).toString();
 
       const occurrenceData: OccurrenceFormData = {
         reporterName: formData.fullName.trim(),
         reporterPhone: unmaskPhone(formData.phone),
-        type: formData.type,
+        type: formData.type, // Sempre será 'Desaparecido'
         location: formData.location.trim(),
         description: formData.description.trim(),
         imageUrl: imageUrl,
@@ -171,11 +156,10 @@ export function RegistrarOcorrencia() {
       setSuccessData({ protocol: docId, code: accessCode });
       setIsSuccess(true);
 
-      // Limpa os campos após o sucesso
       setFormData({ 
         fullName: '', 
         phone: '', 
-        type: '', 
+        type: 'Desaparecido', 
         location: '', 
         description: '',
         lat: undefined,
@@ -202,12 +186,12 @@ export function RegistrarOcorrencia() {
         <div className="max-w-2xl mx-auto px-4 py-4">
           <FadeIn>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">🚨</span>
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <span className="text-2xl">🔍</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-800">Registrar Ocorrência</h1>
-                <p className="text-sm text-slate-500">Ajude um animal em risco</p>
+                <h1 className="text-xl font-bold text-slate-800">Animal Desaparecido</h1>
+                <p className="text-sm text-slate-500">Solicite a divulgação na rede</p>
               </div>
             </div>
           </FadeIn>
@@ -229,6 +213,15 @@ export function RegistrarOcorrencia() {
         {!isSuccess && (
           <FadeIn>
             <form onSubmit={handleSubmit} className="space-y-5">
+              
+              {/* Mensagem Explicativa */}
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <span className="text-xl">ℹ️</span>
+                <p className="text-sm text-blue-800 leading-relaxed">
+                  Caso queira que divulguemos o animal desaparecido, preencha os dados abaixo. É importante informar na descrição: <strong>cor do pelo, se usava coleira, o nome do animal e o horário/local aproximado do último avistamento</strong>.
+                </p>
+              </div>
+
               {/* Nome Completo */}
               <div data-error={!!errors.fullName}>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -267,49 +260,11 @@ export function RegistrarOcorrencia() {
                 {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
               </div>
 
-              {/* Tipo de Ocorrência */}
-              <div data-error={!!errors.type}>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  O que aconteceu? <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={formData.type}
-                    onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, type: e.target.value }));
-                      if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
-                    }}
-                    className={`w-full h-14 px-4 text-base rounded-xl border-2 appearance-none transition-all duration-200 bg-white
-                      ${errors.type ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
-                    `}
-                  >
-                    {occurrenceTypes.map((type) => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                {formData.type === 'Desaparecido' && (
-                  <div className="mt-3 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <span className="text-xl">ℹ️</span>
-                    <p className="text-sm text-blue-800 leading-relaxed">
-                      Para <strong>Animais Desaparecidos</strong>, informe na descrição: 
-                      cor do pelo, se usava coleira, nome e o horário aproximado do último avistamento.
-                    </p>
-                  </div>
-                )}
-              </div>
-
               {/* Localização */}
               <div data-error={!!errors.location} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Localização (Endereço ou Referência) <span className="text-red-500">*</span>
+                    Localização do desaparecimento (Endereço ou Referência) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -319,7 +274,7 @@ export function RegistrarOcorrencia() {
                         setFormData((prev) => ({ ...prev, location: e.target.value }));
                         if (errors.location) setErrors((prev) => ({ ...prev, location: '' }));
                       }}
-                      placeholder="Rua, bairro ou ponto de referência"
+                      placeholder="Rua, bairro ou ponto de referência onde sumiu"
                       className={`w-full h-14 px-4 pl-12 text-base rounded-xl border-2 transition-all duration-200
                         ${errors.location ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
                       `}
@@ -335,13 +290,13 @@ export function RegistrarOcorrencia() {
 
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                      <span className="text-orange-500">📍</span> Selecionar ponto exato no mapa
+                      <span className="text-orange-500">📍</span> Selecionar ponto exato no mapa <span className="text-slate-400 font-normal text-xs">(Opcional)</span>
                     </label>
                     <LocationPicker 
                       onLocationSelect={(lat, lng) => setFormData(prev => ({ ...prev, lat, lng }))} 
                     />
                     <p className="mt-2 text-[11px] text-slate-400 italic">
-                      Dica: Toque no mapa para marcar o local exato para as equipes de resgate.
+                      Dica: Se quiser, toque no mapa para marcar o local exato do último avistamento.
                     </p>
                 </div>
               </div>
@@ -349,7 +304,7 @@ export function RegistrarOcorrencia() {
               {/* Descrição */}
               <div data-error={!!errors.description}>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Descrição Detalhada <span className="text-red-500">*</span>
+                  Descrição Detalhada do Animal <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={formData.description}
@@ -357,7 +312,7 @@ export function RegistrarOcorrencia() {
                     setFormData((prev) => ({ ...prev, description: e.target.value }));
                     if (errors.description) setErrors((prev) => ({ ...prev, description: '' }));
                   }}
-                  placeholder="Descreva a situação, estado do animal e detalhes relevantes..."
+                  placeholder="Nome do animal, raça aparente, porte, cor da pelagem, usava coleira? Alguma marca característica?"
                   rows={5}
                   className={`w-full px-4 py-3 text-base rounded-xl border-2 transition-all duration-200 resize-none
                     ${errors.description ? 'border-red-300 bg-red-50' : 'border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100'}
@@ -369,7 +324,7 @@ export function RegistrarOcorrencia() {
               {/* Foto */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Foto do Local / Animal <span className="text-slate-400 font-normal">(opcional)</span>
+                  Foto do Animal <span className="text-slate-400 font-normal">(Altamente recomendado)</span>
                 </label>
 
                 {!imagePreview ? (
@@ -428,7 +383,7 @@ export function RegistrarOcorrencia() {
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
-                      Enviar Ocorrência
+                      Solicitar Divulgação
                     </>
                   )}
                 </button>

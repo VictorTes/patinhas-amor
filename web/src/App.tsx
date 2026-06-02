@@ -6,7 +6,6 @@ import { Adocao } from './pages/Adocao';
 import { Desaparecidos } from './pages/Desaparecidos';
 import { RegistrarOcorrencia } from './pages/RegistrarOcorrencia';
 import { Sobre } from './pages/Sobre';
-import Acompanhamento from './pages/Acompanhamento';
 import { ScrollToTop } from './components/ScrollToTop';
 import CampaignsWebPage from "./pages/CampaignsWebPage";
 
@@ -23,7 +22,6 @@ function App() {
             <Route path="/campanhas" element={<CampaignsWebPage />} />
             <Route path="/desaparecidos" element={<Desaparecidos />} />
             <Route path="/registrar-ocorrencia" element={<RegistrarOcorrencia />} />
-            <Route path="/acompanhar" element={<Acompanhamento />} />
             <Route path="/sobre" element={<Sobre />} />
           </Routes>
         </div>
