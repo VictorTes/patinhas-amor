@@ -14,7 +14,7 @@ export function Adocao() {
   const [selectedSex, setSelectedSex] = useState<string>('all');
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
 
-  const ONG_PHONE = "5500000000000"; 
+  const ONG_PHONE = "5542998655171"; 
 
   useEffect(() => {
     async function fetchAnimals() {
