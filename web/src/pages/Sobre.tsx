@@ -4,7 +4,7 @@ export function Sobre() {
   // Função para lidar com o clique no WhatsApp
   const handleWhatsAppClick = () => {
     // Substitua pelo número real da ONG (DDI + DDD + Número)
-    const phone = "5542999999999";
+    const phone = "5542998655171";
     const message = encodeURIComponent(
       "Olá! Vi o site da Patinhas & Amor e gostaria de saber mais sobre como posso ser um voluntário."
     );
