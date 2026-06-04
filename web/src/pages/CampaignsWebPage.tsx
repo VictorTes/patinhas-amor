@@ -157,7 +157,7 @@ const CampaignsWebPage: React.FC = () => {
             </a>
 
             <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
-            <p className="text-sm mt-2">© 2026 Patinhas & Amor. União da Vitória - PR.</p>
+            <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>
       </footer>

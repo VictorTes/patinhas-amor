@@ -41,7 +41,7 @@ export function Sobre() {
             <div>
               <h2 className="text-2xl font-bold text-slate-800 mb-4">Quem Somos?</h2>
               <p className="text-slate-600 mb-4">
-                Somos uma organização sem fins lucrativos localizada em <strong>União da Vitória</strong>, dedicada
+                Somos uma organização sem fins lucrativos localizada em <strong>Porto União</strong>, dedicada
                 ao resgate, reabilitação e adoção responsável de cães e gatos.
               </p>
               <p className="text-slate-600">
@@ -124,7 +124,7 @@ export function Sobre() {
             </a>
 
             <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
-            <p className="text-sm mt-2">© 2026 Patinhas & Amor. União da Vitória - PR.</p>
+            <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>
       </footer>
