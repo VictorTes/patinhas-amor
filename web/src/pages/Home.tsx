@@ -119,7 +119,7 @@ export function Home() {
                   to="/registrar-ocorrencia"
                   className="inline-flex items-center justify-center gap-2 bg-orange-700/50 backdrop-blur-sm text-white border border-white/30 px-8 py-4 rounded-full font-semibold text-lg hover:bg-orange-700/70 hover:scale-105 transition-all duration-200"
                 >
-                  🚨 Registrar ocorrência
+                  🚨 Registrar animal
                 </Link>
               </div>
             </FadeIn>
@@ -314,7 +314,7 @@ export function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {[
               { icon: '🏠', title: 'Adote', desc: 'Dê um lar amoroso para um animal.', link: '/adocao', color: 'orange' },
-              { icon: '🚨', title: 'Ocorrências', desc: 'Avise-nos sobre animais em risco.', link: '/registrar-ocorrencia', color: 'red' },
+              { icon: '🚨', title: 'Ocorrências', desc: 'Avise-nos sobre animais desaparecidos.', link: '/registrar-ocorrencia', color: 'red' },
               { icon: '📢', title: 'Divulgue', desc: 'Compartilhe animais desaparecidos.', link: '/desaparecidos', color: 'blue' },
             ].map((item, index) => (
               <FadeIn key={item.title} delay={index * 0.2} direction="up">
