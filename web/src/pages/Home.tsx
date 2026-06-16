@@ -98,8 +98,8 @@ export function Home() {
 
             <FadeIn direction="up" delay={0.4}>
               <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-                Resgatamos, cuidamos e encontramos lares amorosos para animais
-                abandonados. Cada adoção é uma nova história de amor.
+                Através de campanhas, doações e adoções responsáveis, ajudamos a
+                transformar a vida de cães e gatos que precisam de cuidado e carinho.
               </p>
             </FadeIn>
 
