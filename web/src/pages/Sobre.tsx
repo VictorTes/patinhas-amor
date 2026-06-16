@@ -40,8 +40,8 @@ export function Sobre() {
             <div>
               <h2 className="text-2xl font-bold text-slate-800 mb-4">Quem Somos?</h2>
               <p className="text-slate-600 mb-4">
-                Somos uma organização sem fins lucrativos localizada em <strong>Porto União</strong>, dedicada
-                ao resgate, reabilitação e adoção responsável de cães e gatos.
+                Somos uma associação sem fins lucrativos localizada em <strong>Porto União</strong>, dedicada
+                à promoção da adoção responsável e ao apoio de cães e gatos por meio de campanhas e arrecadações.
               </p>
               <p className="text-slate-600">
                 Nossa equipe é formada inteiramente por voluntários apaixonados que dedicam
@@ -69,10 +69,9 @@ export function Sobre() {
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Quer fazer parte dessa história?</h2>
           <p className="text-slate-600 mb-8">
             Você pode ajudar sendo um voluntário, doando qualquer valor ou apenas compartilhando
-            nossos animais disponíveis para adoção.
+            os animais disponíveis para adoção.
           </p>
 
-          {/* Botão com OnClick configurado */}
           <button
             onClick={handleWhatsAppClick}
             className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-orange-200 hover:scale-105 active:scale-95"
