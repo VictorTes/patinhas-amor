@@ -83,7 +83,7 @@ export function Home() {
             <FadeIn direction="down">
               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                ONG ativa desde 2025
+                Associação ativa desde 2025
               </div>
             </FadeIn>
 
@@ -355,7 +355,8 @@ export function Home() {
               Siga-nos no Instagram
             </a>
 
-            <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
+            <p className="text-sm">  Associação dedicada ao cuidado, apoio e incentivo à adoção responsável de animais.
+            </p>
             <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>
