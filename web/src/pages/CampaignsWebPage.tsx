@@ -28,9 +28,9 @@ const CampaignsWebPage: React.FC = () => {
 
   const filteredCampaigns = campaigns.filter((c) => {
     if (filter === 'todas') {
-    return c.status !== 'cancelada'; 
-  }
-  return c.status === filter;
+      return c.status !== 'cancelada';
+    }
+    return c.status === filter;
   });
 
   if (loading) {
@@ -45,7 +45,7 @@ const CampaignsWebPage: React.FC = () => {
   return (
     // Alteração: Adicionado flex e flex-direction para controlar o layout vertical
     <div style={{ backgroundColor: '#fafafa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
+
       {/* Alteração: Adicionado flex: 1 para este container crescer e empurrar o footer */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px', width: '100%', flex: 1 }}>
         <FadeIn direction="down">
@@ -156,7 +156,8 @@ const CampaignsWebPage: React.FC = () => {
               Siga-nos no Instagram
             </a>
 
-            <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
+            <p className="text-sm">  Associação dedicada ao cuidado, apoio e incentivo à adoção responsável de animais.
+            </p>
             <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>

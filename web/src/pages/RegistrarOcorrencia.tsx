@@ -137,19 +137,19 @@ export function RegistrarOcorrencia() {
         imageUrl: imageUrl,
         latitude: formData.lat,
         longitude: formData.lng,
-        accessCode: accessCode, 
+        accessCode: accessCode,
         status: 'pending',
       };
 
       await createPendingOccurrence(occurrenceData);
-      
+
       setIsSuccess(true);
 
-      setFormData({ 
-        fullName: '', 
-        phone: '', 
-        type: 'Desaparecido', 
-        location: '', 
+      setFormData({
+        fullName: '',
+        phone: '',
+        type: 'Desaparecido',
+        location: '',
         description: '',
         lat: undefined,
         lng: undefined
@@ -202,7 +202,7 @@ export function RegistrarOcorrencia() {
         {!isSuccess && (
           <FadeIn>
             <form onSubmit={handleSubmit} className="space-y-5">
-              
+
               {/* Mensagem Explicativa */}
               <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 <span className="text-xl">ℹ️</span>
@@ -278,15 +278,15 @@ export function RegistrarOcorrencia() {
                 </div>
 
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                      <span className="text-orange-500">📍</span> Selecionar ponto exato no mapa <span className="text-slate-400 font-normal text-xs">(Opcional)</span>
-                    </label>
-                    <LocationPicker 
-                      onLocationSelect={(lat, lng) => setFormData(prev => ({ ...prev, lat, lng }))} 
-                    />
-                    <p className="mt-2 text-[11px] text-slate-400 italic">
-                      Dica: Se quiser, toque no mapa para marcar o local exato do último avistamento.
-                    </p>
+                  <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                    <span className="text-orange-500">📍</span> Selecionar ponto exato no mapa <span className="text-slate-400 font-normal text-xs">(Opcional)</span>
+                  </label>
+                  <LocationPicker
+                    onLocationSelect={(lat, lng) => setFormData(prev => ({ ...prev, lat, lng }))}
+                  />
+                  <p className="mt-2 text-[11px] text-slate-400 italic">
+                    Dica: Se quiser, toque no mapa para marcar o local exato do último avistamento.
+                  </p>
                 </div>
               </div>
 
@@ -391,9 +391,9 @@ export function RegistrarOcorrencia() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                
+
                 <h2 className="text-2xl font-bold text-slate-800 mb-4">Enviado com Sucesso!</h2>
-                
+
                 <p className="text-slate-600 mb-8 leading-relaxed">
                   Sua solicitação de divulgação foi registrada e será analisada pela nossa equipe em breve.
                 </p>
@@ -433,7 +433,8 @@ export function RegistrarOcorrencia() {
               Siga-nos no Instagram
             </a>
 
-            <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
+            <p className="text-sm">  Associação dedicada ao cuidado, apoio e incentivo à adoção responsável de animais.
+            </p>
             <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>

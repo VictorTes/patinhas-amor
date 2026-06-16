@@ -28,24 +28,24 @@ export function Desaparecidos() {
 
   // Variantes otimizadas para performance máxima (GPU accelerated)
   const modalVariants: Variants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       scale: 0.98,
       y: 10,
     },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       scale: 1,
       y: 0,
-      transition: { 
+      transition: {
         duration: 0.25,
         ease: [0.4, 0, 0.2, 1] // Ease-out fluido e leve
       }
     },
-    exit: { 
-      opacity: 0, 
+    exit: {
+      opacity: 0,
       scale: 0.98,
-      transition: { duration: 0.15 } 
+      transition: { duration: 0.15 }
     }
   };
 
@@ -56,7 +56,7 @@ export function Desaparecidos() {
           <FadeIn direction="down">
             <div className="bg-white border-l-4 md:border-l-8 border-rose-500 p-5 md:p-8 mb-8 rounded-2xl shadow-sm border border-slate-100">
               <h1 className="text-2xl md:text-4xl font-black text-slate-800 mb-2 flex items-center gap-2 md:gap-3">
-                <span className="text-rose-500 animate-pulse text-xl md:text-3xl">●</span> 
+                <span className="text-rose-500 animate-pulse text-xl md:text-3xl">●</span>
                 Animais Desaparecidos
               </h1>
               <p className="text-slate-600 text-sm md:text-lg leading-relaxed max-w-3xl">
@@ -87,7 +87,7 @@ export function Desaparecidos() {
         {selectedAnimal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Overlay - Removido backdrop-blur para estabilizar o FPS */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -96,7 +96,7 @@ export function Desaparecidos() {
             />
 
             {/* Modal Card - Centralizado e Otimizado */}
-            <motion.div 
+            <motion.div
               variants={modalVariants}
               initial="hidden"
               animate="visible"
@@ -105,13 +105,13 @@ export function Desaparecidos() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative aspect-[4/3] md:aspect-square bg-slate-200">
-                <img 
-                  src={selectedAnimal.imageUrl || ANIMAL_PLACEHOLDER_IMAGE} 
-                  alt={selectedAnimal.name} 
+                <img
+                  src={selectedAnimal.imageUrl || ANIMAL_PLACEHOLDER_IMAGE}
+                  alt={selectedAnimal.name}
                   className="w-full h-full object-cover"
                 />
-                
-                <button 
+
+                <button
                   onClick={() => setSelectedAnimal(null)}
                   className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors z-10"
                 >
@@ -122,7 +122,7 @@ export function Desaparecidos() {
                   Urgente
                 </div>
               </div>
-              
+
               <div className="p-6 md:p-8 max-h-[60vh] overflow-y-auto scrollbar-hide">
                 <div className="flex justify-between items-start mb-6">
                   <div className="space-y-1">
@@ -156,10 +156,10 @@ export function Desaparecidos() {
                       </div>
                       <span className="text-2xl ml-4 opacity-30">📞</span>
                     </div>
-                    
-                    <motion.a 
+
+                    <motion.a
                       whileTap={{ scale: 0.98 }}
-                      href={`tel:${selectedAnimal.adopterPhone.replace(/\D/g, '')}`} 
+                      href={`tel:${selectedAnimal.adopterPhone.replace(/\D/g, '')}`}
                       className="flex items-center justify-center w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-2xl shadow-xl shadow-rose-100 transition-all text-sm uppercase tracking-[0.1em]"
                     >
                       Ligar para Informar
@@ -193,7 +193,8 @@ export function Desaparecidos() {
               Siga-nos no Instagram
             </a>
 
-            <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
+            <p className="text-sm">  Associação dedicada ao cuidado, apoio e incentivo à adoção responsável de animais.
+            </p>
             <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>

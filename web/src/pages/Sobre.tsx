@@ -3,7 +3,6 @@ import { FadeIn } from '../components/FadeIn';
 export function Sobre() {
   // Função para lidar com o clique no WhatsApp
   const handleWhatsAppClick = () => {
-    // Substitua pelo número real da ONG (DDI + DDD + Número)
     const phone = "5542998655171";
     const message = encodeURIComponent(
       "Olá! Vi o site da Patinhas & Amor e gostaria de saber mais sobre como posso ser um voluntário."
@@ -90,9 +89,9 @@ export function Sobre() {
             <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center justify-center gap-2">
               <span className="text-pink-600">📸</span> Acompanhe nosso dia a dia
             </h3>
-            <a 
-              href="https://www.instagram.com/patinhaseamorgemeasdoiguacu" 
-              target="_blank" 
+            <a
+              href="https://www.instagram.com/patinhaseamorgemeasdoiguacu"
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-block bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
             >
@@ -123,7 +122,8 @@ export function Sobre() {
               Siga-nos no Instagram
             </a>
 
-            <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
+            <p className="text-sm">  Associação dedicada ao cuidado, apoio e incentivo à adoção responsável de animais.
+            </p>
             <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>

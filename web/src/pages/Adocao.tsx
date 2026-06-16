@@ -14,7 +14,7 @@ export function Adocao() {
   const [selectedSex, setSelectedSex] = useState<string>('all');
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
 
-  const ONG_PHONE = "5542998655171"; 
+  const ONG_PHONE = "5542998655171";
 
   useEffect(() => {
     async function fetchAnimals() {
@@ -50,22 +50,22 @@ export function Adocao() {
 
   // Variantes otimizadas (GPU accelerated)
   const modalVariants: Variants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       y: 15,
     },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { 
+      transition: {
         duration: 0.25,
-        ease: [0.4, 0, 0.2, 1] 
+        ease: [0.4, 0, 0.2, 1]
       }
     },
-    exit: { 
-      opacity: 0, 
+    exit: {
+      opacity: 0,
       y: 10,
-      transition: { duration: 0.15 } 
+      transition: { duration: 0.15 }
     }
   };
 
@@ -73,13 +73,13 @@ export function Adocao() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-grow py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <FadeIn direction="down">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
               🐕 Animais para Adoção
             </h1>
           </FadeIn>
-          
+
           <FadeIn direction="down" delay={0.1}>
             <p className="text-gray-600 mb-8">
               Encontre seu novo melhor amigo! Todos esses animais estão esperando por um lar amoroso.
@@ -91,9 +91,9 @@ export function Adocao() {
             <div className="bg-white p-4 rounded-2xl shadow-sm mb-8 flex flex-wrap gap-4 border border-gray-100">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Espécie</label>
-                <select 
-                  value={selectedSpecies} 
-                  onChange={(e) => setSelectedSpecies(e.target.value)} 
+                <select
+                  value={selectedSpecies}
+                  onChange={(e) => setSelectedSpecies(e.target.value)}
                   className="border border-gray-200 rounded-xl px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 >
                   <option value="all">Todas as Espécies</option>
@@ -104,9 +104,9 @@ export function Adocao() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Sexo</label>
-                <select 
-                  value={selectedSex} 
-                  onChange={(e) => setSelectedSex(e.target.value)} 
+                <select
+                  value={selectedSex}
+                  onChange={(e) => setSelectedSex(e.target.value)}
                   className="border border-gray-200 rounded-xl px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 >
                   <option value="all">Todos os Sexos</option>
@@ -139,7 +139,7 @@ export function Adocao() {
         {selectedAnimal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Overlay - Sem blur para manter 60 FPS */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -148,7 +148,7 @@ export function Adocao() {
             />
 
             {/* Modal Card - GPU Accelerated */}
-            <motion.div 
+            <motion.div
               variants={modalVariants}
               initial="hidden"
               animate="visible"
@@ -157,19 +157,19 @@ export function Adocao() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative aspect-square bg-slate-100">
-                <img 
-                  src={selectedAnimal.imageUrl || ANIMAL_PLACEHOLDER_IMAGE} 
-                  alt={selectedAnimal.name} 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={selectedAnimal.imageUrl || ANIMAL_PLACEHOLDER_IMAGE}
+                  alt={selectedAnimal.name}
+                  className="w-full h-full object-cover"
                 />
-                <button 
+                <button
                   onClick={() => setSelectedAnimal(null)}
                   className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all z-10"
                 >
                   ✕
                 </button>
               </div>
-              
+
               <div className="p-6 md:p-8 max-h-[60vh] overflow-y-auto scrollbar-hide">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -236,7 +236,8 @@ export function Adocao() {
               Siga-nos no Instagram
             </a>
 
-            <p className="text-sm">ONG dedicada ao resgate e adoção de animais abandonados.</p>
+            <p className="text-sm">  Associação dedicada ao cuidado, apoio e incentivo à adoção responsável de animais.
+            </p>
             <p className="text-sm mt-2">© 2026 Patinhas & Amor. Porto União - SC.</p>
           </FadeIn>
         </div>
