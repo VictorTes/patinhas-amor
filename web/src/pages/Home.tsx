@@ -98,8 +98,7 @@ export function Home() {
 
             <FadeIn direction="up" delay={0.4}>
               <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-                Através de campanhas, doações e adoções responsáveis, ajudamos a
-                transformar a vida de cães e gatos que precisam de cuidado e carinho.
+                Promovemos a adoção responsável e apoiamos animais em situação de vulnerabilidade, ajudando a construir histórias de cuidado, amor e novos começos.
               </p>
             </FadeIn>
 
